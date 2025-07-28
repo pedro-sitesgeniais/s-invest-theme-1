@@ -1,0 +1,1453 @@
+/**
+ * S-Invest Theme - CSS Principal Otimizado v2.1 (Tailwind v4 - CORRIGIDO COM NOVA COR)
+ * Arquivo: resources/css/app.css
+ */
+
+/* Importação do Tailwind v4 */
+@import "tailwindcss";
+
+/* Importa fontes do Google (Montserrat + Nunito) */
+
+
+/* ===========================================
+   THEME CONFIGURATION (Tailwind v4) - NOVA COR SECUNDÁRIA
+   =========================================== */
+@theme {
+  /* Cores customizadas do tema S-Invest - ATUALIZADO */
+  --color-primary: #000E35;
+  --color-secondary: #2ED2F8; /* NOVA COR SECUNDÁRIA */
+  --color-accent: #2072D6;
+  --color-background: #000E35;
+  
+  /* Gradientes da nova cor secundária */
+  --color-secondary-50: #f0fdff;
+  --color-secondary-100: #ccfafe;
+  --color-secondary-200: #a6f4fd;
+  --color-secondary-300: #67ecfc;
+  --color-secondary-400: #2ed2f8; /* Cor principal */
+  --color-secondary-500: #06bfdb;
+  --color-secondary-600: #0891b2;
+  --color-secondary-700: #0e7490;
+  --color-secondary-800: #155e75;
+  --color-secondary-900: #164e63;
+  
+  /* Cores do sistema expandidas */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  
+  /* Typography - Montserrat e Nunito otimizadas */
+  --font-family-sans: Montserrat, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-heading: Nunito, Montserrat, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: 'SF Mono', Monaco, Inconsolata, 'Roboto Mono', 'Source Code Pro', monospace;
+  
+  /* Spacing customizado expandido */
+  --spacing-18: 4.5rem;
+  --spacing-72: 18rem;
+  --spacing-88: 22rem;
+  --spacing-128: 32rem;
+  
+  /* Border radius customizado */
+  --radius-4xl: 2rem;
+  --radius-5xl: 2.5rem;
+  
+  /* Box shadows customizados otimizados com nova cor */
+  --shadow-soft: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -1px rgb(0 0 0 / 0.03);
+  --shadow-medium: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+  --shadow-strong: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+  --shadow-glow: 0 0 20px rgb(46 210 248 / 0.15); /* ATUALIZADO */
+  --shadow-glow-lg: 0 0 40px rgb(46 210 248 / 0.2); /* ATUALIZADO */
+}
+
+/* ===========================================
+   ELEMENTOR COMPATIBILITY (PRIORIDADE MÁXIMA)
+   =========================================== */
+
+/* Garantir que Elementor tenha prioridade total */
+.elementor-page,
+.elementor-page * {
+  /* Reset para evitar conflitos */
+  margin: revert;
+  padding: revert;
+  font-family: revert;
+  font-size: revert;
+  line-height: revert;
+  color: revert;
+  background: revert;
+}
+
+/* Header Elementor - Prioridade máxima */
+.elementor-location-header,
+.elementor-location-header *,
+header .elementor-container,
+header .elementor-section {
+  /* Elementor controla completamente */
+  all: revert;
+}
+
+/* Footer Elementor - Prioridade máxima */
+.elementor-location-footer,
+.elementor-location-footer *,
+footer .elementor-container,
+footer .elementor-section {
+  /* Elementor controla completamente */
+  all: revert;
+}
+
+/* Home page Elementor - Prioridade máxima */
+.home .elementor-section,
+.home .elementor-container,
+.home .elementor-widget {
+  /* Elementor controla completamente */
+  all: revert;
+}
+
+/* Elementor widgets - Compatibilidade otimizada */
+.elementor-widget-heading h1,
+.elementor-widget-heading h2,
+.elementor-widget-heading h3,
+.elementor-widget-heading h4,
+.elementor-widget-heading h5,
+.elementor-widget-heading h6 {
+  margin: 0;
+}
+
+/* Seções Elementor - Reset para largura total */
+.elementor-page #page,
+.elementor-page .site-main,
+.elementor-page #primary,
+.elementor-page #content {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.elementor-section-wrap {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ===========================================
+   BASE STYLES (Apenas para páginas do tema) - OTIMIZADO
+   =========================================== */
+
+/* Alpine.js x-cloak - CRÍTICO */
+[x-cloak] {
+  display: none !important;
+}
+
+/* Aplicar apenas em contextos não-Elementor */
+:not(.elementor-page) html {
+  font-family: var(--font-family-sans);
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  tab-size: 4;
+}
+
+:not(.elementor-page) body {
+  color: rgb(31 41 55);
+  background-color: rgb(249 250 251);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tipografia otimizada para páginas do tema */
+.page-template-page-autenticacao h1,
+.page-template-page-autenticacao h2,
+.page-template-page-autenticacao h3,
+.page-template-page-painel h1,
+.page-template-page-painel h2,
+.page-template-page-painel h3,
+.single-investment h1,
+.single-investment h2,
+.single-investment h3 {
+  font-family: var(--font-family-heading);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Foco acessível otimizado */
+:not(.elementor-page) :focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+:not(.elementor-page) button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ===========================================
+   PRELOADER STYLES - OTIMIZADO
+   =========================================== */
+
+#global-preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s ease;
+}
+
+#global-preloader.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#global-progress-bar {
+  width: 200px;
+  height: 4px;
+  background: rgb(243 244 246);
+  border-radius: 2px;
+  overflow: hidden;
+  transition: width 0.3s ease-out, opacity 0.3s ease-out;
+  box-shadow: var(--shadow-soft);
+}
+
+#global-progress-bar > div {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-secondary), var(--color-accent));
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+/* Loading spinner melhorado */
+.preloader-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid rgb(243 244 246);
+  border-top: 3px solid var(--color-secondary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+/* ===========================================
+   COMPONENT STYLES (Páginas do tema) - NOVA COR APLICADA
+   =========================================== */
+
+/* Botões do tema - USANDO NOVA COR SECUNDÁRIA */
+.s-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+  user-select: none;
+}
+
+.s-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+}
+
+.s-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.s-btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+  box-shadow: var(--shadow-soft);
+}
+
+.s-btn-primary:hover:not(:disabled) {
+  background-color: rgb(0 14 53 / 0.9);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.s-btn-secondary {
+  background-color: var(--color-secondary);
+  color: white;
+  box-shadow: var(--shadow-soft);
+}
+
+.s-btn-secondary:hover:not(:disabled) {
+  background-color: rgb(46 210 248 / 0.9);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.s-btn-success {
+  background-color: var(--color-success);
+  color: white;
+  box-shadow: var(--shadow-soft);
+}
+
+.s-btn-success:hover:not(:disabled) {
+  background-color: rgb(16 185 129 / 0.9);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+/* Cards do tema - USANDO CLASSES TAILWIND + CSS CUSTOMIZADO */
+.s-card {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-medium);
+  border: 1px solid rgb(229 231 235);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.s-card:hover {
+  box-shadow: var(--shadow-strong);
+  transform: translateY(-2px);
+}
+
+.s-card-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgb(229 231 235);
+  background: rgb(249 250 251);
+}
+
+.s-card-body {
+  padding: 1.5rem;
+}
+
+.s-card-footer {
+  padding: 1.5rem;
+  border-top: 1px solid rgb(229 231 235);
+  background: rgb(249 250 251);
+}
+
+/* Forms do tema - USANDO CLASSES TAILWIND PADRÃO */
+.s-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid rgb(209 213 219);
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition: all 0.2s ease;
+  font-family: var(--font-family-sans);
+  font-size: 0.875rem;
+}
+
+.s-input:focus {
+  outline: none;
+  border-color: var(--color-secondary); /* NOVA COR APLICADA */
+  box-shadow: 0 0 0 3px rgb(46 210 248 / 0.1); /* NOVA COR APLICADA */
+}
+
+.s-input::placeholder {
+  color: rgb(156 163 175);
+}
+
+.s-input-error {
+  border-color: var(--color-error);
+}
+
+.s-input-error:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px rgb(239 68 68 / 0.1);
+}
+
+.s-input-success {
+  border-color: var(--color-success);
+}
+
+.s-input-success:focus {
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 3px rgb(16 185 129 / 0.1);
+}
+
+.s-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(55 65 81);
+  margin-bottom: 0.25rem;
+  font-family: var(--font-family-heading);
+}
+
+.s-error {
+  font-size: 0.75rem;
+  color: var(--color-error);
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.s-success {
+  font-size: 0.75rem;
+  color: var(--color-success);
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Alerts do tema - USANDO CLASSES TAILWIND PADRÃO */
+.s-alert {
+  padding: 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: start;
+  gap: 0.75rem;
+}
+
+.s-alert-success {
+  background: rgb(240 253 244);
+  border-color: rgb(34 197 94);
+  color: rgb(21 128 61);
+}
+
+.s-alert-error {
+  background: rgb(254 242 242);
+  border-color: rgb(239 68 68);
+  color: rgb(153 27 27);
+}
+
+.s-alert-warning {
+  background: rgb(255 251 235);
+  border-color: rgb(245 158 11);
+  color: rgb(146 64 14);
+}
+
+.s-alert-info {
+  background: rgb(239 246 255);
+  border-color: rgb(59 130 246);
+  color: rgb(30 64 175);
+}
+
+/* Loading states - USANDO CLASSES TAILWIND PADRÃO */
+.s-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgb(243 244 246);
+  border-top: 2px solid var(--color-secondary); /* NOVA COR APLICADA */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.s-loading-dots::after {
+  content: '...';
+  animation: loading-dots 1.5s ease-in-out infinite;
+}
+
+/* Badges - USANDO CLASSES TAILWIND PADRÃO */
+.s-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.s-badge-primary {
+  background: rgb(239 246 255);
+  color: var(--color-primary);
+}
+
+.s-badge-secondary {
+  background: rgb(240 253 255); /* NOVA COR APLICADA */
+  color: var(--color-secondary);
+}
+
+.s-badge-success {
+  background: rgb(220 252 231);
+  color: rgb(21 128 61);
+}
+
+.s-badge-warning {
+  background: rgb(254 249 195);
+  color: rgb(146 64 14);
+}
+
+.s-badge-error {
+  background: rgb(254 226 226);
+  color: rgb(153 27 27);
+}
+
+/* ===========================================
+   INVESTMENT COMPONENTS - NOVA COR APLICADA
+   =========================================== */
+
+.s-investment-card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgb(229 231 235);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.s-investment-card:hover {
+  box-shadow: var(--shadow-strong);
+  transform: translateY(-2px);
+  border-color: var(--color-secondary); /* NOVA COR APLICADA */
+}
+
+.s-investment-card-featured {
+  border: 2px solid var(--color-secondary); /* NOVA COR APLICADA */
+  box-shadow: var(--shadow-glow);
+}
+
+.s-investment-progress {
+  width: 100%;
+  background: rgb(229 231 235);
+  border-radius: 9999px;
+  height: 0.5rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.s-investment-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-success), rgb(34 197 94));
+  transition: width 0.5s ease-out;
+  position: relative;
+}
+
+.s-investment-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+/* Risk badges - COMPATÍVEL */
+.s-risk-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  border: 1px solid;
+}
+
+.s-risk-badge-low {
+  background: rgb(220 252 231);
+  color: rgb(21 128 61);
+  border-color: rgb(34 197 94);
+}
+
+.s-risk-badge-medium {
+  background: rgb(254 249 195);
+  color: rgb(146 64 14);
+  border-color: rgb(245 158 11);
+}
+
+.s-risk-badge-high {
+  background: rgb(254 226 226);
+  color: rgb(153 27 27);
+  border-color: rgb(239 68 68);
+}
+
+/* Investment status badges */
+.s-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  gap: 0.25rem;
+}
+
+.s-status-badge-active {
+  background: rgb(220 252 231);
+  color: rgb(21 128 61);
+}
+
+.s-status-badge-pending {
+  background: rgb(254 249 195);
+  color: rgb(146 64 14);
+}
+
+.s-status-badge-completed {
+  background: rgb(240 253 255); /* NOVA COR APLICADA */
+  color: var(--color-secondary);
+}
+
+.s-status-badge-cancelled {
+  background: rgb(254 226 226);
+  color: rgb(153 27 27);
+}
+
+/* Investment filters */
+.s-filter-container {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgb(229 231 235);
+  margin-bottom: 2rem;
+}
+
+.s-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+/* Investment metrics */
+.s-metric-card {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid rgb(229 231 235);
+  transition: all 0.2s ease;
+}
+
+.s-metric-card:hover {
+  border-color: var(--color-secondary); /* NOVA COR APLICADA */
+  box-shadow: var(--shadow-soft);
+}
+
+.s-metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-family: var(--font-family-heading);
+}
+
+.s-metric-label {
+  font-size: 0.875rem;
+  color: rgb(107 114 128);
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+/* Investment details */
+.s-investment-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.s-detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgb(243 244 246);
+}
+
+.s-detail-item:last-child {
+  border-bottom: none;
+}
+
+.s-detail-label {
+  font-weight: 500;
+  color: rgb(75 85 99);
+}
+
+.s-detail-value {
+  font-weight: 600;
+  color: rgb(17 24 39);
+}
+
+/* ===========================================
+   UTILITIES & ANIMATIONS - COMPATÍVEL
+   =========================================== */
+
+/* Scrollbar customizada */
+.s-scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(203 213 225) rgb(241 245 249);
+}
+
+.s-scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.s-scrollbar-thin::-webkit-scrollbar-track {
+  background: rgb(241 245 249);
+  border-radius: 3px;
+}
+
+.s-scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgb(203 213 225);
+  border-radius: 3px;
+}
+
+.s-scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184);
+}
+
+/* Glassmorphism effects */
+.s-glass-light {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.s-glass-dark {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Hover effects */
+.s-hover-lift {
+  transition: transform 0.2s ease;
+}
+
+.s-hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.s-hover-scale {
+  transition: transform 0.2s ease;
+}
+
+.s-hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* Text utilities */
+.s-text-gradient {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.s-truncate-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.s-truncate-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+/* Animation delays */
+.s-animation-delay-100 { animation-delay: 100ms; }
+.s-animation-delay-200 { animation-delay: 200ms; }
+.s-animation-delay-300 { animation-delay: 300ms; }
+.s-animation-delay-500 { animation-delay: 500ms; }
+.s-animation-delay-1000 { animation-delay: 1000ms; }
+.s-animation-delay-2000 { animation-delay: 2000ms; }
+.s-animation-delay-4000 { animation-delay: 4000ms; }
+
+/* ===========================================
+   NOVA COR SECUNDÁRIA - CLASSES UTILITÁRIAS
+   =========================================== */
+
+/* Classes específicas para a nova cor secundária */
+.bg-secondary-new {
+  background-color: var(--color-secondary);
+}
+
+.text-secondary-new {
+  color: var(--color-secondary);
+}
+
+.border-secondary-new {
+  border-color: var(--color-secondary);
+}
+
+.ring-secondary-new {
+  --tw-ring-color: var(--color-secondary);
+}
+
+.hover\:bg-secondary-new:hover {
+  background-color: var(--color-secondary);
+}
+
+.hover\:text-secondary-new:hover {
+  color: var(--color-secondary);
+}
+
+.focus\:ring-secondary-new:focus {
+  --tw-ring-color: var(--color-secondary);
+}
+
+/* Variações de opacity da nova cor */
+.bg-secondary-new\/10 {
+  background-color: rgb(46 210 248 / 0.1);
+}
+
+.bg-secondary-new\/20 {
+  background-color: rgb(46 210 248 / 0.2);
+}
+
+.bg-secondary-new\/30 {
+  background-color: rgb(46 210 248 / 0.3);
+}
+
+.bg-secondary-new\/50 {
+  background-color: rgb(46 210 248 / 0.5);
+}
+
+.bg-secondary-new\/75 {
+  background-color: rgb(46 210 248 / 0.75);
+}
+
+.bg-secondary-new\/90 {
+  background-color: rgb(46 210 248 / 0.9);
+}
+
+/* ===========================================
+   WORDPRESS COMPATIBILITY - COMPATÍVEL
+   =========================================== */
+
+/* WordPress blocks compatibility - USANDO CLASSES TAILWIND PADRÃO */
+.wp-block-gallery {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.wp-block-image {
+  margin-bottom: 1rem;
+}
+
+/* ===========================================
+   RESPONSIVE DESIGN - COMPATÍVEL
+   =========================================== */
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .s-card {
+    border-radius: 0.5rem;
+    margin: 0 0.5rem;
+  }
+  
+  .s-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  #global-progress-bar {
+    width: 80%;
+  }
+  
+  .s-filter-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .s-investment-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .s-metric-value {
+    font-size: 1.5rem;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .s-filter-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .s-investment-detail-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop optimizations */
+@media (min-width: 1025px) {
+  .s-hover-lift:hover {
+    transform: translateY(-4px);
+  }
+  
+  .s-investment-card:hover {
+    transform: translateY(-4px);
+  }
+}
+
+/* ===========================================
+   ACCESSIBILITY & PERFORMANCE
+   =========================================== */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .s-btn {
+    border: 2px solid;
+  }
+  
+  .s-card {
+    border: 2px solid rgb(0 0 0);
+  }
+  
+  .s-investment-card {
+    border: 2px solid rgb(0 0 0);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  :not(.elementor-page) html {
+    scroll-behavior: auto;
+  }
+  
+  .s-hover-lift:hover,
+  .s-hover-scale:hover,
+  .s-investment-card:hover {
+    transform: none;
+  }
+}
+
+/* Dark mode preparation */
+@media (prefers-color-scheme: dark) {
+  .s-dark-mode-auto {
+    background-color: rgb(17 24 39);
+    color: rgb(249 250 251);
+  }
+  
+  .s-dark-mode-auto .s-card {
+    background-color: rgb(31 41 55);
+    border-color: rgb(75 85 99);
+  }
+  
+  .s-dark-mode-auto .s-input {
+    background-color: rgb(31 41 55);
+    border-color: rgb(75 85 99);
+    color: rgb(249 250 251);
+  }
+}
+
+/* ===========================================
+   PRINT STYLES
+   =========================================== */
+
+@media print {
+  #global-preloader,
+  .s-btn,
+  .no-print,
+  .s-filter-container {
+    display: none !important;
+  }
+  
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  .s-card {
+    box-shadow: none;
+    border: 1px solid rgb(0 0 0);
+  }
+  
+  .s-investment-card {
+    box-shadow: none;
+    border: 1px solid rgb(0 0 0);
+    break-inside: avoid;
+  }
+  
+  a, a:visited {
+    text-decoration: underline;
+  }
+  
+  .s-metric-value {
+    color: black !important;
+  }
+}
+
+/* ===========================================
+   FONT LOADING OPTIMIZATION
+   =========================================== */
+
+/* Preload fonts with swap */
+@font-face {
+  font-family: 'Montserrat';
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/montserrat/v25/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCs16Hw5aXp-p7K4KLg.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Nunito';
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/nunito/v25/XRXV3I6Li01BKofIMeaBXso.woff2') format('woff2');
+}
+
+/* Font loading states */
+.s-fonts-loading {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.s-fonts-loaded {
+  font-family: var(--font-family-sans);
+}
+
+/* ===========================================
+   PERFORMANCE OPTIMIZATIONS
+   =========================================== */
+
+/* GPU acceleration para elementos animados */
+.s-will-change-transform {
+  will-change: transform;
+}
+
+.s-will-change-opacity {
+  will-change: opacity;
+}
+
+.s-gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Container queries preparation (future) */
+@container (min-width: 400px) {
+  .s-investment-card {
+    padding: 1.5rem;
+  }
+}
+
+/* ===========================================
+   KEYFRAMES & ANIMATIONS - COMPATÍVEL COM TAILWIND V4
+   =========================================== */
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes bounceGentle {
+  0%, 100% { transform: translateY(-5%); }
+  50% { transform: translateY(0); }
+}
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes loading-dots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgb(46 210 248 / 0.3); } /* NOVA COR APLICADA */
+  50% { box-shadow: 0 0 40px rgb(46 210 248 / 0.6); } /* NOVA COR APLICADA */
+}
+
+/* Animation classes */
+.s-fade-in { 
+  animation: fadeIn 0.5s ease-in-out; 
+}
+
+.s-slide-in-right { 
+  animation: slideInRight 0.3s ease-out; 
+}
+
+.s-bounce-gentle { 
+  animation: bounceGentle 1s ease-in-out infinite; 
+}
+
+.s-animate-blob { 
+  animation: blob 7s infinite; 
+}
+
+/* ===========================================
+   ALPINE.JS ESPECÍFICO - COMPATÍVEL
+   =========================================== */
+
+/* Transições Alpine.js otimizadas */
+.s-alpine-enter {
+  transition: all 0.3s ease-out;
+}
+
+.s-alpine-enter-start {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.s-alpine-enter-end {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.s-alpine-leave {
+  transition: all 0.3s ease-in;
+}
+
+.s-alpine-leave-start {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.s-alpine-leave-end {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* ===========================================
+   COMPATIBILIDADE COM CLASSES EXISTENTES (SEM @EXTEND)
+   =========================================== */
+
+/* Aliases para manter compatibilidade com HTML existente */
+/* Botões */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+  user-select: none;
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+  box-shadow: var(--shadow-soft);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: rgb(0 14 53 / 0.9);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary);
+  color: white;
+  box-shadow: var(--shadow-soft);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: rgb(46 210 248 / 0.9);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.btn-success {
+  background-color: var(--color-success);
+  color: white;
+  box-shadow: var(--shadow-soft);
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: rgb(16 185 129 / 0.9);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+/* Cards */
+.card {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-medium);
+  border: 1px solid rgb(229 231 235);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-strong);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgb(229 231 235);
+  background: rgb(249 250 251);
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.card-footer {
+  padding: 1.5rem;
+  border-top: 1px solid rgb(229 231 235);
+  background: rgb(249 250 251);
+}
+
+/* Forms */
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid rgb(209 213 219);
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition: all 0.2s ease;
+  font-family: var(--font-family-sans);
+  font-size: 0.875rem;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-secondary); /* NOVA COR APLICADA */
+  box-shadow: 0 0 0 3px rgb(46 210 248 / 0.1); /* NOVA COR APLICADA */
+}
+
+.form-input::placeholder {
+  color: rgb(156 163 175);
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(55 65 81);
+  margin-bottom: 0.25rem;
+  font-family: var(--font-family-heading);
+}
+
+.form-error {
+  font-size: 0.75rem;
+  color: var(--color-error);
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.form-success {
+  font-size: 0.75rem;
+  color: var(--color-success);
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Alerts */
+.alert {
+  padding: 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: start;
+  gap: 0.75rem;
+}
+
+.alert-success {
+  background: rgb(240 253 244);
+  border-color: rgb(34 197 94);
+  color: rgb(21 128 61);
+}
+
+.alert-error {
+  background: rgb(254 242 242);
+  border-color: rgb(239 68 68);
+  color: rgb(153 27 27);
+}
+
+.alert-warning {
+  background: rgb(255 251 235);
+  border-color: rgb(245 158 11);
+  color: rgb(146 64 14);
+}
+
+.alert-info {
+  background: rgb(239 246 255);
+  border-color: rgb(59 130 246);
+  color: rgb(30 64 175);
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgb(243 244 246);
+  border-top: 2px solid var(--color-secondary); /* NOVA COR APLICADA */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Investment components */
+.investment-card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgb(229 231 235);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.investment-card:hover {
+  box-shadow: var(--shadow-strong);
+  transform: translateY(-2px);
+  border-color: var(--color-secondary); /* NOVA COR APLICADA */
+}
+
+.investment-progress {
+  width: 100%;
+  background: rgb(229 231 235);
+  border-radius: 9999px;
+  height: 0.5rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.investment-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-success), rgb(34 197 94));
+  transition: width 0.5s ease-out;
+  position: relative;
+}
+
+.investment-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+/* Risk badges */
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  border: 1px solid;
+}
+
+.risk-badge-low {
+  background: rgb(220 252 231);
+  color: rgb(21 128 61);
+  border-color: rgb(34 197 94);
+}
+
+.risk-badge-medium {
+  background: rgb(254 249 195);
+  color: rgb(146 64 14);
+  border-color: rgb(245 158 11);
+}
+
+.risk-badge-high {
+  background: rgb(254 226 226);
+  color: rgb(153 27 27);
+  border-color: rgb(239 68 68);
+}
+
+/* Aliases para animation classes */
+.fade-in { animation: fadeIn 0.5s ease-in-out; }
+.slide-in-right { animation: slideInRight 0.3s ease-out; }
+.bounce-gentle { animation: bounceGentle 1s ease-in-out infinite; }
+.animate-blob { animation: blob 7s infinite; }
+
+/* Aliases para Alpine.js */
+.alpine-enter { transition: all 0.3s ease-out; }
+.alpine-enter-start { opacity: 0; transform: translateY(10px); }
+.alpine-enter-end { opacity: 1; transform: translateY(0); }
+.alpine-leave { transition: all 0.3s ease-in; }
+.alpine-leave-start { opacity: 1; transform: translateY(0); }
+.alpine-leave-end { opacity: 0; transform: translateY(-10px); }
+.alpine-loading { opacity: 0.6; pointer-events: none; }
+.alpine-error { border-color: var(--color-error) !important; background-color: rgb(254 242 242); }

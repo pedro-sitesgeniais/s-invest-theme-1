@@ -1,0 +1,41 @@
+{
+  "name": "s-invest-theme",
+  "version": "1.0.4",
+  "description": "Tema WordPress para S-Invest com Elementor e ACF",
+  "author": "Pedro Henrique <contato@sitesgeniais.com.br>",
+  "license": "ISC",
+  "keywords": [
+    "wordpress",
+    "theme",
+    "elementor",
+    "acf",
+    "tailwind",
+    "alpinejs"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:css\" \"npm run dev:js\"",
+    "dev:css": "tailwindcss -i ./resources/css/app.css -o ./public/css/app.css --watch",
+    "dev:js": "esbuild resources/js/main.js --bundle --outfile=public/js/app.js --watch",
+    "build": "npm run build:css && npm run build:js",
+    "build:css": "tailwindcss -i ./resources/css/app.css -o ./public/css/app.css --minify",
+    "build:js": "esbuild resources/js/main.js --bundle --outfile=public/js/app.js --minify",
+    "tailwind:init": "tailwindcss init -p"
+  },
+  "dependencies": {
+    "@alpinejs/collapse": "^3.14.9",
+    "@alpinejs/mask": "^3.14.9",
+    "@tailwindcss/cli": "^4.1.7",
+    "alpinejs": "^3.14.9",
+    "chart.js": "^4.4.9",
+    "imask": "^7.6.1",
+    "zxcvbn": "^4.4.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/aspect-ratio": "^0.4.2",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.1.2",
+    "esbuild": "^0.25.4",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.7"
+  }
+}

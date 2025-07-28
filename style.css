@@ -1,0 +1,423 @@
+/*
+Theme Name: S-Invest Theme
+Theme URI: https://sitesgeniais.com
+Author: Sites Geniais
+Author URI: https://sitesgeniais.com
+Description: Tema personalizado desenvolvido para plataforma de investimentos Brava Forte com Tailwind, Alpine.js e ACF compativel com Elementor. VERSÃO ATUALIZADA com nova cor secundária #2ED2F8.
+Version: 2.1.1
+Author URI: https://sitesgeniais.com
+Text Domain: s-invest-theme
+*/
+
+/* ===========================================
+   NOVA COR SECUNDÁRIA - #2ED2F8
+   =========================================== */
+
+:root {
+  --color-secondary-new: #2ED2F8;
+  --color-secondary-rgb: 46, 210, 248;
+}
+
+/* Transições suaves para o menu */
+[x-cloak] { display: none !important; }
+
+.menu-item-active { 
+  background-color: rgba(var(--color-secondary-rgb), 0.1);
+  color: var(--color-secondary-new);
+  border-left: 3px solid var(--color-secondary-new);
+}
+
+.menu-transition {
+  transition: all 0.3s ease;
+}
+
+/* Garante que o menu ocupe altura total */
+#panel-sidebar {
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+}
+
+/* Personaliza a scrollbar com nova cor */
+#panel-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+#panel-sidebar::-webkit-scrollbar-thumb {
+    background-color: var(--color-secondary-new);
+    border-radius: 3px;
+}
+#panel-sidebar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(var(--color-secondary-rgb), 0.8);
+}
+
+/* CSS para garantir compatibilidade total */
+.elementor-page {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.elementor-section-wrap {
+    width: 100% !important;
+}
+
+.elementor-container {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Remove conflitos do Alpine.js no editor */
+.elementor-editor-active [x-cloak] {
+    display: block !important;
+}
+
+/* ===========================================
+   APLICAÇÃO DA NOVA COR SECUNDÁRIA
+   =========================================== */
+
+/* Botões com nova cor secundária */
+.btn-secondary,
+.s-btn-secondary {
+    background-color: var(--color-secondary-new) !important;
+    border-color: var(--color-secondary-new) !important;
+    color: white !important;
+}
+
+.btn-secondary:hover,
+.s-btn-secondary:hover {
+    background-color: rgba(var(--color-secondary-rgb), 0.9) !important;
+    box-shadow: 0 0 20px rgba(var(--color-secondary-rgb), 0.3) !important;
+}
+
+/* Links e elementos interativos */
+a.text-secondary,
+.text-secondary-new {
+    color: var(--color-secondary-new) !important;
+}
+
+a.text-secondary:hover,
+.text-secondary-new:hover {
+    color: rgba(var(--color-secondary-rgb), 0.8) !important;
+}
+
+/* Backgrounds com nova cor */
+.bg-secondary,
+.bg-secondary-new {
+    background-color: var(--color-secondary-new) !important;
+}
+
+.bg-secondary\/10,
+.bg-secondary-new\/10 {
+    background-color: rgba(var(--color-secondary-rgb), 0.1) !important;
+}
+
+.bg-secondary\/20,
+.bg-secondary-new\/20 {
+    background-color: rgba(var(--color-secondary-rgb), 0.2) !important;
+}
+
+/* Bordas com nova cor */
+.border-secondary,
+.border-secondary-new {
+    border-color: var(--color-secondary-new) !important;
+}
+
+/* Estados de hover */
+.hover\:bg-secondary:hover,
+.hover\:bg-secondary-new:hover {
+    background-color: var(--color-secondary-new) !important;
+}
+
+.hover\:text-secondary:hover,
+.hover\:text-secondary-new:hover {
+    color: var(--color-secondary-new) !important;
+}
+
+/* Inputs com foco na nova cor */
+input:focus,
+select:focus,
+textarea:focus,
+.form-input:focus,
+.s-input:focus {
+    border-color: var(--color-secondary-new) !important;
+    box-shadow: 0 0 0 3px rgba(var(--color-secondary-rgb), 0.1) !important;
+}
+
+/* Progress bars */
+.progress-bar-secondary,
+.investment-progress-bar {
+    background: linear-gradient(90deg, var(--color-secondary-new), rgba(var(--color-secondary-rgb), 0.8)) !important;
+}
+
+/* Cards com destaque */
+.card-featured,
+.investment-card-featured,
+.s-investment-card-featured {
+    border-color: var(--color-secondary-new) !important;
+    box-shadow: 0 0 20px rgba(var(--color-secondary-rgb), 0.15) !important;
+}
+
+/* Badges e status */
+.badge-secondary,
+.s-badge-secondary {
+    background-color: rgba(var(--color-secondary-rgb), 0.1) !important;
+    color: var(--color-secondary-new) !important;
+    border: 1px solid rgba(var(--color-secondary-rgb), 0.3) !important;
+}
+
+/* Gráficos e charts */
+.chart-secondary {
+    color: var(--color-secondary-new) !important;
+}
+
+/* Spinners e loading */
+.spinner-secondary,
+.loading-spinner {
+    border-top-color: var(--color-secondary-new) !important;
+}
+
+/* ===========================================
+   COMPATIBILIDADE COM ELEMENTOR E NOVA COR
+   =========================================== */
+
+/* Correção específica para Lista de Ícones do Elementor */
+.elementor-icon-list-item .elementor-icon-list-icon i,
+.elementor-icon-list-icon i,
+.elementor-widget-icon-list .elementor-icon-list-icon i {
+    display: inline-block !important;
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Pro", "Font Awesome 5 Free" !important;
+    font-weight: 900 !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    text-rendering: auto !important;
+    line-height: 1 !important;
+    color: inherit !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+/* Para ícones de marcas (fab) */
+.elementor-icon-list-item .elementor-icon-list-icon i.fab,
+.elementor-icon-list-icon i.fab,
+.elementor-widget-icon-list .elementor-icon-list-icon i.fab {
+    font-family: "Font Awesome 6 Brands", "Font Awesome 5 Brands" !important;
+    font-weight: 400 !important;
+}
+
+/* Para ícones regulares (far) */
+.elementor-icon-list-item .elementor-icon-list-icon i.far,
+.elementor-icon-list-icon i.far,
+.elementor-widget-icon-list .elementor-icon-list-icon i.far {
+    font-weight: 400 !important;
+}
+
+/* Garantir que o container do ícone tenha tamanho adequado */
+.elementor-icon-list-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 1em !important;
+    min-height: 1em !important;
+}
+
+/* Pseudo-elementos para garantir que apareçam */
+.elementor-icon-list-icon i::before {
+    content: attr(data-content) !important;
+    display: inline-block !important;
+    font-family: inherit !important;
+    font-weight: inherit !important;
+    font-style: inherit !important;
+}
+
+/* ===========================================
+   APLICAÇÕES ESPECÍFICAS DA NOVA COR
+   =========================================== */
+
+/* Dashboard cards com nova cor */
+.dashboard-card.active,
+.stat-card.highlighted {
+    border-left: 4px solid var(--color-secondary-new);
+    background: linear-gradient(135deg, rgba(var(--color-secondary-rgb), 0.05), rgba(var(--color-secondary-rgb), 0.02));
+}
+
+/* Menu items ativos */
+.menu-item.active,
+.nav-item.current {
+    color: var(--color-secondary-new) !important;
+    background-color: rgba(var(--color-secondary-rgb), 0.1);
+}
+
+/* Tooltips com nova cor */
+.tooltip.secondary {
+    background-color: var(--color-secondary-new);
+    color: white;
+}
+
+.tooltip.secondary::after {
+    border-top-color: var(--color-secondary-new);
+}
+
+/* Notifications com nova cor */
+.notification.info,
+.alert.info {
+    border-left-color: var(--color-secondary-new);
+    background-color: rgba(var(--color-secondary-rgb), 0.05);
+}
+
+/* Modals com nova cor */
+.modal-header.secondary {
+    background: linear-gradient(135deg, var(--color-secondary-new), rgba(var(--color-secondary-rgb), 0.8));
+    color: white;
+}
+
+/* Tables com nova cor */
+.table th.secondary,
+.table-header.secondary {
+    background-color: rgba(var(--color-secondary-rgb), 0.1);
+    color: var(--color-secondary-new);
+}
+
+/* Form groups com nova cor */
+.form-group.highlighted,
+.input-group.focused {
+    border-color: var(--color-secondary-new);
+    box-shadow: 0 0 0 2px rgba(var(--color-secondary-rgb), 0.1);
+}
+
+/* ===========================================
+   ANIMAÇÕES COM NOVA COR
+   =========================================== */
+
+/* Glow effect com nova cor */
+@keyframes glow-secondary {
+    0% { box-shadow: 0 0 5px rgba(var(--color-secondary-rgb), 0.3); }
+    50% { box-shadow: 0 0 20px rgba(var(--color-secondary-rgb), 0.6); }
+    100% { box-shadow: 0 0 5px rgba(var(--color-secondary-rgb), 0.3); }
+}
+
+.glow-secondary {
+    animation: glow-secondary 2s ease-in-out infinite;
+}
+
+/* Pulse com nova cor */
+@keyframes pulse-secondary {
+    0% { background-color: rgba(var(--color-secondary-rgb), 0.1); }
+    50% { background-color: rgba(var(--color-secondary-rgb), 0.3); }
+    100% { background-color: rgba(var(--color-secondary-rgb), 0.1); }
+}
+
+.pulse-secondary {
+    animation: pulse-secondary 1.5s ease-in-out infinite;
+}
+
+/* ===========================================
+   RESPONSIVIDADE COM NOVA COR
+   =========================================== */
+
+/* Mobile specific com nova cor */
+@media (max-width: 768px) {
+    .mobile-nav.secondary {
+        background-color: var(--color-secondary-new);
+        color: white;
+    }
+    
+    .mobile-button.secondary {
+        background-color: var(--color-secondary-new);
+        border: none;
+        color: white;
+    }
+}
+
+/* Desktop specific com nova cor */
+@media (min-width: 1024px) {
+    .desktop-sidebar.secondary {
+        border-right: 3px solid var(--color-secondary-new);
+    }
+    
+    .desktop-nav-item:hover {
+        color: var(--color-secondary-new);
+        background-color: rgba(var(--color-secondary-rgb), 0.05);
+    }
+}
+
+/* ===========================================
+   DARK MODE COM NOVA COR
+   =========================================== */
+
+@media (prefers-color-scheme: dark) {
+    .dark-mode .text-secondary,
+    .dark-mode .text-secondary-new {
+        color: rgba(var(--color-secondary-rgb), 0.9) !important;
+    }
+    
+    .dark-mode .bg-secondary,
+    .dark-mode .bg-secondary-new {
+        background-color: rgba(var(--color-secondary-rgb), 0.8) !important;
+    }
+    
+    .dark-mode .border-secondary,
+    .dark-mode .border-secondary-new {
+        border-color: rgba(var(--color-secondary-rgb), 0.6) !important;
+    }
+}
+
+/* ===========================================
+   PRINT STYLES COM NOVA COR
+   =========================================== */
+
+@media print {
+    .text-secondary,
+    .text-secondary-new {
+        color: #333 !important;
+    }
+    
+    .bg-secondary,
+    .bg-secondary-new {
+        background-color: #f5f5f5 !important;
+        color: #333 !important;
+    }
+    
+    .border-secondary,
+    .border-secondary-new {
+        border-color: #333 !important;
+    }
+}
+
+/* ===========================================
+   UTILITY CLASSES COM NOVA COR
+   =========================================== */
+
+/* Text utilities */
+.text-secondary-light { color: rgba(var(--color-secondary-rgb), 0.7) !important; }
+.text-secondary-dark { color: rgba(var(--color-secondary-rgb), 1.2) !important; }
+
+/* Background utilities */
+.bg-secondary-light { background-color: rgba(var(--color-secondary-rgb), 0.05) !important; }
+.bg-secondary-medium { background-color: rgba(var(--color-secondary-rgb), 0.15) !important; }
+.bg-secondary-strong { background-color: rgba(var(--color-secondary-rgb), 0.25) !important; }
+
+/* Border utilities */
+.border-secondary-light { border-color: rgba(var(--color-secondary-rgb), 0.3) !important; }
+.border-secondary-medium { border-color: rgba(var(--color-secondary-rgb), 0.6) !important; }
+.border-secondary-strong { border-color: rgba(var(--color-secondary-rgb), 1) !important; }
+
+/* Shadow utilities */
+.shadow-secondary { box-shadow: 0 4px 6px rgba(var(--color-secondary-rgb), 0.1) !important; }
+.shadow-secondary-lg { box-shadow: 0 10px 15px rgba(var(--color-secondary-rgb), 0.15) !important; }
+.shadow-secondary-xl { box-shadow: 0 20px 25px rgba(var(--color-secondary-rgb), 0.2) !important; }
+
+/* ===========================================
+   LEGACY SUPPORT
+   =========================================== */
+
+/* Manter compatibilidade com código antigo */
+.color-blue { color: var(--color-secondary-new) !important; }
+.bg-blue { background-color: var(--color-secondary-new) !important; }
+.border-blue { border-color: var(--color-secondary-new) !important; }
+
+/* Aliases para facilitar migração */
+.accent-color { color: var(--color-secondary-new) !important; }
+.accent-bg { background-color: var(--color-secondary-new) !important; }
+.accent-border { border-color: var(--color-secondary-new) !important; }
