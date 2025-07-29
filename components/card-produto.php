@@ -189,8 +189,8 @@ switch ($context) {
         
     case 'panel':
         $link = get_permalink($id);
-        $button_text = 'Investir Agora';
-        $button_icon = 'fa-arrow-right';
+        $button_text = 'Saiba Mais';     // ✅ NOVO TEXTO
+        $button_icon = 'fa-info-circle'; // ✅ NOVO ÍCONE (OPCIONAL)
         break;
         
     default:

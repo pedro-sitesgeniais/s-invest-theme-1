@@ -1,13 +1,7 @@
 <?php
 /**
- * Filtros Off-Canvas para Painel - SEM CONFLITOS
+ * Filtros Off-Canvas para Painel - VERSÃO CORRIGIDA
  * components/filtros-painel-offcanvas.php
- * 
- * Uso:
- * get_template_part('components/filtros-painel-offcanvas', null, [
- *     'context' => 'meus-investimentos|produtos-gerais',
- *     'component' => 'meusFiltros|painelFiltros'
- * ]);
  */
 defined('ABSPATH') || exit;
 
@@ -83,9 +77,9 @@ $modalidades = get_terms([
                 </select>
             </div>
 
-            <!-- Filtros específicos por contexto -->
+            <!-- ✅ FILTROS ESPECÍFICOS POR CONTEXTO - CORRIGIDOS -->
             <?php if ($context === 'meus-investimentos') : ?>
-                <!-- Status do Investimento -->
+                <!-- Status do Investimento (ativo/vendido) -->
                 <div class="flex-shrink-0">
                     <select x-model="filtros.status" 
                             @change="aplicarFiltros()"
@@ -95,19 +89,18 @@ $modalidades = get_terms([
                         <option value="vendido">Vendidos</option>
                     </select>
                 </div>
-
-                <!-- Rentabilidade -->
+            <?php else : ?>
+                <!-- Status do Produto (ativo/encerrado) - APENAS PARA PRODUTOS GERAIS -->
                 <div class="flex-shrink-0">
-                    <select x-model="filtros.rentabilidade" 
+                    <select x-model="filtros.status_produto" 
                             @change="aplicarFiltros()"
                             class="appearance-none bg-white border border-gray-300 rounded-2xl px-5 py-3 text-sm shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors">
-                        <option value="">Qualquer Resultado</option>
-                        <option value="positiva">Rentabilidade Positiva</option>
-                        <option value="negativa">Rentabilidade Negativa</option>
-                        <option value="alta">Alta Rentabilidade (>20%)</option>
+                        <option value="">Todos os Status</option>
+                        <option value="ativo">Ativo</option>
+                        <option value="encerrado">Encerrado</option>
                     </select>
                 </div>
-            <?php else : ?>
+
                 <!-- Prazo (para produtos gerais) -->
                 <div class="flex-shrink-0">
                     <select x-model="filtros.prazo" 
@@ -143,8 +136,7 @@ $modalidades = get_terms([
                     <option value="DESC">Mais Recente</option>
                     <option value="ASC">Mais Antigo</option>
                     <?php if ($context === 'meus-investimentos') : ?>
-                        <option value="rentabilidade_desc">Maior Rentabilidade</option>
-                        <option value="rentabilidade_asc">Menor Rentabilidade</option>
+                        <!-- Removido filtros de rentabilidade conforme solicitado -->
                     <?php endif; ?>
                 </select>
             </div>
@@ -249,7 +241,7 @@ $modalidades = get_terms([
             </div>
         </div>
 
-        <!-- CONTEÚDO DOS FILTROS -->
+        <!-- CONTEÚDO DOS FILTROS MOBILE -->
         <div class="p-6 space-y-6">
             
             <!-- Classe de Ativos -->
@@ -318,7 +310,7 @@ $modalidades = get_terms([
                 </div>
             </div>
 
-            <!-- Filtros específicos por contexto -->
+            <!-- ✅ FILTROS ESPECÍFICOS POR CONTEXTO - MOBILE CORRIGIDO -->
             <?php if ($context === 'meus-investimentos') : ?>
                 <!-- Status do Investimento -->
                 <div class="filter-group">
@@ -338,27 +330,26 @@ $modalidades = get_terms([
                         Filtro aplicado
                     </div>
                 </div>
-
-                <!-- Resultado -->
+            <?php else : ?>
+                <!-- Status do Produto - APENAS PARA PRODUTOS GERAIS -->
                 <div class="filter-group">
                     <label class="block text-sm font-semibold text-gray-800 mb-3">
-                        <i class="fas fa-chart-line mr-2 text-green-600"></i>
-                        Resultado
+                        <i class="fas fa-toggle-on mr-2 text-blue-600"></i>
+                        Status do Produto
                     </label>
-                    <select x-model="filtros.rentabilidade" 
+                    <select x-model="filtros.status_produto" 
                             class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all">
-                        <option value="">Qualquer Resultado</option>
-                        <option value="positiva">Rentabilidade Positiva</option>
-                        <option value="negativa">Rentabilidade Negativa</option>
-                        <option value="alta">Alta Rentabilidade (>20%)</option>
+                        <option value="">Todos os Status</option>
+                        <option value="ativo">Ativo</option>
+                        <option value="encerrado">Encerrado</option>
                     </select>
-                    <div x-show="filtros.rentabilidade !== ''" 
+                    <div x-show="filtros.status_produto !== ''" 
                          class="mt-2 text-xs text-blue-600 font-medium flex items-center">
                         <i class="fas fa-check mr-1"></i>
                         Filtro aplicado
                     </div>
                 </div>
-            <?php else : ?>
+
                 <!-- Prazo -->
                 <div class="filter-group">
                     <label class="block text-sm font-semibold text-gray-800 mb-3">
@@ -422,18 +413,7 @@ $modalidades = get_terms([
                         Mais Antigos
                     </button>
                     <?php if ($context === 'meus-investimentos') : ?>
-                        <button @click="filtros.ordem = 'rentabilidade_desc'" 
-                                :class="filtros.ordem === 'rentabilidade_desc' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                                class="px-4 py-3 rounded-lg text-sm font-medium transition-colors">
-                            <i class="fas fa-chart-line mr-1"></i>
-                            Maior Rentabilidade
-                        </button>
-                        <button @click="filtros.ordem = 'rentabilidade_asc'" 
-                                :class="filtros.ordem === 'rentabilidade_asc' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                                class="px-4 py-3 rounded-lg text-sm font-medium transition-colors">
-                            <i class="fas fa-chart-line-down mr-1"></i>
-                            Menor Rentabilidade
-                        </button>
+                        <!-- Removido filtros de rentabilidade conforme solicitado -->
                     <?php endif; ?>
                 </div>
             </div>
@@ -463,11 +443,11 @@ $modalidades = get_terms([
                             <span class="w-20 font-medium">Status:</span>
                             <span class="bg-indigo-100 px-2 py-1 rounded" x-text="filtros.status"></span>
                         </div>
-                        <div x-show="filtros.rentabilidade !== ''" class="flex items-center">
-                            <span class="w-20 font-medium">Resultado:</span>
-                            <span class="bg-green-100 px-2 py-1 rounded" x-text="filtros.rentabilidade"></span>
-                        </div>
                     <?php else : ?>
+                        <div x-show="filtros.status_produto !== ''" class="flex items-center">
+                            <span class="w-20 font-medium">Status:</span>
+                            <span class="bg-blue-100 px-2 py-1 rounded" x-text="filtros.status_produto"></span>
+                        </div>
                         <div x-show="filtros.prazo !== ''" class="flex items-center">
                             <span class="w-20 font-medium">Prazo:</span>
                             <span class="bg-orange-100 px-2 py-1 rounded" x-text="filtros.prazo + ' meses+'"></span>
@@ -657,7 +637,6 @@ body .filtros-painel-container .fixed[style*="z-index: 9998"] {
     }
 }
 </style>
-</style>
 
 <!-- JAVASCRIPT -->
 <script>
@@ -726,7 +705,6 @@ document.addEventListener('alpine:init', () => {
                     imposto: '',
                     modalidade: '',
                     status: '',
-                    rentabilidade: '',
                     ordem: 'DESC'
                 };
             } else {
@@ -734,6 +712,7 @@ document.addEventListener('alpine:init', () => {
                     tipo_produto: '',
                     imposto: '',
                     modalidade: '',
+                    status_produto: '',
                     prazo: '',
                     valor: '',
                     ordem: 'DESC'

@@ -1346,3 +1346,90 @@ add_action('s_invest_cleanup_sessions', function() {
         error_log('Sessões antigas limpas automaticamente');
     }
 });
+// 1. DESABILITAR VERIFICAÇÕES AGRESSIVAS
+remove_action('wp_footer', 's_invest_session_check_script');
+remove_action('template_redirect', 's_invest_verify_authentication');
+
+// 2. AUMENTAR TEMPO DE SESSÃO
+add_filter('auth_cookie_expiration', function($expiration, $user_id, $remember) {
+    return $remember ? (30 * DAY_IN_SECONDS) : (24 * HOUR_IN_SECONDS);
+}, 999, 3);
+
+// 3. CONFIGURAÇÕES DE SESSÃO MAIS ESTÁVEIS
+function s_invest_fix_session_config() {
+    if (is_admin() || wp_doing_ajax()) return;
+    
+    if (function_exists('ini_set') && !headers_sent()) {
+        ini_set('session.gc_maxlifetime', '86400');
+        ini_set('session.cookie_lifetime', '86400');
+        ini_set('session.cookie_samesite', 'Lax');
+    }
+}
+add_action('init', 's_invest_fix_session_config', 1);
+
+// 4. REDIRECIONAMENTOS MAIS SUAVES
+function s_invest_simple_redirects() {
+    if (is_admin() || wp_doing_ajax() || headers_sent()) return;
+    
+    // Apenas redirecionamentos essenciais
+    if (is_user_logged_in() && is_page('acessar') && !isset($_GET['action'])) {
+        wp_safe_redirect(home_url('/painel/'));
+        exit;
+    }
+    
+    if (!is_user_logged_in() && is_page('painel')) {
+        wp_safe_redirect(home_url('/acessar/'));
+        exit;
+    }
+}
+add_action('template_redirect', 's_invest_simple_redirects', 5);
+
+// 5. EVITAR CACHE EM PÁGINAS DE AUTENTICAÇÃO
+function s_invest_no_cache_auth_pages() {
+    if (is_page(['acessar', 'painel'])) {
+        if (!defined('DONOTCACHEPAGE')) {
+            define('DONOTCACHEPAGE', true);
+        }
+        
+        if (!headers_sent()) {
+            header('Cache-Control: no-cache, no-store, must-revalidate');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+        }
+    }
+}
+add_action('template_redirect', 's_invest_no_cache_auth_pages', 1);
+
+// 6. LIMPEZA SUAVE DE CACHE NO LOGIN
+function s_invest_gentle_login_cleanup($user_login, $user) {
+    if ($user && $user->ID) {
+        // Apenas limpar cache específico, não forçar logout
+        wp_cache_delete("dashboard_stats_{$user->ID}", 'user_stats');
+        delete_transient("investor_dashboard_{$user->ID}");
+    }
+}
+add_action('wp_login', 's_invest_gentle_login_cleanup', 10, 2);
+
+// 7. DEBUG ESPECÍFICO PARA SESSÃO (se necessário)
+function s_invest_debug_session_only() {
+    if (!isset($_GET['debug_session']) || !current_user_can('administrator')) {
+        return;
+    }
+    
+    $info = [
+        'is_logged_in' => is_user_logged_in(),
+        'user_id' => get_current_user_id(),
+        'session_cookies' => [
+            'auth' => isset($_COOKIE[AUTH_COOKIE]) ? 'presente' : 'ausente',
+            'logged_in' => isset($_COOKIE[LOGGED_IN_COOKIE]) ? 'presente' : 'ausente'
+        ],
+        'session_config' => [
+            'gc_maxlifetime' => ini_get('session.gc_maxlifetime'),
+            'cookie_lifetime' => ini_get('session.cookie_lifetime')
+        ],
+        'timestamp' => date('Y-m-d H:i:s')
+    ];
+    
+    wp_die('<pre>' . print_r($info, true) . '</pre>');
+}
+add_action('init', 's_invest_debug_session_only');

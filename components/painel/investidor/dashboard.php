@@ -1,6 +1,6 @@
 <?php
 /**
- * Dashboard do Investidor - VERSÃO CORRIGIDA COM VALORES CORRETOS
+ * Dashboard do Investidor - VERSÃO COMPLETA E OTIMIZADA
  * components/painel/investidor/dashboard.php
  */
 date_default_timezone_set('America/Sao_Paulo');
@@ -34,9 +34,10 @@ $rentabilidade_consolidada = max(0, $vendas['total_rentabilidade']); // AGORA É
 
 $total_investido_geral = $total_investido_ativo + $total_investido_vendido;
 
-// ========== CORREÇÃO: DADOS DO GRÁFICO POR MÊS/ANO ==========
+// ========== INICIALIZAR ARRAYS ==========
 $distribuicao = [];
 $ultimos = [];
+$movimentos_completos = []; // NOVO: Array para todos os movimentos
 
 // Arrays para organizar dados do gráfico por mês/ano
 $investidoPorMesAno = [];
@@ -59,17 +60,78 @@ $args_aportes = [
 
 $aportes = get_posts($args_aportes);
 
+// ===== CÁLCULO DOS APORTES SCP (PRIVATE) CONCLUÍDOS =====
+$total_investido_scp = 0;
+$dividendos_recebidos = 0;
+$quantidade_scp = 0;
+
+// Buscar aportes do usuário e verificar quais são SCP/Private
+foreach ($aportes as $aporte) {
+    $aporte_id = $aporte->ID;
+    $investment_id = get_field('investment_id', $aporte_id);
+    
+    if ($investment_id) {
+        // Verificar se é SCP/Private por taxonomia
+        $terms = wp_get_post_terms($investment_id, 'tipo_produto');
+        $eh_scp = false;
+        
+        foreach ($terms as $term) {
+            // Detectar SCP/Private por nome da categoria
+            if (stripos($term->name, 'scp') !== false || 
+                stripos($term->name, 'private') !== false ||
+                stripos($term->name, 'capital semente') !== false ||
+                stripos($term->slug, 'scp') !== false ||
+                stripos($term->slug, 'private') !== false) {
+                $eh_scp = true;
+                break;
+            }
+        }
+        
+        // Se é SCP/Private e a captação foi encerrada (produto concluído)
+        $status_captacao = function_exists('s_invest_calcular_status_captacao') 
+            ? s_invest_calcular_status_captacao($investment_id)
+            : '';
+            
+        if ($eh_scp && in_array($status_captacao, ['encerrado_meta', 'encerrado'])) {
+            $quantidade_scp++;
+            
+            // Somar valor total investido pelo usuário neste SCP
+            $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
+            foreach ($historico_aportes as $item) {
+                $total_investido_scp += floatval($item['valor_aporte'] ?? 0);
+            }
+            
+            // Somar dividendos já recebidos
+            $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
+            foreach ($historico_dividendos as $dividendo) {
+                $dividendos_recebidos += floatval($dividendo['valor'] ?? 0);
+            }
+            
+            // ALTERNATIVA: Se não há campo historico_dividendos ainda,
+            // pode usar a rentabilidade consolidada como proxy temporário
+            if (empty($historico_dividendos)) {
+                $rentabilidade_consolidada_temp = get_field('rentabilidade_consolidada', $aporte_id);
+                if ($rentabilidade_consolidada_temp) {
+                    $dividendos_recebidos += floatval($rentabilidade_consolidada_temp);
+                }
+            }
+        }
+    }
+}
+
+// ========== PROCESSAR TODOS OS APORTES ==========
 if (!empty($aportes)) {
     foreach ($aportes as $aporte) {
         $aporte_id = $aporte->ID;
         $investment_id = get_field('investment_id', $aporte_id);
         $venda_status = get_field('venda_status', $aporte_id);
+        $nome_investimento = $investment_id ? get_the_title($investment_id) : 'Investimento não identificado';
         
         // ========== PROCESSAR HISTÓRICO DE APORTES (VALOR INVESTIDO) ==========
         $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
         $total_aporte_investido = 0;
         
-        foreach ($historico_aportes as $item) {
+        foreach ($historico_aportes as $index => $item) {
             $valor_aporte_item = (float) ($item['valor_aporte'] ?? 0);
             $data_aporte = $item['data_aporte'] ?? '';
             
@@ -93,14 +155,50 @@ if (!empty($aportes)) {
                     }
                 }
                 
-                // Para a tabela de últimos movimentos
-                $nome_investimento = $investment_id ? get_the_title($investment_id) : 'Investimento não identificado';
+                // Para a tabela de últimos movimentos (COMPATIBILIDADE)
                 $status_movimento = $venda_status ? ' (Vendido)' : '';
                 $ultimos[] = [
                     'data' => $data_aporte,
                     'valor' => $valor_aporte_item,
                     'investimento' => $nome_investimento . $status_movimento,
-                    'vendido' => $venda_status
+                    'vendido' => $venda_status ? true : false
+                ];
+                
+                // NOVO: Para o extrato completo
+                $movimentos_completos[] = [
+                    'id' => "aporte_{$aporte_id}_{$index}",
+                    'data' => $data_aporte,
+                    'tipo' => 'aporte',
+                    'investimento' => $nome_investimento,
+                    'valor' => $valor_aporte_item,
+                    'vendido' => $venda_status ? true : false,
+                    'aporte_id' => $aporte_id,
+                    'investment_id' => $investment_id,
+                    'timestamp' => $data ? $data->getTimestamp() : time()
+                ];
+            }
+        }
+        
+        // ========== PROCESSAR HISTÓRICO DE DIVIDENDOS ==========
+        $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
+        
+        foreach ($historico_dividendos as $index => $dividendo) {
+            $valor_dividendo = (float) ($dividendo['valor'] ?? 0);
+            $data_dividendo = $dividendo['data_dividendo'] ?? $dividendo['data'] ?? '';
+            
+            if ($valor_dividendo > 0 && !empty($data_dividendo)) {
+                $data = DateTime::createFromFormat('d/m/Y', $data_dividendo);
+                
+                $movimentos_completos[] = [
+                    'id' => "dividendo_{$aporte_id}_{$index}",
+                    'data' => $data_dividendo,
+                    'tipo' => 'dividendo',
+                    'investimento' => $nome_investimento,
+                    'valor' => $valor_dividendo,
+                    'vendido' => $venda_status ? true : false,
+                    'aporte_id' => $aporte_id,
+                    'investment_id' => $investment_id,
+                    'timestamp' => $data ? $data->getTimestamp() : time()
                 ];
             }
         }
@@ -199,7 +297,16 @@ foreach ($todosMesesAno as $mesAno) {
     $chartRentabilidade[] = $rentabilidadePorMesAno[$mesAno] ?? 0;
 }
 
-// Ordenar últimos movimentos
+// ========== ORDENAR MOVIMENTOS COMPLETOS ==========
+// Ordenar por timestamp (mais recente primeiro)
+usort($movimentos_completos, function ($a, $b) {
+    return $b['timestamp'] - $a['timestamp'];
+});
+
+// Limitar para os últimos 100 movimentos para performance
+$movimentos_completos = array_slice($movimentos_completos, 0, 100);
+
+// Ordenar últimos movimentos (compatibilidade)
 usort($ultimos, function ($a, $b) {
     $dataA = DateTime::createFromFormat('d/m/Y', $a['data']);
     $dataB = DateTime::createFromFormat('d/m/Y', $b['data']);
@@ -216,6 +323,7 @@ $ultimos = array_slice($ultimos, 0, 10);
 
 <div x-data="dashboardData()" class="space-y-6 lg:py-10 main-content-mobile min-h-screen">
 
+    <!-- CABEÇALHO -->
     <div class="bg-gradient-to-r from-primary to-slate-950 rounded-2xl p-6 lg:p-8 text-white shadow-2xl">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
@@ -242,9 +350,10 @@ $ultimos = array_slice($ultimos, 0, 10);
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+    <!-- CARDS DE MÉTRICAS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         
-        <!-- Card 1: Aportes Ativos - LAYOUT ORIGINAL -->
+        <!-- Card 1: Aportes Ativos -->
         <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -285,13 +394,12 @@ $ultimos = array_slice($ultimos, 0, 10);
                 </div>
             </div>
             
-            <!-- FORMATO ORIGINAL: R$ + VALOR JUNTO -->
             <p class="text-2xl font-bold text-gray-900">
                 R$ <?php echo number_format($total_investido_ativo, 0, ',', '.'); ?>
             </p>
         </div>
 
-        <!-- ===== CARD 2: RENTABILIDADE PROJETADA CORRIGIDA ===== -->
+        <!-- Card 2: Rentabilidade Projetada -->
         <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -332,13 +440,12 @@ $ultimos = array_slice($ultimos, 0, 10);
                 </div>
             </div>
             
-            <!-- CORREÇÃO: MOSTRA O ÚLTIMO VALOR DO HISTÓRICO DE RENTABILIDADE -->
             <p class="text-2xl font-bold <?php echo $rentabilidade_projetada >= 0 ? 'text-green-600' : 'text-red-600'; ?>">
                 <?php echo ($rentabilidade_projetada >= 0 ? '+' : ''); ?>R$ <?php echo number_format(abs($rentabilidade_projetada), 0, ',', '.'); ?>
             </p>
         </div>
 
-        <!-- ===== CARD 3: RENTABILIDADE CONSOLIDADA CORRIGIDA ===== -->
+        <!-- Card 3: Rentabilidade Consolidada -->
         <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
@@ -379,15 +486,83 @@ $ultimos = array_slice($ultimos, 0, 10);
                 </div>
             </div>
             
-            <!-- CORREÇÃO: AGORA MOSTRA O VALOR RECEBIDO DAS VENDAS (NÃO O LUCRO) -->
             <p class="text-2xl font-bold text-green-800">
                 R$ <?php echo number_format($rentabilidade_consolidada, 0, ',', '.'); ?>
             </p>
         </div>
+
+        <!-- Card 4: SCP Concluídos -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-building text-xl text-emerald-600"></i>
+                </div>
+                <span class="text-xs font-medium px-2 py-1 bg-emerald-50 text-emerald-600 rounded-full">
+                    <?php echo $quantidade_scp; ?> SCP<?php echo $quantidade_scp != 1 ? 's' : ''; ?>
+                </span>
+            </div>
+            
+            <div class="flex items-center gap-2 mb-1">
+                <h3 class="text-sm font-medium text-gray-600">SCP Concluídos</h3>
+                
+                <div class="relative" x-data="{ showTooltip: false }">
+                    <button 
+                        @mouseenter="showTooltip = true" 
+                        @mouseleave="showTooltip = false"
+                        @click="showTooltip = !showTooltip"
+                        class="w-4 h-4 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+                    >
+                        <i class="fas fa-question text-xs text-gray-500"></i>
+                    </button>
+                    
+                    <div 
+                        x-show="showTooltip"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 transform scale-95"
+                        x-transition:enter-end="opacity-100 transform scale-100"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 transform scale-100"
+                        x-transition:leave-end="opacity-0 transform scale-95"
+                        class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap"
+                        style="display: none;"
+                    >
+                        Produtos Private/SCP finalizados que geram dividendos.
+                        <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Valor Total Investido em SCP -->
+            <p class="text-2xl font-bold text-gray-900 mb-3">
+                R$ <?php echo number_format($total_investido_scp, 0, ',', '.'); ?>
+            </p>
+            
+            <!-- Dividendos Recebidos -->
+            <div class="bg-emerald-50 p-3 rounded-lg">
+                <div class="flex justify-between items-center">
+                    <span class="text-emerald-600 text-sm font-medium">💰 Dividendos Recebidos</span>
+                    <div class="text-right">
+                        <span class="font-bold text-lg text-emerald-600">
+                            R$ <?php echo number_format($dividendos_recebidos, 0, ',', '.'); ?>
+                        </span>
+                        <?php if ($total_investido_scp > 0) : ?>
+                            <div class="text-xs text-emerald-500">
+                                <?php 
+                                $yield_percentual = ($dividendos_recebidos / $total_investido_scp) * 100;
+                                echo '+' . number_format($yield_percentual, 1, ',', '.'); 
+                                ?>% yield
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- GRÁFICOS -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         
+        <!-- Distribuição por Categoria -->
         <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-semibold text-gray-900">Distribuição por Categoria</h3>
@@ -410,9 +585,13 @@ $ultimos = array_slice($ultimos, 0, 10);
             </div>
         </div>
 
+        <!-- Performance Mensal -->
         <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-semibold text-gray-900">Performance Mensal</h3>
+                <div class="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
+                    Histórico de aportes e rentabilidade
+                </div>
             </div>
             
             <div class="relative" style="height: 280px;">
@@ -421,74 +600,169 @@ $ultimos = array_slice($ultimos, 0, 10);
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100">
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-gray-900">Últimos Movimentos</h3>
-                <a href="?secao=meus-investimentos" 
-                   class="text-sm text-primary hover:text-slate-950 font-medium">
-                    Ver todos
-                </a>
+    <!-- EXTRATO DE MOVIMENTAÇÕES -->
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden" 
+         x-data="extratoData()" x-init="init()">
+    
+        <!-- HEADER COM FILTROS -->
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Extrato de Movimentações</h3>
+                    <p class="text-sm text-gray-600">Histórico completo de aportes e dividendos</p>
+                </div>
+                
+                <!-- FILTROS DO EXTRATO -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Tipo de Movimento -->
+                    <select x-model="filtros.tipo" 
+                            @change="aplicarFiltros()" 
+                            class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Todos os Tipos</option>
+                        <option value="aporte">Aportes (Saída)</option>
+                        <option value="dividendo">Dividendos (Entrada)</option>
+                    </select>
+                    
+                    <!-- Status -->
+                    <select x-model="filtros.status" 
+                            @change="aplicarFiltros()" 
+                            class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Todos Status</option>
+                        <option value="ativo">Investimentos Ativos</option>
+                        <option value="vendido">Investimentos Vendidos</option>
+                    </select>
+                    
+                    <!-- Período -->
+                    <select x-model="filtros.periodo" 
+                            @change="aplicarFiltros()" 
+                            class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Todo o período</option>
+                        <option value="30">Últimos 30 dias</option>
+                        <option value="90">Últimos 3 meses</option>
+                        <option value="180">Últimos 6 meses</option>
+                        <option value="365">Último ano</option>
+                    </select>
+                    
+                    <!-- Botão Limpar -->
+                    <button @click="limparFiltros()" 
+                            class="text-sm px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-eraser mr-1"></i>
+                        Limpar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- RESUMO DOS FILTROS ATIVOS -->
+            <div x-show="temFiltrosAtivos()" class="mt-3 flex flex-wrap gap-2">
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    <span x-text="contarMovimentosFiltrados()"></span> movimentação(ões) encontrada(s)
+                </span>
+                <span x-show="filtros.tipo" class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    Tipo: <span x-text="filtros.tipo === 'aporte' ? 'Aportes' : 'Dividendos'"></span>
+                </span>
+                <span x-show="filtros.status" class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                    Status: <span x-text="filtros.status === 'ativo' ? 'Ativos' : 'Vendidos'"></span>
+                </span>
+                <span x-show="filtros.periodo" class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                    Período: <span x-text="obterLabelPeriodo()"></span>
+                </span>
             </div>
         </div>
         
+        <!-- TABELA COM LOADING -->
         <div class="overflow-x-auto">
-            <?php if (!empty($ultimos)): ?>
-                <table class="w-full">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investimento</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        <?php foreach (array_slice($ultimos, 0, 8) as $movimento): ?>
-                            <tr class="hover:bg-gray-50 transition-colors">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <?php echo esc_html($movimento['data']); ?>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">
-                                    <div class="max-w-xs truncate">
-                                        <?php echo esc_html(str_replace(' (Vendido)', '', $movimento['investimento'])); ?>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    R$ <?php echo number_format($movimento['valor'], 2, ',', '.'); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <?php if ($movimento['vendido']): ?>
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                            <i class="fas fa-hand-holding-usd mr-1"></i>
-                                            Vendido
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <i class="fas fa-chart-line mr-1"></i>
-                                            Ativo
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
+            <div x-show="carregando" class="flex items-center justify-center py-12">
+                <div class="flex items-center gap-2 text-gray-500">
+                    <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm">Aplicando filtros...</span>
+                </div>
+            </div>
+            
+            <div x-show="!carregando">
+                <template x-if="movimentosFiltrados.length > 0">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investimento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php else: ?>
-                <div class="px-6 py-12 text-center">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-inbox text-2xl text-gray-400"></i>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <template x-for="movimento in movimentosFiltrados.slice(0, limite)" :key="movimento.id">
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="movimento.data"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span :class="movimento.tipo === 'aporte' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'" 
+                                              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                                            <i :class="movimento.tipo === 'aporte' ? 'fas fa-arrow-up' : 'fas fa-arrow-down'" class="mr-1"></i>
+                                            <span x-text="movimento.tipo === 'aporte' ? 'Aporte' : 'Dividendo'"></span>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">
+                                        <div class="max-w-xs truncate" x-text="movimento.investimento"></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <span :class="movimento.tipo === 'aporte' ? 'text-red-600' : 'text-green-600'">
+                                            <span x-text="movimento.tipo === 'aporte' ? '-' : '+'"></span>R$ <span x-text="movimento.valor_formatado"></span>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span :class="movimento.vendido ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'" 
+                                              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                                            <i :class="movimento.vendido ? 'fas fa-hand-holding-usd' : 'fas fa-chart-line'" class="mr-1"></i>
+                                            <span x-text="movimento.vendido ? 'Vendido' : 'Ativo'"></span>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </template>
+                
+                <!-- ESTADO VAZIO -->
+                <template x-if="movimentosFiltrados.length === 0">
+                    <div class="px-6 py-12 text-center">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-filter text-2xl text-gray-400"></i>
+                        </div>
+                        <h3 class="text-sm font-medium text-gray-900 mb-2">Nenhum movimento encontrado</h3>
+                        <p class="text-sm text-gray-500 mb-4">
+                            Ajuste os filtros para encontrar suas movimentações.
+                        </p>
+                        <button @click="limparFiltros()" 
+                                class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-slate-950">
+                            Limpar filtros
+                        </button>
                     </div>
-                    <h3 class="text-sm font-medium text-gray-900 mb-2">Nenhum movimento encontrado</h3>
-                    <p class="text-sm text-gray-500 mb-4">
-                        Seus movimentos aparecerão aqui conforme você fizer aportes.
-                    </p>
-                    <a href="?secao=produtos-gerais" 
-                       class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-slate-950">
-                        Fazer primeiro investimento
+                </template>
+            </div>
+        </div>
+        
+        <!-- FOOTER COM PAGINAÇÃO --> 
+        <div x-show="movimentosFiltrados.length > limite" class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-700">
+                    Mostrando <span x-text="Math.min(limite, movimentosFiltrados.length)"></span> de 
+                    <span x-text="movimentosFiltrados.length"></span> movimentações
+                </p>
+                <div class="flex gap-2">
+                    <button @click="limite = limite + 10" 
+                            x-show="limite < movimentosFiltrados.length"
+                            class="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">
+                        Carregar mais
+                    </button>
+                    <a href="?secao=meus-investimentos" 
+                       class="px-3 py-1 text-sm text-primary hover:text-slate-950 font-medium">
+                        Ver todos →
                     </a>
                 </div>
-            <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
@@ -504,6 +778,19 @@ window.dashboardChartData = {
     chartInvestido: <?php echo json_encode($chartInvestido); ?>,
     chartRentabilidade: <?php echo json_encode($chartRentabilidade); ?>
 };
+
+// Dados para o extrato (NOVO)
+window.dashboardMovimentos = <?php echo json_encode($movimentos_completos); ?>;
+
+// Compatibilidade com código existente
+window.dashboardUltimos = <?php echo json_encode($ultimos); ?>;
+
+// Debug
+console.log('Dashboard carregado:', {
+    aportes: <?php echo count($aportes); ?>,
+    movimentos: window.dashboardMovimentos?.length || 0,
+    distribuicao: Object.keys(window.dashboardChartData.distribuicaoData).length
+});
 </script>
 
 <script>
@@ -758,3 +1045,6 @@ window.dashboardData = function() {
 };
 </script>
 <?php endif; ?>
+
+<!-- SCRIPT PARA FUNÇÃO EXTRATO -->
+<script src="<?php echo S_INVEST_THEME_URL; ?>/public/js/dashboard-fix.js"></script>
