@@ -1,6 +1,6 @@
 <?php
 /**
- * Template: Página de Detalhes do Investimento - VERSÃO CORRIGIDA
+ * Template: Página de Detalhes do Investimento - VERSÃO COM INFORMAÇÕES ADICIONAIS
  */
 defined('ABSPATH') || exit;
 
@@ -66,6 +66,20 @@ $lamina_url    = get_field('url_lamina_tecnica');
 $whatsapp_no   = get_field('whatsapp_contato') 
                  ?: '5599999999999';
 $investment_title = urlencode( get_the_title() );
+
+// ========== NOVOS CAMPOS ADICIONAIS ==========
+$quantidade_cotas = get_field('quantidade_cotas');
+$cotas_vendidas = get_field('cotas_vendidas');
+$regiao_projeto = get_field('regiao_projeto');
+$data_lancamento = get_field('data_lancamento');
+
+// Calcular cotas vendidas automaticamente se não estiver preenchido
+if ($quantidade_cotas && !$cotas_vendidas) {
+    $valor_por_cota = floatval(get_field('valor_por_cota') ?: 0);
+    if ($valor_por_cota > 0) {
+        $cotas_vendidas = floor($total_captado / $valor_por_cota);
+    }
+}
 ?>
 
 <main class="pt-30 bg-radial-[at_10%_80%] from-slate-900 to-primary text-white">
@@ -104,32 +118,12 @@ $investment_title = urlencode( get_the_title() );
                    rounded transition"
             aria-label="Investir via WhatsApp"
           >
-            Investir
+            Saiba Mais
             <i class="fas fa-arrow-right"></i>
           </a>
         </div>
 
-        <div class="flex items-center gap-3 text-base text-gray-400">
-          <span>Compartilhar Oportunidade:</span>
-          <a href="https://www.instagram.com/sharer.php?u=<?= urlencode( get_permalink() ); ?>"
-             target="_blank" rel="noopener noreferrer"
-             class="hover:text-white"
-          >
-            <i class="fab fa-instagram fa-lg"></i>
-          </a>
-          <a href="https://twitter.com/intent/tweet?url=<?= urlencode( get_permalink() ); ?>&text=Confira%20este%20investimento"
-             target="_blank" rel="noopener noreferrer"
-             class="hover:text-white"
-          >
-            <i class="fab fa-twitter fa-lg"></i>
-          </a>
-          <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode( get_permalink() ); ?>"
-             target="_blank" rel="noopener noreferrer"
-             class="hover:text-white"
-          >
-            <i class="fab fa-linkedin fa-lg"></i>
-          </a>
-        </div>
+        <!-- COMPARTILHAMENTO REMOVIDO CONFORME SOLICITAÇÃO -->
       </div>
     </div>
 
@@ -138,7 +132,9 @@ $investment_title = urlencode( get_the_title() );
       <header class="grid space-y-2">
         <p class="text-base uppercase text-gray-400 tracking-wide">
           <?= esc_html($tipo_produto) ?>
-          <?php if ( $localizacao ) : ?>
+          <?php if ( $regiao_projeto ) : ?>
+            | <?= esc_html($regiao_projeto) ?>
+          <?php elseif ( $localizacao ) : ?>
             | <?= esc_html($localizacao) ?>
           <?php endif; ?>
         </p>
@@ -169,13 +165,6 @@ $investment_title = urlencode( get_the_title() );
             de <strong class="text-white">R$ <?= number_format($valor_total, 0, ',', '.') ?></strong>
           </span>
         </div>
-        
-        <?php 
-        $restante = $valor_total - $total_captado;
-        if ($restante > 0 && $porcentagem < 100) : 
-        ?>
-        <!-- LINHA REMOVIDA CONFORME SOLICITAÇÃO DA QUARTA IMAGEM -->
-        <?php endif; ?>
 
         <?php if ( $risco ) : ?>
           <span class="inline-block <?= $badge_class ?> text-white text-xs font-bold px-3 py-1 rounded uppercase">
@@ -184,6 +173,7 @@ $investment_title = urlencode( get_the_title() );
         <?php endif; ?>
       </div>
 
+      <!-- GRID DE INFORMAÇÕES ATUALIZADO COM NOVOS CAMPOS -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base">
         <div class="p-3 bg-slate-800 rounded">
           <p class="text-xs text-gray-400">Rentabilidade Projetada</p>
@@ -234,6 +224,40 @@ $investment_title = urlencode( get_the_title() );
             ?>
           </p>
         </div>
+
+        <!-- NOVOS CAMPOS ADICIONAIS -->
+        <?php if ($quantidade_cotas) : ?>
+        <div class="p-3 bg-slate-800 rounded">
+          <p class="text-xs text-gray-400">Quantidade de Cotas</p>
+          <p class="mt-1 font-medium">
+            <?php if ($cotas_vendidas) : ?>
+              <span class="text-secondary"><?= number_format($cotas_vendidas, 0, ',', '.') ?></span>
+              <span class="text-gray-400"> / </span>
+            <?php endif; ?>
+            <?= number_format($quantidade_cotas, 0, ',', '.') ?>
+          </p>
+          <?php if ($cotas_vendidas && $quantidade_cotas > 0) : ?>
+            <?php $percentual_cotas = ($cotas_vendidas / $quantidade_cotas) * 100; ?>
+            <p class="text-xs text-gray-500 mt-1">
+              <?= number_format($percentual_cotas, 1, ',', '.') ?>% vendidas
+            </p>
+          <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($regiao_projeto) : ?>
+        <div class="p-3 bg-slate-800 rounded">
+          <p class="text-xs text-gray-400">Região do Projeto</p>
+          <p class="mt-1 font-medium"><?= esc_html($regiao_projeto) ?></p>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($data_lancamento) : ?>
+        <div class="p-3 bg-slate-800 rounded">
+          <p class="text-xs text-gray-400">Data de Lançamento</p>
+          <p class="mt-1 font-medium"><?= esc_html($data_lancamento) ?></p>
+        </div>
+        <?php endif; ?>
 
         <div class="p-3 bg-slate-800 rounded">
           <p class="text-xs text-gray-400">Data de Início</p>

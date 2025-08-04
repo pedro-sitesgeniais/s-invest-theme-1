@@ -77,25 +77,14 @@ function s_invest_get_status_captacao_info($investment_id) {
             break;
             
         case 'encerrado_meta':
-            $info['label'] = 'Encerrado - Meta Atingida';
-            $info['class'] = 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-            $info['icon'] = 'fa-target';
-            $info['description'] = 'Captação encerrada - 100% da meta atingida';
-            break;
-            
         case 'encerrado_data':
-            $info['label'] = 'Encerrado - Prazo Expirado';
-            $info['class'] = 'bg-red-500/20 text-red-400 border-red-500/30';
-            $info['icon'] = 'fa-clock';
-            $info['description'] = 'Captação encerrada - prazo limite atingido';
-            break;
-            
         case 'encerrado_manual':
         case 'encerrado':
+            // SIMPLIFICADO: Todos os tipos de encerramento mostram apenas "Encerrado"
             $info['label'] = 'Encerrado';
             $info['class'] = 'bg-gray-500/20 text-gray-400 border-gray-500/30';
             $info['icon'] = 'fa-times-circle';
-            $info['description'] = 'Captação encerrada manualmente';
+            $info['description'] = 'Captação finalizada';
             break;
             
         default:
@@ -1433,3 +1422,74 @@ function s_invest_debug_session_only() {
     wp_die('<pre>' . print_r($info, true) . '</pre>');
 }
 add_action('init', 's_invest_debug_session_only');
+// ========== FUNÇÕES PARA PRODUTOS PRIVATE/SCP ==========
+
+/**
+ * Verifica se um investimento é do tipo Private/SCP
+ */
+function s_invest_is_private_scp($investment_id) {
+    if (!$investment_id) return false;
+    
+    // Verificar por taxonomia tipo_produto
+    $terms = wp_get_post_terms($investment_id, 'tipo_produto');
+    
+    if (!is_wp_error($terms) && !empty($terms)) {
+        foreach ($terms as $term) {
+            $term_name = strtolower($term->name);
+            $term_slug = strtolower($term->slug);
+            
+            // Palavras-chave que identificam SCP/Private
+            $keywords_scp = ['scp', 'private', 'capital semente', 'sociedade', 'participacao'];
+            
+            foreach ($keywords_scp as $keyword) {
+                if (strpos($term_name, $keyword) !== false || 
+                    strpos($term_slug, $keyword) !== false) {
+                    return true;
+                }
+            }
+        }
+    }
+    
+    // Verificar por campo customizado específico (caso exista)
+    $tipo_produto_manual = get_field('tipo_produto_manual', $investment_id);
+    if ($tipo_produto_manual === 'private' || $tipo_produto_manual === 'scp') {
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * Retorna o tipo de produto formatado (PRIVATE, TRADE)
+ */
+function s_invest_get_product_type_label($investment_id) {
+    if (s_invest_is_private_scp($investment_id)) {
+        return 'PRIVATE';
+    }
+    return 'TRADE';
+}
+
+/**
+ * Retorna as classes CSS para o badge do tipo de produto
+ */
+function s_invest_get_product_type_class($investment_id) {
+    if (s_invest_is_private_scp($investment_id)) {
+        return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+    }
+    return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+}
+
+/**
+ * Verifica se um aporte é de produto Private/SCP
+ */
+function s_invest_aporte_is_private($aporte_id) {
+    $investment_id = get_field('investment_id', $aporte_id);
+    return $investment_id ? s_invest_is_private_scp($investment_id) : false;
+}
+// ========== INCLUIR NOVOS METABOXES ==========
+
+// Incluir novos metaboxes (quando criarmos)
+$metaboxes_adicional = S_INVEST_THEME_DIR . '/includes/metaboxes/investimentos-adicional.php';
+if (file_exists($metaboxes_adicional)) {
+    require_once $metaboxes_adicional;
+}

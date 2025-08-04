@@ -1,6 +1,6 @@
 <?php
 /**
- * Dashboard do Investidor - VERSÃO COMPLETA E OTIMIZADA
+ * Dashboard do Investidor - VERSÃO COMPLETA E OTIMIZADA COM 3º DATASET
  * components/painel/investidor/dashboard.php
  */
 date_default_timezone_set('America/Sao_Paulo');
@@ -34,14 +34,15 @@ $rentabilidade_consolidada = max(0, $vendas['total_rentabilidade']); // AGORA É
 
 $total_investido_geral = $total_investido_ativo + $total_investido_vendido;
 
-// ========== INICIALIZAR ARRAYS ==========
+// ========== INICIALIZAR ARRAYS COM O 3º DATASET ==========
 $distribuicao = [];
 $ultimos = [];
 $movimentos_completos = []; // NOVO: Array para todos os movimentos
 
-// Arrays para organizar dados do gráfico por mês/ano
+// Arrays para organizar dados do gráfico por mês/ano - AGORA COM 3 DATASETS
 $investidoPorMesAno = [];
 $rentabilidadePorMesAno = [];
+$rentabilidadeConsolidadaPorMesAno = []; // ← NOVO DATASET
 
 $mesesTraducao = [
     'Jan' => 'Jan', 'Feb' => 'Fev', 'Mar' => 'Mar', 'Apr' => 'Abr',
@@ -119,7 +120,7 @@ foreach ($aportes as $aporte) {
     }
 }
 
-// ========== PROCESSAR TODOS OS APORTES ==========
+// ========== PROCESSAR TODOS OS APORTES COM 3 DATASETS ==========
 if (!empty($aportes)) {
     foreach ($aportes as $aporte) {
         $aporte_id = $aporte->ID;
@@ -127,7 +128,7 @@ if (!empty($aportes)) {
         $venda_status = get_field('venda_status', $aporte_id);
         $nome_investimento = $investment_id ? get_the_title($investment_id) : 'Investimento não identificado';
         
-        // ========== PROCESSAR HISTÓRICO DE APORTES (VALOR INVESTIDO) ==========
+        // ========== PROCESSAR HISTÓRICO DE APORTES (DATASET 1: VALOR INVESTIDO) ==========
         $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
         $total_aporte_investido = 0;
         
@@ -147,7 +148,7 @@ if (!empty($aportes)) {
                     $mesAno = $mes . ' ' . $ano;
                     
                     if ($mes) {
-                        // Agrupar valor investido por mês/ano
+                        // DATASET 1: Agrupar valor investido por mês/ano
                         if (!isset($investidoPorMesAno[$mesAno])) {
                             $investidoPorMesAno[$mesAno] = 0;
                         }
@@ -179,7 +180,7 @@ if (!empty($aportes)) {
             }
         }
         
-        // ========== PROCESSAR HISTÓRICO DE DIVIDENDOS ==========
+        // ========== PROCESSAR HISTÓRICO DE DIVIDENDOS (DATASET 3: RENTABILIDADE CONSOLIDADA) ==========
         $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
         
         foreach ($historico_dividendos as $index => $dividendo) {
@@ -188,6 +189,21 @@ if (!empty($aportes)) {
             
             if ($valor_dividendo > 0 && !empty($data_dividendo)) {
                 $data = DateTime::createFromFormat('d/m/Y', $data_dividendo);
+                
+                if ($data) {
+                    $mesIngles = $data->format('M');
+                    $ano = $data->format('Y');
+                    $mes = $mesesTraducao[$mesIngles] ?? '';
+                    $mesAno = $mes . ' ' . $ano;
+                    
+                    if ($mes) {
+                        // DATASET 3: Agrupar dividendos por mês/ano
+                        if (!isset($rentabilidadeConsolidadaPorMesAno[$mesAno])) {
+                            $rentabilidadeConsolidadaPorMesAno[$mesAno] = 0;
+                        }
+                        $rentabilidadeConsolidadaPorMesAno[$mesAno] += $valor_dividendo;
+                    }
+                }
                 
                 $movimentos_completos[] = [
                     'id' => "dividendo_{$aporte_id}_{$index}",
@@ -203,7 +219,31 @@ if (!empty($aportes)) {
             }
         }
         
-        // ========== PROCESSAR HISTÓRICO DE RENTABILIDADE (APENAS APORTES ATIVOS) ==========
+        // ========== PROCESSAR VENDAS (DATASET 3: RENTABILIDADE CONSOLIDADA) ==========
+        if ($venda_status) {
+            $valor_recebido_venda = (float) get_field('venda_valor', $aporte_id);
+            $data_venda = get_field('venda_data', $aporte_id);
+            
+            if ($valor_recebido_venda > 0 && !empty($data_venda)) {
+                $data = DateTime::createFromFormat('d/m/Y', $data_venda);
+                if ($data) {
+                    $mesIngles = $data->format('M');
+                    $ano = $data->format('Y');
+                    $mes = $mesesTraducao[$mesIngles] ?? '';
+                    $mesAno = $mes . ' ' . $ano;
+                    
+                    if ($mes) {
+                        // DATASET 3: Agrupar vendas por mês/ano
+                        if (!isset($rentabilidadeConsolidadaPorMesAno[$mesAno])) {
+                            $rentabilidadeConsolidadaPorMesAno[$mesAno] = 0;
+                        }
+                        $rentabilidadeConsolidadaPorMesAno[$mesAno] += $valor_recebido_venda;
+                    }
+                }
+            }
+        }
+        
+        // ========== PROCESSAR HISTÓRICO DE RENTABILIDADE (DATASET 2: APENAS APORTES ATIVOS) ==========
         if (!$venda_status) { // Só processar rentabilidade de aportes ativos
             $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id) ?: [];
             
@@ -221,7 +261,7 @@ if (!empty($aportes)) {
                             $mesAno = $mes . ' ' . $ano;
                             
                             if ($mes) {
-                                // Agrupar rentabilidade por mês/ano
+                                // DATASET 2: Agrupar rentabilidade projetada por mês/ano
                                 if (!isset($rentabilidadePorMesAno[$mesAno])) {
                                     $rentabilidadePorMesAno[$mesAno] = 0;
                                 }
@@ -254,11 +294,12 @@ if (!empty($aportes)) {
     }
 }
 
-// ========== ORGANIZAR DADOS DO GRÁFICO CRONOLOGICAMENTE ==========
+// ========== ORGANIZAR DADOS DO GRÁFICO CRONOLOGICAMENTE (AGORA COM 3 DATASETS) ==========
 // Combinar todos os meses/anos que têm dados
 $todosMesesAno = array_unique(array_merge(
     array_keys($investidoPorMesAno),
-    array_keys($rentabilidadePorMesAno)
+    array_keys($rentabilidadePorMesAno),
+    array_keys($rentabilidadeConsolidadaPorMesAno) // ← INCLUIR O 3º DATASET
 ));
 
 // Ordenar cronologicamente
@@ -286,15 +327,17 @@ usort($todosMesesAno, function($a, $b) {
     return $mes_a - $mes_b;
 });
 
-// Preparar arrays finais para o gráfico
+// Preparar arrays finais para o gráfico COM 3 DATASETS
 $chartLabels = [];
 $chartInvestido = [];
 $chartRentabilidade = [];
+$chartRentabilidadeConsolidada = []; // ← NOVO DATASET
 
 foreach ($todosMesesAno as $mesAno) {
     $chartLabels[] = $mesAno;
     $chartInvestido[] = $investidoPorMesAno[$mesAno] ?? 0;
     $chartRentabilidade[] = $rentabilidadePorMesAno[$mesAno] ?? 0;
+    $chartRentabilidadeConsolidada[] = $rentabilidadeConsolidadaPorMesAno[$mesAno] ?? 0; // ← NOVO
 }
 
 // ========== ORDENAR MOVIMENTOS COMPLETOS ==========
@@ -480,7 +523,7 @@ $ultimos = array_slice($ultimos, 0, 10);
                         class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap"
                         style="display: none;"
                     >
-                        Rentabilidade realizada em vendas já concretizadas.
+                        Rentabilidade realizada em vendas já concretizadas e dividendos recebidos.
                         <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
                     </div>
                 </div>
@@ -773,10 +816,11 @@ window.dashboardChartData = {
     // Dados da distribuição (donut chart)
     distribuicaoData: <?php echo json_encode($distribuicao); ?>,
     
-    // Dados do gráfico de barras - CORRIGIDOS
+    // Dados do gráfico de barras - AGORA COM 3 DATASETS CORRIGIDOS
     chartLabels: <?php echo json_encode($chartLabels); ?>,
     chartInvestido: <?php echo json_encode($chartInvestido); ?>,
-    chartRentabilidade: <?php echo json_encode($chartRentabilidade); ?>
+    chartRentabilidade: <?php echo json_encode($chartRentabilidade); ?>,
+    chartRentabilidadeConsolidada: <?php echo json_encode($chartRentabilidadeConsolidada); ?> // ← NOVO DATASET
 };
 
 // Dados para o extrato (NOVO)
@@ -786,10 +830,15 @@ window.dashboardMovimentos = <?php echo json_encode($movimentos_completos); ?>;
 window.dashboardUltimos = <?php echo json_encode($ultimos); ?>;
 
 // Debug
-console.log('Dashboard carregado:', {
+console.log('Dashboard carregado com 3 datasets:', {
     aportes: <?php echo count($aportes); ?>,
     movimentos: window.dashboardMovimentos?.length || 0,
-    distribuicao: Object.keys(window.dashboardChartData.distribuicaoData).length
+    distribuicao: Object.keys(window.dashboardChartData.distribuicaoData).length,
+    datasets: {
+        investido: window.dashboardChartData.chartInvestido?.length || 0,
+        rentabilidade: window.dashboardChartData.chartRentabilidade?.length || 0,
+        consolidada: window.dashboardChartData.chartRentabilidadeConsolidada?.length || 0
+    }
 });
 </script>
 
@@ -916,16 +965,18 @@ document.addEventListener('DOMContentLoaded', function() {
             window.performanceChartInstance.destroy();
         }
         
-        // DADOS CORRIGIDOS: Usar os arrays preparados no PHP
+        // DADOS CORRIGIDOS: Usar os arrays preparados no PHP COM 3 DATASETS
         const labels = chartData.chartLabels || [];
         const investidoData = chartData.chartInvestido || [];
         const rentabilidadeData = chartData.chartRentabilidade || [];
+        const rentabilidadeConsolidadaData = chartData.chartRentabilidadeConsolidada || []; // ← NOVO DATASET
         
         // Se não há dados, mostrar exemplo vazio
         if (labels.length === 0) {
             labels.push('Sem dados');
             investidoData.push(0);
             rentabilidadeData.push(0);
+            rentabilidadeConsolidadaData.push(0); // ← NOVO
         }
         
         try {
@@ -937,17 +988,25 @@ document.addEventListener('DOMContentLoaded', function() {
                         {
                             label: 'Valor Investido',
                             data: investidoData,
-                            backgroundColor: '#2ED2F8', // Azul
+                            backgroundColor: '#3B82F6', // Azul
                             borderRadius: 6,
-                            barThickness: window.innerWidth < 768 ? 15 : 20,
+                            barThickness: window.innerWidth < 768 ? 12 : 16,
                             borderSkipped: false
                         },
                         {
-                            label: 'Rentabilidade',
+                            label: 'Rentabilidade Projetada Acumulada',
                             data: rentabilidadeData,
                             backgroundColor: '#10B981', // Verde
                             borderRadius: 6,
-                            barThickness: window.innerWidth < 768 ? 15 : 20,
+                            barThickness: window.innerWidth < 768 ? 12 : 16,
+                            borderSkipped: false
+                        },
+                        {
+                            label: 'Rentabilidade Consolidada Acumulada', // ← NOVO DATASET
+                            data: rentabilidadeConsolidadaData,
+                            backgroundColor: '#F59E0B', // Laranja/Amarelo
+                            borderRadius: 6,
+                            barThickness: window.innerWidth < 768 ? 12 : 16,
                             borderSkipped: false
                         }
                     ]
@@ -966,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             labels: {
                                 usePointStyle: true,
                                 padding: 15,
-                                font: { size: 12 }
+                                font: { size: 11 }
                             }
                         },
                         tooltip: {
@@ -982,10 +1041,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 },
                                 footer: function(tooltipItems) {
                                     if (tooltipItems.length >= 2) {
-                                        const investido = tooltipItems[0].parsed.y || 0;
-                                        const rentabilidade = tooltipItems[1].parsed.y || 0;
-                                        const total = investido + rentabilidade;
-                                        return `Total: R$ ${total.toLocaleString('pt-BR')}`;
+                                        let total = 0;
+                                        tooltipItems.forEach(item => {
+                                            total += item.parsed.y || 0;
+                                        });
+                                        return `Total do período: R$ ${total.toLocaleString('pt-BR')}`;
                                     }
                                     return '';
                                 }
@@ -1017,6 +1077,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             });
+            
+            console.log('✅ Gráfico de performance criado com 3 datasets:', {
+                investido: investidoData.length,
+                projetada: rentabilidadeData.length,
+                consolidada: rentabilidadeConsolidadaData.length
+            });
+            
         } catch (error) {
             console.error('Erro ao criar gráfico de performance:', error);
         }
