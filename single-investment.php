@@ -109,18 +109,6 @@ if ($quantidade_cotas && !$cotas_vendidas) {
               Lâmina Técnica
             </a>
           <?php endif; ?>
-
-          <a
-            href="https://wa.me/<?= esc_attr( $whatsapp_no ); ?>?text=Olá%2C%20tenho%20interesse%20no%20ativo%20imobiliário<?= $investment_title; ?>"
-            target="_blank" rel="noopener noreferrer"
-            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2
-                   bg-secondary hover:bg-accent text-primary px-6 py-3 text-base font-semibold
-                   rounded transition"
-            aria-label="Investir via WhatsApp"
-          >
-            Saiba Mais
-            <i class="fas fa-arrow-right"></i>
-          </a>
         </div>
 
         <!-- COMPARTILHAMENTO REMOVIDO CONFORME SOLICITAÇÃO -->
