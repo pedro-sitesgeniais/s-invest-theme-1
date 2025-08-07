@@ -70,93 +70,115 @@ if (false === $cached_data) {
         ]);
         
         if (!empty($aportes_usuario)) {
-            $aporte = $aportes_usuario[0];
-            $aporte_id = $aporte->ID;
-            
-            $venda_status = get_field('venda_status', $aporte_id);
-            
-            $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
-            $valor_investido_total = 0;
-            foreach ($historico_aportes as $item) {
-                $valor_investido_total += (float) ($item['valor_aporte'] ?? 0);
-            }
-
-            if ($venda_status) {
-                // ===== CORREÇÃO: VALORES CORRETOS PARA VENDIDOS =====
-                $valor_recebido_total = (float) get_field('venda_valor', $aporte_id);
-                $valor_atual_vendido = (float) get_field('valor_atual', $aporte_id);  // NOVO: pegar valor atual
-                $rentabilidade_reais = (float) get_field('venda_rentabilidade_reais', $aporte_id);
-                $rentabilidade_pct = (float) get_field('venda_rentabilidade', $aporte_id);
-                $data_venda = get_field('venda_data', $aporte_id);
-                
-                // Se não tem a rentabilidade em reais salva, calcular
-                if ($rentabilidade_reais == 0 && $valor_recebido_total > 0) {
-                    $rentabilidade_reais = $valor_recebido_total - $valor_investido_total;
-                }
-                
-                // FÓRMULA CORRIGIDA: Se não tem a porcentagem salva, calcular
-                if ($rentabilidade_pct == 0 && $valor_investido_total > 0 && $valor_recebido_total > 0) {
-                    $rentabilidade_pct = ($valor_recebido_total / $valor_investido_total) * 100;
-                }
-                
-                $dados_pessoais = [
-                    'status' => 'vendido',
-                    'valor_investido' => $valor_investido_total,
-                    'valor_atual' => $valor_atual_vendido,           // CORREÇÃO: valor atual (para "Valor na Venda")
-                    'valor_recebido' => $valor_recebido_total,       // VALOR TOTAL RECEBIDO (para "Rentabilidade Consolidada")
-                    'rentabilidade_reais' => $rentabilidade_reais,  // RENTABILIDADE EM R$
-                    'rentabilidade_pct' => $rentabilidade_pct,      // RENTABILIDADE EM %
-                    'data_venda' => $data_venda,
-                    'lucro_realizado' => true
-                ];
-            } else {
-    // INVESTIMENTO ATIVO
-    $valor_atual = (float) get_field('valor_atual', $aporte_id);
+    // ✅ CORRIGIDO: Somar TODOS os aportes do usuário neste investimento
+    $valor_investido_total = 0;
+    $valor_atual_total = 0;
+    $venda_status = false;
+    $aporte_representativo = $aportes_usuario[0]; // Para pegar outros dados não-financeiros
     
-    // CORREÇÃO: Primeiro verificar se há histórico de rentabilidade
-    $rentabilidade_projetada = 0;
-    $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id);
-    
-    if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
-        $ultimo_valor = end($rentabilidade_hist);
-        if (isset($ultimo_valor['valor'])) {
-            $rentabilidade_projetada = floatval($ultimo_valor['valor']);
-        }
-    } else {
-        // CORREÇÃO: Se não há histórico, verificar se valor_atual faz sentido
-        // Se valor_atual for muito maior que valor_investido (indicando erro de dados),
-        // considerar rentabilidade zero
-        $diferenca = $valor_atual - $valor_investido_total;
+    // Processar cada aporte individualmente
+    foreach ($aportes_usuario as $aporte_item) {
+        $aporte_id = $aporte_item->ID;
+        $venda_status_item = get_field('venda_status', $aporte_id);
         
-        // Se a diferença for desproporcional (mais de 10x o valor investido), 
-        // provavelmente é erro de dados - manter zero
-        if ($valor_atual > 0 && $diferenca > ($valor_investido_total * 10)) {
-            $rentabilidade_projetada = 0;
-            // CORREÇÃO: Ajustar valor_atual para ser igual ao investido se não há crescimento
-            $valor_atual = $valor_investido_total;
-        } elseif ($valor_atual > 0 && $valor_atual != $valor_investido_total) {
-            // Se a diferença for razoável, usar ela
-            $rentabilidade_projetada = $diferenca;
-        } else {
-            // Se valor_atual não está definido ou é zero, usar valor investido
-            $rentabilidade_projetada = 0;
-            $valor_atual = $valor_investido_total;
+        // Se qualquer aporte foi vendido, considerar como vendido
+        if ($venda_status_item) {
+            $venda_status = true;
         }
+        
+        // Somar histórico de aportes
+        $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
+        foreach ($historico_aportes as $item) {
+            $valor_investido_total += (float) ($item['valor_aporte'] ?? 0);
+        }
+        
+        // Somar valor atual
+        $valor_atual_item = (float) get_field('valor_atual', $aporte_id);
+        $valor_atual_total += $valor_atual_item;
     }
     
-    // Para aportes ativos, calcular a porcentagem baseada na rentabilidade
-    $rentabilidade_pct = $valor_investido_total > 0 ? (($rentabilidade_projetada) / $valor_investido_total) * 100 : 0;
-    
-    $dados_pessoais = [
-        'status' => 'ativo',
-        'valor_investido' => $valor_investido_total,
-        'valor_atual' => $valor_atual,
-        'rentabilidade_reais' => $rentabilidade_projetada,
-        'rentabilidade_pct' => $rentabilidade_pct,
-        'lucro_realizado' => false
-    ];
-}
+    if ($venda_status) {
+        // ===== VENDIDO: Somar valores de todos os aportes vendidos =====
+        $valor_recebido_total = 0;
+        $rentabilidade_reais_total = 0;
+        $rentabilidade_pct_total = 0;
+        $data_venda = '';
+        
+        foreach ($aportes_usuario as $aporte_item) {
+            $aporte_id = $aporte_item->ID;
+            if (get_field('venda_status', $aporte_id)) {
+                $valor_recebido_total += (float) get_field('venda_valor', $aporte_id);
+                $rentabilidade_reais_total += (float) get_field('venda_rentabilidade_reais', $aporte_id);
+                
+                if (!$data_venda) {
+                    $data_venda = get_field('venda_data', $aporte_id);
+                }
+            }
         }
+        
+        // Calcular rentabilidade percentual total
+        if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
+            $rentabilidade_pct_total = ($valor_recebido_total / $valor_investido_total) * 100;
+        }
+        
+        $dados_pessoais = [
+            'status' => 'vendido',
+            'valor_investido' => $valor_investido_total,
+            'valor_atual' => $valor_atual_total,
+            'valor_recebido' => $valor_recebido_total,
+            'rentabilidade_reais' => $rentabilidade_reais_total,
+            'rentabilidade_pct' => $rentabilidade_pct_total,
+            'data_venda' => $data_venda,
+            'lucro_realizado' => true
+        ];
+    } else {
+        // ===== ATIVO: Calcular rentabilidade projetada de todos os aportes =====
+        $rentabilidade_projetada_total = 0;
+        
+        foreach ($aportes_usuario as $aporte_item) {
+            $aporte_id = $aporte_item->ID;
+            $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id);
+            
+            if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
+                $ultimo_valor = end($rentabilidade_hist);
+                if (isset($ultimo_valor['valor'])) {
+                    $rentabilidade_projetada_total += floatval($ultimo_valor['valor']);
+                }
+            } else {
+                // Se não há histórico, usar diferença valor atual - valor investido
+                $valor_atual_item = (float) get_field('valor_atual', $aporte_id);
+                $historico_aportes_item = get_field('historico_aportes', $aporte_id) ?: [];
+                $valor_investido_item = 0;
+                
+                foreach ($historico_aportes_item as $item) {
+                    $valor_investido_item += (float) ($item['valor_aporte'] ?? 0);
+                }
+                
+                $diferenca = $valor_atual_item - $valor_investido_item;
+                if ($diferenca <= ($valor_investido_item * 10)) { // Filtro anti-erro
+                    $rentabilidade_projetada_total += $diferenca;
+                }
+            }
+        }
+        
+        // Se valor_atual_total não foi calculado corretamente, ajustar
+        if ($valor_atual_total <= 0) {
+            $valor_atual_total = $valor_investido_total + $rentabilidade_projetada_total;
+        }
+        
+        $rentabilidade_pct = $valor_investido_total > 0 ? 
+            ($rentabilidade_projetada_total / $valor_investido_total) * 100 : 0;
+        
+        $dados_pessoais = [
+            'status' => 'ativo',
+            'valor_investido' => $valor_investido_total,
+            'valor_atual' => $valor_atual_total,
+            'rentabilidade_reais' => $rentabilidade_projetada_total,
+            'rentabilidade_pct' => $rentabilidade_pct,
+            'lucro_realizado' => false
+        ];
+    }
+}
     }
     
     $cached_data = compact(

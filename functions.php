@@ -237,7 +237,7 @@ function s_invest_page_specific_scripts($handle, $version) {
     
     if (is_page_template('page-painel.php')) {
         $secao = $_GET['secao'] ?? 'dashboard';
-        if (in_array($secao, ['dashboard', 'meus-investimentos'])) {
+        if (in_array($secao, ['dashboard', 'meus-investimentos', 'detalhes-investimento'])) {
             wp_enqueue_script('s-invest-chartjs', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js', [], '4.4.9', true);
         }
         
@@ -1485,11 +1485,4 @@ function s_invest_get_product_type_class($investment_id) {
 function s_invest_aporte_is_private($aporte_id) {
     $investment_id = get_field('investment_id', $aporte_id);
     return $investment_id ? s_invest_is_private_scp($investment_id) : false;
-}
-// ========== INCLUIR NOVOS METABOXES ==========
-
-// Incluir novos metaboxes (quando criarmos)
-$metaboxes_adicional = S_INVEST_THEME_DIR . '/includes/metaboxes/investimentos-adicional.php';
-if (file_exists($metaboxes_adicional)) {
-    require_once $metaboxes_adicional;
 }

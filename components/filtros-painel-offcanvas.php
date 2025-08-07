@@ -61,21 +61,7 @@ $modalidades = get_terms([
                         </option>
                     <?php endforeach; ?>
                 </select>
-            </div>
-
-            <!-- Modalidade -->
-            <div class="flex-shrink-0">
-                <select x-model="filtros.modalidade" 
-                        @change="aplicarFiltros()"
-                        class="appearance-none bg-white border border-gray-300 rounded-2xl px-5 py-3 text-sm shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors">
-                    <option value="">Qualquer Modalidade</option>
-                    <?php foreach ($modalidades as $modalidade) : ?>
-                        <option value="<?php echo esc_attr($modalidade->slug); ?>">
-                            <?php echo esc_html($modalidade->name); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+                    </div>
 
             <!-- ✅ FILTROS ESPECÍFICOS POR CONTEXTO - CORRIGIDOS -->
             <?php if ($context === 'meus-investimentos') : ?>
