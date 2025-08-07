@@ -237,7 +237,7 @@ function s_invest_page_specific_scripts($handle, $version) {
     
     if (is_page_template('page-painel.php')) {
         $secao = $_GET['secao'] ?? 'dashboard';
-        if (in_array($secao, ['dashboard', 'meus-investimentos'])) {
+        if (in_array($secao, ['dashboard', 'meus-investimentos', 'detalhes-investimento'])) {
             wp_enqueue_script('s-invest-chartjs', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js', [], '4.4.9', true);
         }
         
