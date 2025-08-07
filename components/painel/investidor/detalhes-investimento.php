@@ -35,14 +35,116 @@ $args_aporte = [
 ];
 
 $aporte_posts = get_posts($args_aporte);
-$aporte_id = $aporte_posts ? $aporte_posts[0]->ID : 0;
 
-if (!$aporte_id) {
+if (empty($aporte_posts)) {
     echo '<div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6">
             <p class="text-sm text-yellow-700">Você não possui aportes neste investimento.</p>
           </div>';
     return;
 }
+
+// ===== PROCESSAR TODOS OS APORTES DO USUÁRIO =====
+$valor_investido_total = 0;
+$valor_atual_total = 0;
+$rentabilidade_projetada_total = 0;
+$venda_status_geral = false;
+$historico_aportes_consolidado = [];
+$historico_rentabilidade_consolidado = [];
+$historico_dividendos_consolidado = [];
+
+// Dados do primeiro aporte para campos não-financeiros
+$aporte_principal = $aporte_posts[0];
+$whatsapp_assessor = get_field('whatsapp_assessor', $aporte_principal->ID) ?: '';
+$nome_assessor = get_field('nome_assessor', $aporte_principal->ID) ?: 'Assessor';
+$foto_assessor = get_field('foto_assessor', $aporte_principal->ID);
+$contrato = get_field('contrato_pdf', $aporte_principal->ID);
+
+foreach ($aporte_posts as $aporte_post) {
+    $aporte_id = $aporte_post->ID;
+    $venda_status_item = get_field('venda_status', $aporte_id);
+    
+    if ($venda_status_item) {
+        $venda_status_geral = true;
+    }
+    
+    // Somar histórico de aportes
+    $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
+    foreach ($historico_aportes as $item) {
+        $valor_investido_total += floatval($item['valor_aporte'] ?? 0);
+        $historico_aportes_consolidado[] = $item; // Para exibição
+    }
+    
+    // Somar valores atuais
+    $valor_atual_item = floatval(get_field('valor_atual', $aporte_id) ?: 0);
+    $valor_atual_total += $valor_atual_item;
+    
+    // Consolidar histórico de rentabilidade para o gráfico
+    $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id) ?: [];
+    foreach ($rentabilidade_hist as $item) {
+        $data_key = $item['data_rentabilidade'] ?? '';
+        if ($data_key) {
+            if (!isset($historico_rentabilidade_consolidado[$data_key])) {
+                $historico_rentabilidade_consolidado[$data_key] = [
+                    'data_rentabilidade' => $data_key,
+                    'valor' => 0
+                ];
+            }
+            $historico_rentabilidade_consolidado[$data_key]['valor'] += floatval($item['valor'] ?? 0);
+        }
+    }
+    
+    // Consolidar dividendos (para produtos Private)
+    if ($is_private) {
+        $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
+        foreach ($historico_dividendos as $dividendo) {
+            $historico_dividendos_consolidado[] = $dividendo;
+        }
+    }
+}
+
+// Converter array associativo em indexado para o gráfico
+$rentabilidade_hist = array_values($historico_rentabilidade_consolidado);
+
+// Ordenar por data
+usort($rentabilidade_hist, function($a, $b) {
+    return strtotime($a['data_rentabilidade']) - strtotime($b['data_rentabilidade']);
+});
+
+// Calcular rentabilidade projetada (último valor do histórico consolidado)
+if (!empty($rentabilidade_hist)) {
+    $ultimo_valor = end($rentabilidade_hist);
+    $rentabilidade_projetada_total = floatval($ultimo_valor['valor'] ?? 0);
+}
+
+// Dados de venda consolidados
+$venda_data = '';
+$venda_valor_total = 0;
+$venda_rentabilidade_total = 0;
+
+if ($venda_status_geral) {
+    foreach ($aporte_posts as $aporte_post) {
+        $aporte_id = $aporte_post->ID;
+        if (get_field('venda_status', $aporte_id)) {
+            $venda_valor_total += floatval(get_field('venda_valor', $aporte_id) ?: 0);
+            if (!$venda_data) {
+                $venda_data = get_field('venda_data', $aporte_id) ?: '';
+            }
+        }
+    }
+    
+    if ($valor_investido_total > 0) {
+        $venda_rentabilidade_total = (($venda_valor_total / $valor_investido_total) - 1) * 100;
+    }
+}
+
+// Atualizar variáveis para compatibilidade com o resto do código
+$valor_compra = $valor_investido_total;
+$valor_atual = $valor_atual_total;
+$venda_status = $venda_status_geral;
+$venda_valor = $venda_valor_total;
+$venda_rentabilidade = $venda_rentabilidade_total;
+$rentabilidade_projetada = $rentabilidade_projetada_total;
+$historico_aportes = $historico_aportes_consolidado;
 
 // ========== DADOS BÁSICOS DO INVESTIMENTO ==========
 $titulo = esc_html(get_the_title($inv_id));
@@ -326,7 +428,7 @@ $docs = get_field('documentos', $inv_id) ?: [];
     </div>
 
     <!-- GRÁFICO -->
-    <?php if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) : ?>
+    <?php if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist) && count($rentabilidade_hist) > 0) : ?>
         <div class="h-[300px] sm:h-[350px] md:h-[400px] my-6 md:my-12">
             <canvas id="investmentChart"></canvas>
         </div>
@@ -551,7 +653,7 @@ $docs = get_field('documentos', $inv_id) ?: [];
 </div>
 
 <!-- SCRIPT DO GRÁFICO -->
-<?php if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) : ?>
+<?php if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist) && count($rentabilidade_hist) > 0) : ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Aguardar Chart.js estar disponível
@@ -566,8 +668,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const ctx = canvas.getContext('2d');
         const historico = <?php echo json_encode($rentabilidade_hist); ?>;
-        
+
         if (historico && historico.length > 0) {
+            console.log('Dados do gráfico:', historico); // Debug
             try {
                 new Chart(ctx, {
                     type: 'bar',
