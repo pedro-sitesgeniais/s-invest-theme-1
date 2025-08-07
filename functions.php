@@ -1486,10 +1486,3 @@ function s_invest_aporte_is_private($aporte_id) {
     $investment_id = get_field('investment_id', $aporte_id);
     return $investment_id ? s_invest_is_private_scp($investment_id) : false;
 }
-// ========== INCLUIR NOVOS METABOXES ==========
-
-// Incluir novos metaboxes (quando criarmos)
-$metaboxes_adicional = S_INVEST_THEME_DIR . '/includes/metaboxes/investimentos-adicional.php';
-if (file_exists($metaboxes_adicional)) {
-    require_once $metaboxes_adicional;
-}
