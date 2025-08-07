@@ -21,10 +21,10 @@ if (!$user_id) {
     return;
 }
 
-// Buscar TODOS os aportes do usuário para este investimento
+// Buscar aporte do usuário
 $args_aporte = [
     'post_type'      => 'aporte',
-    'posts_per_page' => -1, // ✅ CORRIGIDO: Buscar TODOS os aportes
+    'posts_per_page' => 1,
     'post_status'    => 'publish',
     'meta_query'     => [
         ['key' => 'investment_id', 'value' => $inv_id],
@@ -43,23 +43,6 @@ if (empty($aporte_posts)) {
     return;
 }
 
-// ========== VERIFICAÇÃO DE TIPO DEVE VIR PRIMEIRO ==========
-$is_private = false;
-$product_type_label = 'TRADE';
-$product_type_class = 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-
-if (function_exists('s_invest_is_private_scp')) {
-    $is_private = s_invest_is_private_scp($inv_id);
-}
-
-if (function_exists('s_invest_get_product_type_label')) {
-    $product_type_label = s_invest_get_product_type_label($inv_id);
-}
-
-if (function_exists('s_invest_get_product_type_class')) {
-    $product_type_class = s_invest_get_product_type_class($inv_id);
-}
-
 // ===== PROCESSAR TODOS OS APORTES DO USUÁRIO =====
 $valor_investido_total = 0;
 $valor_atual_total = 0;
@@ -68,7 +51,6 @@ $venda_status_geral = false;
 $historico_aportes_consolidado = [];
 $historico_rentabilidade_consolidado = [];
 $historico_dividendos_consolidado = [];
-$total_dividendos_recebidos = 0;
 
 // Dados do primeiro aporte para campos não-financeiros
 $aporte_principal = $aporte_posts[0];
@@ -89,7 +71,7 @@ foreach ($aporte_posts as $aporte_post) {
     $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
     foreach ($historico_aportes as $item) {
         $valor_investido_total += floatval($item['valor_aporte'] ?? 0);
-        $historico_aportes_consolidado[] = $item;
+        $historico_aportes_consolidado[] = $item; // Para exibição
     }
     
     // Somar valores atuais
@@ -97,8 +79,8 @@ foreach ($aporte_posts as $aporte_post) {
     $valor_atual_total += $valor_atual_item;
     
     // Consolidar histórico de rentabilidade para o gráfico
-    $rentabilidade_hist_item = get_field('rentabilidade_historico', $aporte_id) ?: [];
-    foreach ($rentabilidade_hist_item as $item) {
+    $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id) ?: [];
+    foreach ($rentabilidade_hist as $item) {
         $data_key = $item['data_rentabilidade'] ?? '';
         if ($data_key) {
             if (!isset($historico_rentabilidade_consolidado[$data_key])) {
@@ -116,7 +98,6 @@ foreach ($aporte_posts as $aporte_post) {
         $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
         foreach ($historico_dividendos as $dividendo) {
             $historico_dividendos_consolidado[] = $dividendo;
-            $total_dividendos_recebidos += floatval($dividendo['valor'] ?? 0);
         }
     }
 }
@@ -126,10 +107,7 @@ $rentabilidade_hist = array_values($historico_rentabilidade_consolidado);
 
 // Ordenar por data
 usort($rentabilidade_hist, function($a, $b) {
-    $dateA = DateTime::createFromFormat('d/m/Y', $a['data_rentabilidade']);
-    $dateB = DateTime::createFromFormat('d/m/Y', $b['data_rentabilidade']);
-    if (!$dateA || !$dateB) return 0;
-    return $dateA->getTimestamp() - $dateB->getTimestamp();
+    return strtotime($a['data_rentabilidade']) - strtotime($b['data_rentabilidade']);
 });
 
 // Calcular rentabilidade projetada (último valor do histórico consolidado)
@@ -142,8 +120,6 @@ if (!empty($rentabilidade_hist)) {
 $venda_data = '';
 $venda_valor_total = 0;
 $venda_rentabilidade_total = 0;
-$venda_observacoes = '';
-$venda_documento = null;
 
 if ($venda_status_geral) {
     foreach ($aporte_posts as $aporte_post) {
@@ -152,8 +128,6 @@ if ($venda_status_geral) {
             $venda_valor_total += floatval(get_field('venda_valor', $aporte_id) ?: 0);
             if (!$venda_data) {
                 $venda_data = get_field('venda_data', $aporte_id) ?: '';
-                $venda_observacoes = get_field('venda_observacoes', $aporte_id) ?: '';
-                $venda_documento = get_field('venda_documento', $aporte_id);
             }
         }
     }
@@ -171,30 +145,108 @@ $venda_valor = $venda_valor_total;
 $venda_rentabilidade = $venda_rentabilidade_total;
 $rentabilidade_projetada = $rentabilidade_projetada_total;
 $historico_aportes = $historico_aportes_consolidado;
-$historico_dividendos = $historico_dividendos_consolidado;
 
-// Calcular rentabilidade percentual
-$rentabilidade_pct = $valor_investido_total > 0 ? ($rentabilidade_projetada / $valor_investido_total) * 100 : 0;
+// ========== DADOS BÁSICOS DO INVESTIMENTO ==========
+$titulo = esc_html(get_the_title($inv_id));
+$localizacao = get_field('localizacao', $inv_id) ?: '';
+$lamina_tecnica = get_field('url_lamina_tecnica', $inv_id) ?: '';
+$link_produto = get_permalink($inv_id);
 
-// Dados específicos para dividendos
+// ========== VERIFICAÇÃO DE FUNÇÕES E DETECÇÃO DE TIPO ==========
+$is_private = false;
+$product_type_label = 'TRADE';
+$product_type_class = 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+
+if (function_exists('s_invest_is_private_scp')) {
+    $is_private = s_invest_is_private_scp($inv_id);
+}
+
+if (function_exists('s_invest_get_product_type_label')) {
+    $product_type_label = s_invest_get_product_type_label($inv_id);
+}
+
+if (function_exists('s_invest_get_product_type_class')) {
+    $product_type_class = s_invest_get_product_type_class($inv_id);
+}
+
+// ========== DADOS DO APORTE ==========
+$valor_compra = floatval(get_field('valor_compra', $aporte_id) ?: 0);
+$valor_atual = floatval(get_field('valor_atual', $aporte_id) ?: 0);
+
+// Histórico de aportes e cálculo do valor total investido
+$historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
+$valor_investido_total = 0;
+
+if (is_array($historico_aportes)) {
+    foreach ($historico_aportes as $item) {
+        $valor_investido_total += floatval($item['valor_aporte'] ?? 0);
+    }
+}
+
+// Se não há histórico, usar valor de compra como fallback
+if ($valor_investido_total == 0 && $valor_compra > 0) {
+    $valor_investido_total = $valor_compra;
+}
+
+// ========== RENTABILIDADE PROJETADA ==========
+$rentabilidade_projetada = 0;
+$rentabilidade_pct = 0;
+$rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id) ?: [];
+
+if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
+    $ultimo_valor = end($rentabilidade_hist);
+    if (isset($ultimo_valor['valor'])) {
+        $rentabilidade_projetada = floatval($ultimo_valor['valor']);
+    }
+}
+
+if ($valor_investido_total > 0) {
+    $rentabilidade_pct = ($rentabilidade_projetada / $valor_investido_total) * 100;
+}
+
+// ========== DADOS DO ASSESSOR ==========
+$whatsapp_assessor = get_field('whatsapp_assessor', $aporte_id) ?: '';
+$nome_assessor = get_field('nome_assessor', $aporte_id) ?: 'Assessor';
+$foto_assessor = get_field('foto_assessor', $aporte_id);
+$contrato = get_field('contrato_pdf', $aporte_id);
+
+// ========== DADOS DE VENDA ==========
+$venda_status = get_field('venda_status', $aporte_id);
+$venda_data = get_field('venda_data', $aporte_id) ?: '';
+$venda_valor = floatval(get_field('venda_valor', $aporte_id) ?: 0);
+$venda_rentabilidade = floatval(get_field('venda_rentabilidade', $aporte_id) ?: 0);
+$venda_observacoes = get_field('venda_observacoes', $aporte_id) ?: '';
+$venda_documento = get_field('venda_documento', $aporte_id);
+
+// ========== DADOS ESPECÍFICOS PARA PRODUTOS PRIVATE ==========
+$historico_dividendos = [];
+$total_dividendos_recebidos = 0;
 $ultimo_dividendo = null;
 $proximo_dividendo = null;
 
-if ($is_private && !empty($historico_dividendos)) {
-    foreach ($historico_dividendos as $dividendo) {
-        $data_dividendo = $dividendo['data_dividendo'] ?? $dividendo['data'] ?? '';
-        if ($data_dividendo && (!$ultimo_dividendo || 
-            strtotime($data_dividendo) > strtotime($ultimo_dividendo['data']))) {
-            $ultimo_dividendo = [
-                'valor' => floatval($dividendo['valor'] ?? 0),
-                'data' => $data_dividendo
-            ];
+if ($is_private) {
+    $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
+    
+    if (!empty($historico_dividendos) && is_array($historico_dividendos)) {
+        foreach ($historico_dividendos as $dividendo) {
+            $valor_dividendo = floatval($dividendo['valor'] ?? 0);
+            $total_dividendos_recebidos += $valor_dividendo;
+            
+            // Pegar último dividendo por data
+            $data_dividendo = $dividendo['data_dividendo'] ?? $dividendo['data'] ?? '';
+            if ($data_dividendo && (!$ultimo_dividendo || 
+                strtotime($data_dividendo) > strtotime($ultimo_dividendo['data']))) {
+                $ultimo_dividendo = [
+                    'valor' => $valor_dividendo,
+                    'data' => $data_dividendo
+                ];
+            }
         }
     }
     
-    // Próximo dividendo do primeiro aporte
-    $proximo_dividendo_data = get_field('proximo_dividendo_data', $aporte_principal->ID) ?: '';
-    $proximo_dividendo_valor = floatval(get_field('proximo_dividendo_valor', $aporte_principal->ID) ?: 0);
+    // Próximo dividendo programado
+    $proximo_dividendo_data = get_field('proximo_dividendo_data', $aporte_id) ?: '';
+    $proximo_dividendo_valor = floatval(get_field('proximo_dividendo_valor', $aporte_id) ?: 0);
     
     if ($proximo_dividendo_data) {
         $proximo_dividendo = [
@@ -203,12 +255,6 @@ if ($is_private && !empty($historico_dividendos)) {
         ];
     }
 }
-
-// ========== DADOS BÁSICOS DO INVESTIMENTO ==========
-$titulo = esc_html(get_the_title($inv_id));
-$localizacao = get_field('localizacao', $inv_id) ?: '';
-$lamina_tecnica = get_field('url_lamina_tecnica', $inv_id) ?: '';
-$link_produto = get_permalink($inv_id);
 
 // ========== LÓGICA DE VENDA PARA PRODUTOS TRADE ==========
 $pode_vender = false;
