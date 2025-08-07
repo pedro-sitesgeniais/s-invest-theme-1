@@ -610,127 +610,87 @@ $docs = get_field('documentos', $inv_id) ?: [];
 <?php if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist) && count($rentabilidade_hist) > 0) : ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Iniciando gráfico...', <?php echo json_encode($rentabilidade_hist); ?>);
-    
+    // Aguardar Chart.js estar disponível
     function initChart() {
-        const canvas = document.getElementById('investmentChart');
-        if (!canvas) {
-            console.error('Canvas não encontrado');
+        if (typeof Chart === 'undefined') {
+            setTimeout(initChart, 200);
             return;
         }
         
-        // Verificar se Chart.js está disponível
-        if (typeof Chart === 'undefined') {
-            console.log('Chart.js não disponível, tentando novamente...');
-            setTimeout(initChart, 500);
-            return;
-        }
+        const canvas = document.getElementById('investmentChart');
+        if (!canvas) return;
         
         const ctx = canvas.getContext('2d');
         const historico = <?php echo json_encode($rentabilidade_hist); ?>;
-        
-        console.log('Dados processados:', historico);
 
-        if (!historico || historico.length === 0) {
-            console.error('Dados do gráfico vazios');
-            return;
-        }
-        
-        try {
-            const chart = new Chart(ctx, {
-                type: 'line', // Mudei para line para melhor visualização
-                data: {
-                    labels: historico.map(item => item.data_rentabilidade || 'N/A'),
-                    datasets: [{
-                        label: 'Evolução do Investimento',
-                        data: historico.map(item => parseFloat(item.valor || 0)),
-                        backgroundColor: 'rgba(46, 210, 248, 0.1)',
-                        borderColor: '#2ED2F8',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.1,
-                        pointBackgroundColor: '#2ED2F8',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { 
-                            display: true,
-                            labels: { color: '#94A3B8' }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#ffffff',
-                            bodyColor: '#ffffff',
-                            callbacks: {
-                                label: function(context) {
-                                    return 'R$ ' + context.raw.toLocaleString('pt-BR', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    });
-                                }
-                            }
-                        }
+        if (historico && historico.length > 0) {
+            console.log('Dados do gráfico:', historico); // Debug
+            try {
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: historico.map(item => item.data_rentabilidade || item.mes || 'N/A'),
+                        datasets: [{
+                            label: 'Valor (R$)',
+                            data: historico.map(item => parseFloat(item.valor || 0)),
+                            backgroundColor: '#2ED2F8',
+                            borderWidth: 0,
+                            borderRadius: 4
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { 
-                                color: 'rgba(255,255,255,0.1)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: '#94A3B8',
-                                font: { size: window.innerWidth < 768 ? 10 : 12 },
-                                callback: function(value) {
-                                    return 'R$ ' + value.toLocaleString('pt-BR');
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#ffffff',
+                                bodyColor: '#ffffff',
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'R$ ' + context.raw.toLocaleString('pt-BR', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        });
+                                    }
                                 }
                             }
                         },
-                        x: {
-                            grid: { 
-                                color: 'rgba(255,255,255,0.05)',
-                                drawBorder: false 
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { 
+                                    color: 'rgba(255,255,255,0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#94A3B8',
+                                    font: { size: window.innerWidth < 768 ? 10 : 12 },
+                                    callback: function(value) {
+                                        return 'R$ ' + value.toLocaleString('pt-BR');
+                                    },
+                                    maxTicksLimit: 7
+                                }
                             },
-                            ticks: { 
-                                color: '#94A3B8',
-                                font: { size: window.innerWidth < 768 ? 10 : 12 }
+                            x: {
+                                grid: { display: false },
+                                ticks: { 
+                                    color: '#94A3B8',
+                                    font: { size: window.innerWidth < 768 ? 10 : 12 }
+                                }
                             }
                         }
                     }
-                }
-            });
-            
-            console.log('Gráfico criado com sucesso');
-        } catch (error) {
-            console.error('Erro ao criar gráfico:', error);
+                });
+            } catch (error) {
+                console.error('Erro ao criar gráfico:', error);
+            }
         }
     }
     
-    // Aguardar um pouco mais e tentar múltiplas vezes
-    let tentativas = 0;
-    const maxTentativas = 10;
-    
-    function tentarInicializar() {
-        if (tentativas >= maxTentativas) {
-            console.error('Falha ao carregar Chart.js após', maxTentativas, 'tentativas');
-            return;
-        }
-        
-        tentativas++;
-        setTimeout(initChart, tentativas * 200);
-    }
-    
-    tentarInicializar();
+    // Inicializar após um pequeno delay
+    setTimeout(initChart, 300);
 });
-</script>
-<?php else: ?>
-<script>
-console.log('Gráfico não renderizado - dados:', <?php echo json_encode($rentabilidade_hist ?? []); ?>);
 </script>
 <?php endif; ?>
