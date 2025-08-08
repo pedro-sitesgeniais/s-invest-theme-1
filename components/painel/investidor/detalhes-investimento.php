@@ -61,23 +61,6 @@ if (function_exists('s_invest_get_product_type_class')) {
 }
 
 // ===== PROCESSAR TODOS OS APORTES DO USUÁRIO =====
-$valor_investido_total = 0;
-$valor_atual_total = 0;
-$valor_compra_total = 0;
-$rentabilidade_projetada_total = 0;
-$venda_status_geral = false;
-$historico_aportes_consolidado = [];
-$historico_rentabilidade_consolidado = [];
-$historico_dividendos_consolidado = [];
-$total_dividendos_recebidos = 0;
-
-// Dados do primeiro aporte para campos não-financeiros
-$aporte_principal = $aporte_posts[0];
-$whatsapp_assessor = get_field('whatsapp_assessor', $aporte_principal->ID) ?: '';
-$nome_assessor = get_field('nome_assessor', $aporte_principal->ID) ?: 'Assessor';
-$foto_assessor = get_field('foto_assessor', $aporte_principal->ID);
-$contrato = get_field('contrato_pdf', $aporte_principal->ID);
-
 foreach ($aporte_posts as $aporte_post) {
     $aporte_id = $aporte_post->ID;
     $venda_status_item = get_field('venda_status', $aporte_id);
@@ -86,10 +69,6 @@ foreach ($aporte_posts as $aporte_post) {
         $venda_status_geral = true;
     }
     
-    // ✅ CORRIGIDO: Somar campo valor_compra individual de cada aporte
-    $valor_compra_item = floatval(get_field('valor_compra', $aporte_id) ?: 0);
-    $valor_compra_total += $valor_compra_item;
-    
     // Somar histórico de aportes (para valor investido)
     $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
     foreach ($historico_aportes as $item) {
@@ -97,9 +76,7 @@ foreach ($aporte_posts as $aporte_post) {
         $historico_aportes_consolidado[] = $item;
     }
     
-    // Somar valores atuais
-    $valor_atual_item = floatval(get_field('valor_atual', $aporte_id) ?: 0);
-    $valor_atual_total += $valor_atual_item;
+    // ✅ REMOVIDO: Não somar valor_atual (usar apenas do primeiro aporte)
     
     // Consolidar histórico de rentabilidade para o gráfico
     $rentabilidade_hist_item = get_field('rentabilidade_historico', $aporte_id) ?: [];
@@ -169,8 +146,8 @@ if ($venda_status_geral) {
 }
 
 // Atualizar variáveis para compatibilidade com o resto do código
-$valor_compra = $valor_investido_total;
-$valor_atual = $valor_atual_total;
+// $valor_compra = $valor_investido_total;
+// $valor_atual = $valor_atual_total;
 $venda_status = $venda_status_geral;
 $venda_valor = $venda_valor_total;
 $venda_rentabilidade = $venda_rentabilidade_total;
