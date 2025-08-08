@@ -194,25 +194,6 @@ if ($quantidade_cotas && !$cotas_vendidas) {
           <p class="mt-1 font-medium">R$ <?= number_format(get_field('aporte_minimo'),0,',','.') ?></p>
         </div>
 
-        <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Região do Projeto</p>
-          <p class="mt-1 space-x-1">
-            <?php
-            $moedas = (array) get_field('regiao_projeto');
-            if ( $moedas ) {
-              foreach ( $moedas as $m ) {
-                printf(
-                  '<span class="inline-block bg-secondary text-primary text-xs font-bold rounded px-2 py-1">%s</span>',
-                  esc_html($m)
-                );
-              }
-            } else {
-              echo '—';
-            }
-            ?>
-          </p>
-        </div>
-
         <!-- NOVOS CAMPOS ADICIONAIS -->
         <?php if ($quantidade_cotas) : ?>
         <div class="p-3 bg-slate-800 rounded">
