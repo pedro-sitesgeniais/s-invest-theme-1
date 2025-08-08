@@ -583,11 +583,6 @@ $ultimos = array_slice($ultimos, 0, 10);
             </p>
         </div>
             </div>
-            
-            <!-- Valor Total Investido em SCP -->
-            <p class="text-2xl font-bold text-gray-900 mb-3">
-                R$ <?php echo number_format($total_investido_scp, 0, ',', '.'); ?>
-            </p>
         </div>
     </div>
 
