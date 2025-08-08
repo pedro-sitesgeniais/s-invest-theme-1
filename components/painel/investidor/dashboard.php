@@ -582,8 +582,6 @@ $ultimos = array_slice($ultimos, 0, 10);
                 R$ <?php echo number_format($total_investido_scp, 0, ',', '.'); ?>
             </p>
         </div>
-            </div>
-        </div>
     </div>
 
     <!-- GRÁFICOS -->
