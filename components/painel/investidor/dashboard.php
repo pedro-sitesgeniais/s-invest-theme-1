@@ -588,26 +588,6 @@ $ultimos = array_slice($ultimos, 0, 10);
             <p class="text-2xl font-bold text-gray-900 mb-3">
                 R$ <?php echo number_format($total_investido_scp, 0, ',', '.'); ?>
             </p>
-            
-            <!-- Dividendos Recebidos -->
-            <div class="bg-emerald-50 p-3 rounded-lg">
-                <div class="flex justify-between items-center">
-                    <span class="text-emerald-600 text-sm font-medium">💰 Dividendos Recebidos</span>
-                    <div class="text-right">
-                        <span class="font-bold text-lg text-emerald-600">
-                            R$ <?php echo number_format($dividendos_recebidos, 0, ',', '.'); ?>
-                        </span>
-                        <?php if ($total_investido_scp > 0) : ?>
-                            <div class="text-xs text-emerald-500">
-                                <?php 
-                                $yield_percentual = ($dividendos_recebidos / $total_investido_scp) * 100;
-                                echo '+' . number_format($yield_percentual, 1, ',', '.'); 
-                                ?>% yield
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
