@@ -1,6 +1,6 @@
 <?php
 /**
- * Card de Investimento UNIFICADO - VERSÃO CORRIGIDA COM VALORES CORRETOS
+ * Card de Investimento UNIFICADO - VERSÃO CORRIGIDA COM STATUS MELHORADO
  * components/card-produto.php
  * 
  * Uso:
@@ -32,27 +32,56 @@ if (false === $cached_data) {
     $total_captado = floatval(get_field('total_captado', $id) ?: 0);
     $fim_captacao = get_field('fim_captacao', $id);
     $aporte_minimo = floatval(get_field('aporte_minimo', $id) ?: 0);
+    $regiao_projeto = get_field('regiao_projeto', $id);
     
     $terms = wp_get_post_terms($id, 'tipo_produto');
     $tipo_produto = !empty($terms) && !is_wp_error($terms) ? esc_html($terms[0]->name) : '';
     
-    // 🎯 AQUI É ONDE VAI O CÓDIGO! 
     $porcentagem = ($valor_total > 0) ? min(100, ($total_captado / $valor_total) * 100) : 0;
     
-    // NOVO SISTEMA: Usar status da captação automático
-    $status_captacao_info = function_exists('s_invest_get_status_captacao_info') 
-        ? s_invest_get_status_captacao_info($id) 
-        : ['status' => 'ativo', 'label' => 'Em Captação'];
+    // NOVA LÓGICA DE STATUS DA CAPTAÇÃO
+    $inicio_raw = get_field('data_inicio', $id);
+    $fim_raw = get_field('fim_captacao', $id);
+    $hoje = new DateTime();
     
-    $status_captacao = $status_captacao_info['status'];
-    $encerrado = !in_array($status_captacao, ['ativo']);
-    $disponivel_para_investir = $status_captacao === 'ativo';
-    if ($fim_captacao) {
-        $data_fim = DateTime::createFromFormat('Y-m-d', $fim_captacao) ?: DateTime::createFromFormat('d/m/Y', $fim_captacao);
-        if ($data_fim && $data_fim < new DateTime()) {
-            $status_captacao = 'encerrado';
-            $encerrado = true;
-        }
+    $inicio_date = false;
+    $fim_date = false;
+    
+    if ($inicio_raw) {
+        $inicio_date = DateTime::createFromFormat('Y-m-d', $inicio_raw)
+            ?: DateTime::createFromFormat('d/m/Y', $inicio_raw)
+            ?: false;
+    }
+    
+    if ($fim_raw) {
+        $fim_date = DateTime::createFromFormat('Y-m-d', $fim_raw)
+            ?: DateTime::createFromFormat('d/m/Y', $fim_raw)
+            ?: false;
+    }
+    
+    // Definir status da captação
+    $status_captacao = 'ativa'; // Padrão
+    $encerrado = false;
+    $disponivel_para_investir = true;
+    
+    if ($inicio_date && $hoje < $inicio_date) {
+        // Ainda não começou
+        $status_captacao = 'em_breve';
+        $disponivel_para_investir = false;
+    } elseif ($fim_date && $hoje > $fim_date) {
+        // Já encerrou por data
+        $status_captacao = 'encerrada';
+        $encerrado = true;
+        $disponivel_para_investir = false;
+    } elseif ($porcentagem >= 100) {
+        // Encerrou por meta atingida
+        $status_captacao = 'encerrada';
+        $encerrado = true;
+        $disponivel_para_investir = false;
+    } else {
+        // Ativa
+        $status_captacao = 'ativa';
+        $disponivel_para_investir = true;
     }
     
     $dados_pessoais = null;
@@ -70,121 +99,120 @@ if (false === $cached_data) {
         ]);
         
         if (!empty($aportes_usuario)) {
-    // ✅ CORRIGIDO: Somar TODOS os aportes do usuário neste investimento
-    $valor_investido_total = 0;
-    $valor_atual_total = 0;
-    $venda_status = false;
-    $aporte_representativo = $aportes_usuario[0]; // Para pegar outros dados não-financeiros
-    
-    // Processar cada aporte individualmente
-    foreach ($aportes_usuario as $aporte_item) {
-        $aporte_id = $aporte_item->ID;
-        $venda_status_item = get_field('venda_status', $aporte_id);
-        
-        // Se qualquer aporte foi vendido, considerar como vendido
-        if ($venda_status_item) {
-            $venda_status = true;
-        }
-        
-        // Somar histórico de aportes
-        $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
-        foreach ($historico_aportes as $item) {
-            $valor_investido_total += (float) ($item['valor_aporte'] ?? 0);
-        }
-        
-        // Somar valor atual
-        $valor_atual_item = (float) get_field('valor_atual', $aporte_id);
-        $valor_atual_total += $valor_atual_item;
-    }
-    
-    if ($venda_status) {
-        // ===== VENDIDO: Somar valores de todos os aportes vendidos =====
-        $valor_recebido_total = 0;
-        $rentabilidade_reais_total = 0;
-        $rentabilidade_pct_total = 0;
-        $data_venda = '';
-        
-        foreach ($aportes_usuario as $aporte_item) {
-            $aporte_id = $aporte_item->ID;
-            if (get_field('venda_status', $aporte_id)) {
-                $valor_recebido_total += (float) get_field('venda_valor', $aporte_id);
-                $rentabilidade_reais_total += (float) get_field('venda_rentabilidade_reais', $aporte_id);
-                
-                if (!$data_venda) {
-                    $data_venda = get_field('venda_data', $aporte_id);
-                }
-            }
-        }
-        
-        // Calcular rentabilidade percentual total
-        if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
-            $rentabilidade_pct_total = ($valor_recebido_total / $valor_investido_total) * 100;
-        }
-        
-        $dados_pessoais = [
-            'status' => 'vendido',
-            'valor_investido' => $valor_investido_total,
-            'valor_atual' => $valor_atual_total,
-            'valor_recebido' => $valor_recebido_total,
-            'rentabilidade_reais' => $rentabilidade_reais_total,
-            'rentabilidade_pct' => $rentabilidade_pct_total,
-            'data_venda' => $data_venda,
-            'lucro_realizado' => true
-        ];
-    } else {
-        // ===== ATIVO: Calcular rentabilidade projetada de todos os aportes =====
-        $rentabilidade_projetada_total = 0;
-        
-        foreach ($aportes_usuario as $aporte_item) {
-            $aporte_id = $aporte_item->ID;
-            $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id);
+            // Somar TODOS os aportes do usuário neste investimento
+            $valor_investido_total = 0;
+            $valor_atual_total = 0;
+            $venda_status = false;
+            $aporte_representativo = $aportes_usuario[0];
             
-            if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
-                $ultimo_valor = end($rentabilidade_hist);
-                if (isset($ultimo_valor['valor'])) {
-                    $rentabilidade_projetada_total += floatval($ultimo_valor['valor']);
+            // Processar cada aporte individualmente
+            foreach ($aportes_usuario as $aporte_item) {
+                $aporte_id = $aporte_item->ID;
+                $venda_status_item = get_field('venda_status', $aporte_id);
+                
+                if ($venda_status_item) {
+                    $venda_status = true;
                 }
-            } else {
-                // Se não há histórico, usar diferença valor atual - valor investido
+                
+                // Somar histórico de aportes
+                $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
+                foreach ($historico_aportes as $item) {
+                    $valor_investido_total += (float) ($item['valor_aporte'] ?? 0);
+                }
+                
+                // Somar valor atual
                 $valor_atual_item = (float) get_field('valor_atual', $aporte_id);
-                $historico_aportes_item = get_field('historico_aportes', $aporte_id) ?: [];
-                $valor_investido_item = 0;
+                $valor_atual_total += $valor_atual_item;
+            }
+            
+            if ($venda_status) {
+                // ===== VENDIDO: Somar valores de todos os aportes vendidos =====
+                $valor_recebido_total = 0;
+                $rentabilidade_reais_total = 0;
+                $rentabilidade_pct_total = 0;
+                $data_venda = '';
                 
-                foreach ($historico_aportes_item as $item) {
-                    $valor_investido_item += (float) ($item['valor_aporte'] ?? 0);
+                foreach ($aportes_usuario as $aporte_item) {
+                    $aporte_id = $aporte_item->ID;
+                    if (get_field('venda_status', $aporte_id)) {
+                        $valor_recebido_total += (float) get_field('venda_valor', $aporte_id);
+                        $rentabilidade_reais_total += (float) get_field('venda_rentabilidade_reais', $aporte_id);
+                        
+                        if (!$data_venda) {
+                            $data_venda = get_field('venda_data', $aporte_id);
+                        }
+                    }
                 }
                 
-                $diferenca = $valor_atual_item - $valor_investido_item;
-                if ($diferenca <= ($valor_investido_item * 10)) { // Filtro anti-erro
-                    $rentabilidade_projetada_total += $diferenca;
+                // Calcular rentabilidade percentual total
+                if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
+                    $rentabilidade_pct_total = ($valor_recebido_total / $valor_investido_total) * 100;
                 }
+                
+                $dados_pessoais = [
+                    'status' => 'vendido',
+                    'valor_investido' => $valor_investido_total,
+                    'valor_atual' => $valor_atual_total,
+                    'valor_recebido' => $valor_recebido_total,
+                    'rentabilidade_reais' => $rentabilidade_reais_total,
+                    'rentabilidade_pct' => $rentabilidade_pct_total,
+                    'data_venda' => $data_venda,
+                    'lucro_realizado' => true
+                ];
+            } else {
+                // ===== ATIVO: Calcular rentabilidade projetada de todos os aportes =====
+                $rentabilidade_projetada_total = 0;
+                
+                foreach ($aportes_usuario as $aporte_item) {
+                    $aporte_id = $aporte_item->ID;
+                    $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id);
+                    
+                    if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
+                        $ultimo_valor = end($rentabilidade_hist);
+                        if (isset($ultimo_valor['valor'])) {
+                            $rentabilidade_projetada_total += floatval($ultimo_valor['valor']);
+                        }
+                    } else {
+                        // Se não há histórico, usar diferença valor atual - valor investido
+                        $valor_atual_item = (float) get_field('valor_atual', $aporte_id);
+                        $historico_aportes_item = get_field('historico_aportes', $aporte_id) ?: [];
+                        $valor_investido_item = 0;
+                        
+                        foreach ($historico_aportes_item as $item) {
+                            $valor_investido_item += (float) ($item['valor_aporte'] ?? 0);
+                        }
+                        
+                        $diferenca = $valor_atual_item - $valor_investido_item;
+                        if ($diferenca <= ($valor_investido_item * 10)) { // Filtro anti-erro
+                            $rentabilidade_projetada_total += $diferenca;
+                        }
+                    }
+                }
+                
+                // Se valor_atual_total não foi calculado corretamente, ajustar
+                if ($valor_atual_total <= 0) {
+                    $valor_atual_total = $valor_investido_total + $rentabilidade_projetada_total;
+                }
+                
+                $rentabilidade_pct = $valor_investido_total > 0 ? 
+                    ($rentabilidade_projetada_total / $valor_investido_total) * 100 : 0;
+                
+                $dados_pessoais = [
+                    'status' => 'ativo',
+                    'valor_investido' => $valor_investido_total,
+                    'valor_atual' => $valor_atual_total,
+                    'rentabilidade_reais' => $rentabilidade_projetada_total,
+                    'rentabilidade_pct' => $rentabilidade_pct,
+                    'lucro_realizado' => false
+                ];
             }
         }
-        
-        // Se valor_atual_total não foi calculado corretamente, ajustar
-        if ($valor_atual_total <= 0) {
-            $valor_atual_total = $valor_investido_total + $rentabilidade_projetada_total;
-        }
-        
-        $rentabilidade_pct = $valor_investido_total > 0 ? 
-            ($rentabilidade_projetada_total / $valor_investido_total) * 100 : 0;
-        
-        $dados_pessoais = [
-            'status' => 'ativo',
-            'valor_investido' => $valor_investido_total,
-            'valor_atual' => $valor_atual_total,
-            'rentabilidade_reais' => $rentabilidade_projetada_total,
-            'rentabilidade_pct' => $rentabilidade_pct,
-            'lucro_realizado' => false
-        ];
-    }
-}
     }
     
     $cached_data = compact(
         'prazo', 'rentabilidade', 'risco', 'valor_total', 'total_captado',
         'tipo_produto', 'porcentagem', 'encerrado', 'status_captacao', 'aporte_minimo',
-        'dados_pessoais', 'status_captacao_info', 'disponivel_para_investir'
+        'dados_pessoais', 'disponivel_para_investir', 'regiao_projeto', 'inicio_date', 'fim_date'
     );
     
     wp_cache_set($cache_key, $cached_data, 'investment_cards', 15 * MINUTE_IN_SECONDS);
@@ -211,8 +239,8 @@ switch ($context) {
         
     case 'panel':
         $link = get_permalink($id);
-        $button_text = 'Saiba Mais';     // ✅ NOVO TEXTO
-        $button_icon = 'fa-info-circle'; // ✅ NOVO ÍCONE (OPCIONAL)
+        $button_text = 'Saiba Mais';
+        $button_icon = 'fa-info-circle';
         break;
         
     default:
@@ -245,15 +273,10 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
     aria-labelledby="investment-title-<?php echo esc_attr($id); ?>"
     data-investment-id="<?php echo esc_attr($id); ?>"
     data-context="<?php echo esc_attr($context); ?>">
+    
     <?php 
-        $regiao = get_field('regiao_projeto', $investment_id);
-        if ($regiao) : ?>
-        <div class="investment-region">
-            <i class="fas fa-map-marker-alt"></i>
-            <span><?php echo esc_html($regiao); ?></span>
-        </div>
-    <?php endif; ?>
-    <?php if ($dados_pessoais && $dados_pessoais['status'] === 'vendido') : ?>
+    // LÓGICA DE BADGES ATUALIZADA
+    if ($dados_pessoais && $dados_pessoais['status'] === 'vendido') : ?>
         <div class="absolute top-3 right-3 bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full z-10 shadow-lg">
             <i class="fas fa-hand-holding-usd mr-1"></i>
             Vendido
@@ -261,26 +284,55 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                 <div class="text-xs opacity-90 mt-1"><?php echo esc_html($dados_pessoais['data_venda']); ?></div>
             <?php endif; ?>
         </div>
-    <?php elseif ($encerrado && $context !== 'my-investments') : ?>
-        <div class="absolute top-3 right-3 bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full z-10 shadow-lg">
-            <i class="fas fa-times-circle mr-1"></i>
-            Encerrado
+    <?php elseif ($context !== 'my-investments') : ?>
+        <?php
+        // Determinar badge baseado no status
+        $badge_color = 'bg-green-600';
+        $badge_text = 'Aberto';
+        $badge_icon = 'fa-check-circle';
+        $animate_class = '';
+        
+        switch ($status_captacao) {
+            case 'em_breve':
+                $badge_color = 'bg-blue-600';
+                $badge_text = 'Em Breve';
+                $badge_icon = 'fa-clock';
+                $animate_class = 'animate-pulse';
+                break;
+                
+            case 'encerrada':
+                if ($porcentagem >= 100) {
+                    $badge_color = 'bg-purple-600';
+                    $badge_text = 'Esgotado';
+                    $badge_icon = 'fa-fire';
+                } else {
+                    $badge_color = 'bg-red-600';
+                    $badge_text = 'Encerrado';
+                    $badge_icon = 'fa-times-circle';
+                }
+                break;
+                
+            case 'ativa':
+            default:
+                if ($porcentagem > 90) {
+                    $badge_color = 'bg-orange-600';
+                    $badge_text = 'Últimas Vagas';
+                    $badge_icon = 'fa-fire';
+                    $animate_class = 'animate-pulse';
+                } else {
+                    $badge_color = 'bg-green-600';
+                    $badge_text = 'Aberto';
+                    $badge_icon = 'fa-check-circle';
+                }
+                break;
+        }
+        ?>
+        
+        <div class="absolute top-3 right-3 <?php echo $badge_color; ?> text-white text-xs font-semibold px-3 py-1.5 rounded-full z-10 shadow-lg <?php echo $animate_class; ?>">
+            <i class="fas <?php echo $badge_icon; ?> mr-1"></i>
+            <?php echo $badge_text; ?>
         </div>
-    <?php elseif ($porcentagem > 95 && $context !== 'my-investments') : ?>
-        <div class="absolute top-3 right-3 bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full z-10 shadow-lg animate-pulse">
-            <i class="fas fa-fire mr-1"></i>
-            Quase Esgotado
-        </div>
-    <?php elseif ($porcentagem > 80 && $context !== 'my-investments') : ?>
-        <div class="absolute top-3 right-3 bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full z-10 shadow-lg">
-            <i class="fas fa-trending-up mr-1"></i>
-            Alta Procura
-        </div>
-    <?php elseif ($porcentagem > 60 && $context !== 'my-investments') : ?>
-        <div class="absolute top-3 right-3 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full z-10 shadow-lg">
-            <i class="fas fa-chart-line mr-1"></i>
-            Em Captação
-    </div>
+        
     <?php elseif ($context === 'my-investments' && (!$dados_pessoais || $dados_pessoais['status'] === 'ativo')) : ?>
         <div class="absolute top-3 right-3 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full z-10 shadow-lg">
             <i class="fas fa-user-check mr-1"></i>
@@ -335,22 +387,19 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                     </span>
                 <?php endif; ?>
                 
+                <?php if ($regiao_projeto) : ?>
+                    <span class="bg-purple-50 text-purple-700 text-xs px-2 py-1 rounded-full">
+                        <i class="fas fa-map-marker-alt mr-1"></i>
+                        <?php echo esc_html($regiao_projeto); ?>
+                    </span>
+                <?php endif; ?>
+                
                 <?php 
                 $impostos = wp_get_post_terms($id, 'imposto');
                 if (!empty($impostos) && !is_wp_error($impostos)) :
                     foreach ($impostos as $imposto) : ?>
                         <span class="bg-yellow-50 text-yellow-700 text-xs font-medium px-2 py-1 rounded-full">
                             <?php echo esc_html($imposto->name); ?>
-                        </span>
-                    <?php endforeach;
-                endif; ?>
-                
-                <?php 
-                $modalidades = wp_get_post_terms($id, 'modalidade');
-                if (!empty($modalidades) && !is_wp_error($modalidades)) :
-                    foreach ($modalidades as $modalidade) : ?>
-                        <span class="bg-accent/20 text-primary text-xs font-medium px-2 py-1 rounded-full">
-                            <?php echo esc_html($modalidade->name); ?>
                         </span>
                     <?php endforeach;
                 endif; ?>
@@ -368,14 +417,10 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                     </div>
                     <div>
                         <span class="text-gray-600 block">
-                            <!-- CORREÇÃO: Sempre "Valor na Venda" para vendidos -->
                             <?php echo $dados_pessoais['status'] === 'vendido' ? 'Valor na Venda' : 'Valor Atual'; ?>
                         </span>
                         <span class="font-bold text-lg text-primary">
-                            R$ <?php 
-                                // CORREÇÃO: Para vendidos, mostrar valor_atual. Para ativos, mostrar valor_atual
-                                echo number_format($dados_pessoais['valor_atual'], 0, ',', '.');
-                            ?>
+                            R$ <?php echo number_format($dados_pessoais['valor_atual'], 0, ',', '.'); ?>
                         </span>
                     </div>
                 </div>
@@ -383,17 +428,14 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                 <div class="bg-gray-50 p-3 rounded-lg">
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600 text-sm">
-                            <!-- CORREÇÃO: Sempre "Rentabilidade Consolidada" para vendidos -->
                             <?php echo $dados_pessoais['status'] === 'vendido' ? 'Rentabilidade Consolidada' : 'Rentabilidade Projetada'; ?>
                         </span>
                         <div class="text-right">
                             <span class="font-bold text-lg text-green-600">
                                 <?php 
                                 if ($dados_pessoais['status'] === 'vendido') {
-                                    // CORREÇÃO: Para vendidos, mostrar valor_recebido (total recebido R$ 141.446)
                                     echo 'R$ ' . number_format($dados_pessoais['valor_recebido'], 0, ',', '.');
                                 } else {
-                                    // Para ativos, mostrar rentabilidade_reais com sinal
                                     echo ($dados_pessoais['rentabilidade_reais'] >= 0 ? '+' : '') . 'R$ ' . number_format(abs($dados_pessoais['rentabilidade_reais']), 0, ',', '.');
                                 }
                                 ?>
@@ -443,7 +485,17 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                      aria-valuenow="<?php echo esc_attr($porcentagem); ?>" 
                      aria-valuemin="0" 
                      aria-valuemax="100">
-                    <div class="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-700 ease-out" 
+                    <?php
+                    $progress_color = 'from-green-500 to-green-600';
+                    if ($status_captacao === 'em_breve') {
+                        $progress_color = 'from-blue-500 to-blue-600';
+                    } elseif ($status_captacao === 'encerrada') {
+                        $progress_color = 'from-red-500 to-red-600';
+                    } elseif ($porcentagem > 90) {
+                        $progress_color = 'from-orange-500 to-orange-600';
+                    }
+                    ?>
+                    <div class="h-full bg-gradient-to-r <?php echo $progress_color; ?> transition-all duration-700 ease-out" 
                          style="width: <?php echo esc_attr($porcentagem); ?>%"></div>
                 </div>
                 <div class="flex justify-between text-xs text-gray-500">
@@ -458,11 +510,17 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                 <button disabled 
                         class="w-full py-3 px-4 bg-gray-300 text-gray-600 rounded-lg cursor-not-allowed text-sm font-medium">
                     <i class="fas fa-lock mr-2"></i>
-                    Investimento Encerrado
+                    <?php echo $status_captacao === 'encerrada' && $porcentagem >= 100 ? 'Esgotado' : 'Encerrado'; ?>
+                </button>
+            <?php elseif (!$disponivel_para_investir && $context !== 'my-investments') : ?>
+                <button disabled 
+                        class="w-full py-3 px-4 bg-blue-300 text-blue-700 rounded-lg cursor-not-allowed text-sm font-medium">
+                    <i class="fas fa-clock mr-2"></i>
+                    Em Breve
                 </button>
             <?php else : ?>
                 <a href="<?php echo $link; ?>" 
-                   class="w-full block text-center py-3 px-4 <?php echo ($dados_pessoais && $dados_pessoais['status'] === 'vendido') ? 'bg-red-600 hover:bg-orange-600' : 'bg-gradient-to-r from-accent to-secondary hover:from-blue-700 hover:to-blue-800'; ?> text-white rounded-lg transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm font-medium shadow-lg hover:shadow-xl"
+                   class="w-full block text-center py-3 px-4 <?php echo ($dados_pessoais && $dados_pessoais['status'] === 'vendido') ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gradient-to-r from-accent to-secondary hover:from-blue-700 hover:to-blue-800'; ?> text-white rounded-lg transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm font-medium shadow-lg hover:shadow-xl"
                    <?php if ($context === 'panel') echo 'target="_self" rel="noopener"'; ?>>
                     <i class="fas <?php echo $button_icon; ?> mr-2"></i>
                     <?php echo $button_text; ?>
