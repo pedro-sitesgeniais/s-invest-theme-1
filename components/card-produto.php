@@ -456,7 +456,7 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
             <?php else : ?>
                 <a href="<?php echo $link; ?>" 
                    class="w-full block text-center py-3 px-4 <?php echo ($dados_pessoais && $dados_pessoais['status'] === 'vendido') ? 'bg-red-600 hover:bg-orange-600' : 'bg-gradient-to-r from-accent to-secondary hover:from-blue-700 hover:to-blue-800'; ?> text-white rounded-lg transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm font-medium shadow-lg hover:shadow-xl"
-                   <?php if ($context === 'panel') echo 'target="_blank" rel="noopener"'; ?>>
+                   <?php if ($context === 'panel') echo 'target="_self" rel="noopener"'; ?>>
                     <i class="fas <?php echo $button_icon; ?> mr-2"></i>
                     <?php echo $button_text; ?>
                 </a>
