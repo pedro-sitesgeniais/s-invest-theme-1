@@ -99,11 +99,14 @@ if (false === $cached_data) {
         ]);
         
         if (!empty($aportes_usuario)) {
+            // Dados do primeiro aporte (não somar valor_compra e valor_atual)
+            $aporte_principal = $aportes_usuario[0];
+            $valor_compra = (float) get_field('valor_compra', $aporte_principal->ID);
+            $valor_atual = (float) get_field('valor_atual', $aporte_principal->ID);
+            
             // Somar TODOS os aportes do usuário neste investimento
             $valor_investido_total = 0;
-            $valor_atual_total = 0;
             $venda_status = false;
-            $aporte_representativo = $aportes_usuario[0];
             
             // Processar cada aporte individualmente
             foreach ($aportes_usuario as $aporte_item) {
@@ -114,15 +117,11 @@ if (false === $cached_data) {
                     $venda_status = true;
                 }
                 
-                // Somar histórico de aportes
+                // Somar histórico de aportes (para valor investido)
                 $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
                 foreach ($historico_aportes as $item) {
                     $valor_investido_total += (float) ($item['valor_aporte'] ?? 0);
                 }
-                
-                // Somar valor atual
-                $valor_atual_item = (float) get_field('valor_atual', $aporte_id);
-                $valor_atual_total += $valor_atual_item;
             }
             
             if ($venda_status) {
@@ -160,50 +159,35 @@ if (false === $cached_data) {
                     'lucro_realizado' => true
                 ];
             } else {
-                // ===== ATIVO: Calcular rentabilidade projetada de todos os aportes =====
-                $rentabilidade_projetada_total = 0;
-                
-                foreach ($aportes_usuario as $aporte_item) {
-                    $aporte_id = $aporte_item->ID;
-                    $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id);
-                    
-                    if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
-                        $ultimo_valor = end($rentabilidade_hist);
-                        if (isset($ultimo_valor['valor'])) {
-                            $rentabilidade_projetada_total += floatval($ultimo_valor['valor']);
-                        }
-                    } else {
-                        // Se não há histórico, usar diferença valor atual - valor investido
-                        $valor_atual_item = (float) get_field('valor_atual', $aporte_id);
-                        $historico_aportes_item = get_field('historico_aportes', $aporte_id) ?: [];
-                        $valor_investido_item = 0;
-                        
-                        foreach ($historico_aportes_item as $item) {
-                            $valor_investido_item += (float) ($item['valor_aporte'] ?? 0);
-                        }
-                        
-                        $diferenca = $valor_atual_item - $valor_investido_item;
-                        if ($diferenca <= ($valor_investido_item * 10)) { // Filtro anti-erro
-                            $rentabilidade_projetada_total += $diferenca;
-                        }
-                    }
+        // ===== ATIVO: Calcular rentabilidade projetada =====
+        $rentabilidade_projetada_total = 0;
+        
+        foreach ($aportes_usuario as $aporte_item) {
+            $aporte_id = $aporte_item->ID;
+            $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id);
+            
+            if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
+                $ultimo_valor = end($rentabilidade_hist);
+                if (isset($ultimo_valor['valor'])) {
+                    $rentabilidade_projetada_total += floatval($ultimo_valor['valor']);
                 }
-                
-                // Se valor_atual_total não foi calculado corretamente, ajustar
-                if ($valor_atual_total <= 0) {
-                    $valor_atual_total = $valor_investido_total + $rentabilidade_projetada_total;
+            } else {
+                $diferenca = $valor_atual - $valor_investido_total;
+                if ($diferenca <= ($valor_investido_total * 10)) {
+                    $rentabilidade_projetada_total += $diferenca;
                 }
-                
-                $rentabilidade_pct = $valor_investido_total > 0 ? 
-                    ($rentabilidade_projetada_total / $valor_investido_total) * 100 : 0;
-                
-                $dados_pessoais = [
-                    'status' => 'ativo',
-                    'valor_investido' => $valor_investido_total,
-                    'valor_atual' => $valor_atual_total,
-                    'rentabilidade_reais' => $rentabilidade_projetada_total,
-                    'rentabilidade_pct' => $rentabilidade_pct,
-                    'lucro_realizado' => false
+            }
+        }
+        
+        $rentabilidade_pct = $valor_investido_total > 0 ? 
+            ($rentabilidade_projetada_total / $valor_investido_total) * 100 : 0;
+        $dados_pessoais = [
+            'status' => 'ativo',
+            'valor_investido' => $valor_investido_total,
+            'valor_atual' => $valor_atual, // ✅ Usar do primeiro aporte
+            'rentabilidade_reais' => $rentabilidade_projetada_total,
+            'rentabilidade_pct' => $rentabilidade_pct,
+            'lucro_realizado' => false
                 ];
             }
         }
