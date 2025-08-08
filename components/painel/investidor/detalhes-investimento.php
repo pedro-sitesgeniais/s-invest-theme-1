@@ -63,6 +63,7 @@ if (function_exists('s_invest_get_product_type_class')) {
 // ===== PROCESSAR TODOS OS APORTES DO USUÁRIO =====
 $valor_investido_total = 0;
 $valor_atual_total = 0;
+$valor_compra_total = 0;
 $rentabilidade_projetada_total = 0;
 $venda_status_geral = false;
 $historico_aportes_consolidado = [];
@@ -77,6 +78,9 @@ $nome_assessor = get_field('nome_assessor', $aporte_principal->ID) ?: 'Assessor'
 $foto_assessor = get_field('foto_assessor', $aporte_principal->ID);
 $contrato = get_field('contrato_pdf', $aporte_principal->ID);
 
+$valor_compra = floatval(get_field('valor_compra', $aporte_principal->ID) ?: 0);
+$valor_atual = floatval(get_field('valor_atual', $aporte_principal->ID) ?: 0);
+
 foreach ($aporte_posts as $aporte_post) {
     $aporte_id = $aporte_post->ID;
     $venda_status_item = get_field('venda_status', $aporte_id);
@@ -85,16 +89,12 @@ foreach ($aporte_posts as $aporte_post) {
         $venda_status_geral = true;
     }
     
-    // Somar histórico de aportes
+    // Somar histórico de aportes (para valor investido)
     $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
     foreach ($historico_aportes as $item) {
         $valor_investido_total += floatval($item['valor_aporte'] ?? 0);
         $historico_aportes_consolidado[] = $item;
     }
-    
-    // Somar valores atuais
-    $valor_atual_item = floatval(get_field('valor_atual', $aporte_id) ?: 0);
-    $valor_atual_total += $valor_atual_item;
     
     // Consolidar histórico de rentabilidade para o gráfico
     $rentabilidade_hist_item = get_field('rentabilidade_historico', $aporte_id) ?: [];
@@ -164,8 +164,8 @@ if ($venda_status_geral) {
 }
 
 // Atualizar variáveis para compatibilidade com o resto do código
-$valor_compra = $valor_investido_total;
-$valor_atual = $valor_atual_total;
+// $valor_compra = $valor_investido_total;
+// $valor_atual = $valor_atual_total;
 $venda_status = $venda_status_geral;
 $venda_valor = $venda_valor_total;
 $venda_rentabilidade = $venda_rentabilidade_total;

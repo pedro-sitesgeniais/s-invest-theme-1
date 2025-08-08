@@ -15,11 +15,6 @@ $impostos = get_terms([
     'taxonomy' => 'imposto',
     'hide_empty' => false,
 ]);
-
-$modalidades = get_terms([
-    'taxonomy' => 'modalidade',
-    'hide_empty' => false,
-]);
 ?>
 
 <!-- ABA LATERAL + MENU LATERAL - SÓ MOBILE -->
@@ -148,28 +143,6 @@ $modalidades = get_terms([
                 </div>
             </div>
 
-            <!-- Modalidade -->
-            <div class="filter-group">
-                <label class="block text-sm font-semibold text-gray-800 mb-3">
-                    <i class="fas fa-cogs mr-2 text-purple-600"></i>
-                    Modalidade
-                </label>
-                <select x-model="filtros.modalidade" 
-                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all">
-                    <option value="">Qualquer Modalidade</option>
-                    <?php foreach ($modalidades as $modalidade) : ?>
-                        <option value="<?php echo esc_attr($modalidade->slug); ?>">
-                            <?php echo esc_html($modalidade->name); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                <div x-show="filtros.modalidade !== ''" 
-                     class="mt-2 text-xs text-blue-600 font-medium flex items-center">
-                    <i class="fas fa-check mr-1"></i>
-                    Filtro aplicado
-                </div>
-            </div>
-
             <!-- Prazo -->
             <div class="filter-group">
                 <label class="block text-sm font-semibold text-gray-800 mb-3">
@@ -250,10 +223,6 @@ $modalidades = get_terms([
                         <span class="w-20 font-medium">Imposto:</span>
                         <span class="bg-green-100 px-2 py-1 rounded" x-text="filtros.imposto"></span>
                     </div>
-                    <div x-show="filtros.modalidade !== ''" class="flex items-center">
-                        <span class="w-20 font-medium">Modalidade:</span>
-                        <span class="bg-purple-100 px-2 py-1 rounded" x-text="filtros.modalidade"></span>
-                    </div>
                     <div x-show="filtros.prazo !== ''" class="flex items-center">
                         <span class="w-20 font-medium">Prazo:</span>
                         <span class="bg-orange-100 px-2 py-1 rounded" x-text="filtros.prazo + ' meses+'"></span>
@@ -309,7 +278,6 @@ document.addEventListener('alpine:init', () => {
         filtros: {
             tipo_produto: '',
             imposto: '',
-            modalidade: '',
             prazo: '',
             valor: '',
             ordem: 'DESC'
@@ -418,7 +386,6 @@ document.addEventListener('alpine:init', () => {
             this.filtros = {
                 tipo_produto: '',
                 imposto: '',
-                modalidade: '',
                 prazo: '',
                 valor: '',
                 ordem: 'DESC'

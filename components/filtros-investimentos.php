@@ -27,11 +27,6 @@ $impostos = get_terms([
     'hide_empty' => false,
 ]);
 
-$modalidades = get_terms([
-    'taxonomy' => 'modalidade',
-    'hide_empty' => false,
-]);
-
 // Classes CSS baseadas no contexto - ORIGINAL
 $container_class = ($context === 'public') 
     ? 'inline-flex flex-wrap items-center gap-6 p-6 rounded-xl bg-white/90 backdrop-blur-sm shadow-lg' 
@@ -68,20 +63,6 @@ $input_class = 'appearance-none bg-white border border-gray-300 rounded-2xl px-5
                 <?php foreach ($impostos as $imposto) : ?>
                     <option value="<?php echo esc_attr($imposto->slug); ?>">
                         <?php echo esc_html($imposto->name); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-
-        <!-- Modalidade -->
-        <div class="flex-shrink-0">
-            <select x-model="filtros.modalidade" 
-                    @change="aplicarFiltros()"
-                    class="<?php echo $input_class; ?>">
-                <option value="">Qualquer Modalidade</option>
-                <?php foreach ($modalidades as $modalidade) : ?>
-                    <option value="<?php echo esc_attr($modalidade->slug); ?>">
-                        <?php echo esc_html($modalidade->name); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -201,20 +182,6 @@ $input_class = 'appearance-none bg-white border border-gray-300 rounded-2xl px-5
                             <?php foreach ($impostos as $imposto) : ?>
                                 <option value="<?php echo esc_attr($imposto->slug); ?>">
                                     <?php echo esc_html($imposto->name); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <!-- Modalidade -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Modalidade</label>
-                        <select x-model="filtros.modalidade" 
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                            <option value="">Qualquer Modalidade</option>
-                            <?php foreach ($modalidades as $modalidade) : ?>
-                                <option value="<?php echo esc_attr($modalidade->slug); ?>">
-                                    <?php echo esc_html($modalidade->name); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>

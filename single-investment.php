@@ -21,46 +21,79 @@ $porcentagem   = $valor_total > 0
   ? min( 100, ( $total_captado / $valor_total ) * 100 )
   : 0;
 
-$fim_raw = get_field( 'fim_captacao' );
+// ========== NOVA LÓGICA DE STATUS E DATAS ==========
+$inicio_raw = get_field('data_inicio');
+$fim_raw = get_field('fim_captacao');
+$hoje = new DateTime();
+
+$inicio_date = false;
 $fim_date = false;
 
-if ( $fim_raw ) {
-  $fim_date = DateTime::createFromFormat('Y-m-d', $fim_raw)
-           ?: DateTime::createFromFormat('d/m/Y', $fim_raw)
-           ?: false;
-}
-
-$dias_restantes = '—';
-if ( $fim_date instanceof DateTime ) {
-  $hoje      = new DateTime();
-  $intervalo = $hoje->diff( $fim_date );
-  $dias_restantes = $intervalo->invert
-    ? 'Encerrado'
-    : "Faltam {$intervalo->days} dias";
-}
-
-$display_fim = $fim_date instanceof DateTime
-  ? date_i18n('d/m/Y', $fim_date->getTimestamp())
-  : '—';
-
-$inicio_raw = get_field('data_inicio');
-$inicio_date = false;
 if ($inicio_raw) {
     $inicio_date = DateTime::createFromFormat('Y-m-d', $inicio_raw)
         ?: DateTime::createFromFormat('d/m/Y', $inicio_raw)
         ?: false;
 }
+
+if ($fim_raw) {
+    $fim_date = DateTime::createFromFormat('Y-m-d', $fim_raw)
+        ?: DateTime::createFromFormat('d/m/Y', $fim_raw)
+        ?: false;
+}
+
+// Definir status da captação
+$status_captacao = 'ativa'; // Padrão
+$badge_class = 'bg-green-600';
+$badge_text = 'Aberto';
+$dias_restantes = '—';
+
+if ($inicio_date && $hoje < $inicio_date) {
+    // Ainda não começou
+    $status_captacao = 'em_breve';
+    $badge_class = 'bg-blue-600';
+    $badge_text = 'Em Breve';
+    
+    $intervalo = $hoje->diff($inicio_date);
+    $dias_restantes = "Faltam {$intervalo->days} dias para abertura";
+    
+} elseif ($fim_date && $hoje > $fim_date) {
+    // Já encerrou
+    $status_captacao = 'encerrada';
+    $badge_class = 'bg-red-600';
+    $badge_text = 'Encerrado';
+    $dias_restantes = 'Captação encerrada';
+    
+} elseif ($inicio_date && $fim_date && $hoje >= $inicio_date && $hoje <= $fim_date) {
+    // Está ativa
+    $status_captacao = 'ativa';
+    $badge_class = 'bg-green-600';
+    $badge_text = 'Aberto';
+    
+    $intervalo = $hoje->diff($fim_date);
+    $dias_restantes = $intervalo->invert 
+        ? 'Captação encerrada' 
+        : "Faltam {$intervalo->days} dias para encerramento";
+}
+
+// Se atingiu 100% da meta, também encerrar
+if ($porcentagem >= 100) {
+    $status_captacao = 'encerrada';
+    $badge_class = 'bg-red-600';
+    $badge_text = 'Encerrado';
+    $dias_restantes = 'Meta atingida';
+}
+
 $display_inicio = $inicio_date instanceof DateTime
     ? date_i18n('d/m/Y', $inicio_date->getTimestamp())
     : '—';
 
 $risco      = strtolower( get_field('risco') );
-$badge_map  = [
+$risco_badge_map  = [
   'baixo' => 'bg-green-600',
   'medio' => 'bg-yellow-600',
   'alto'  => 'bg-red-600',
 ];
-$badge_class = $badge_map[ $risco ] ?? 'bg-gray-600';
+$risco_badge_class = $risco_badge_map[ $risco ] ?? 'bg-gray-600';
 
 $lamina_url    = get_field('url_lamina_tecnica');
 $whatsapp_no   = get_field('whatsapp_contato') 
@@ -98,7 +131,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
       <div class="mt-6 flex flex-col space-y-4">
         <div class="flex flex-wrap gap-4">
           <?php if ( $lamina_url ) : ?>
-            <a
+            
               href="<?= esc_url( $lamina_url ); ?>"
               target="_blank" rel="noopener noreferrer"
               class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2
@@ -110,8 +143,6 @@ if ($quantidade_cotas && !$cotas_vendidas) {
             </a>
           <?php endif; ?>
         </div>
-
-        <!-- COMPARTILHAMENTO REMOVIDO CONFORME SOLICITAÇÃO -->
       </div>
     </div>
 
@@ -127,16 +158,32 @@ if ($quantidade_cotas && !$cotas_vendidas) {
           <?php endif; ?>
         </p>
         <h1 class="text-3xl font-bold"><?= get_the_title() ?></h1>
+        
+        <!-- BADGES DE STATUS -->
+        <div class="flex flex-wrap gap-2 items-center">
+          <span class="inline-block <?= $badge_class ?> text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase">
+            <i class="fas <?= $status_captacao === 'em_breve' ? 'fa-clock' : ($status_captacao === 'ativa' ? 'fa-check-circle' : 'fa-times-circle') ?> mr-1"></i>
+            <?= $badge_text ?>
+          </span>
+          
+          <?php if ( $risco ) : ?>
+            <span class="inline-block <?= $risco_badge_class ?> text-white text-xs font-bold px-3 py-1 rounded uppercase">
+              Risco <?= ucfirst($risco) ?>
+            </span>
+          <?php endif; ?>
+        </div>
       </header>
 
       <div class="space-y-4">
         <div class="flex justify-between items-center text-base">
           <span class="font-semibold"><?= number_format($porcentagem,1) ?>% Captados</span>
-          <span><?= esc_html($dias_restantes) ?></span>
+          <span class="text-sm <?= $status_captacao === 'em_breve' ? 'text-blue-300' : ($status_captacao === 'ativa' ? 'text-green-300' : 'text-red-300') ?>">
+            <?= esc_html($dias_restantes) ?>
+          </span>
         </div>
         
         <div class="w-full bg-gray-700 h-6 rounded-full overflow-hidden">
-          <div class="h-full bg-green-500 transition-all"
+          <div class="h-full <?= $status_captacao === 'em_breve' ? 'bg-blue-500' : ($status_captacao === 'ativa' ? 'bg-green-500' : 'bg-red-500') ?> transition-all"
                style="width: <?= $porcentagem ?>%;"
                role="progressbar"
                aria-valuenow="<?= $porcentagem ?>"
@@ -147,21 +194,17 @@ if ($quantidade_cotas && !$cotas_vendidas) {
         
         <div class="flex justify-between items-center text-sm text-gray-300">
           <span>
-            <strong class="text-green-400">R$ <?= number_format($total_captado, 0, ',', '.') ?></strong> captados
+            <strong class="<?= $status_captacao === 'em_breve' ? 'text-blue-400' : ($status_captacao === 'ativa' ? 'text-green-400' : 'text-red-400') ?>">
+              R$ <?= number_format($total_captado, 0, ',', '.') ?>
+            </strong> captados
           </span>
           <span>
             de <strong class="text-white">R$ <?= number_format($valor_total, 0, ',', '.') ?></strong>
           </span>
         </div>
-
-        <?php if ( $risco ) : ?>
-          <span class="inline-block <?= $badge_class ?> text-white text-xs font-bold px-3 py-1 rounded uppercase">
-            <?= ucfirst($risco) ?>
-          </span>
-        <?php endif; ?>
       </div>
 
-      <!-- GRID DE INFORMAÇÕES ATUALIZADO COM NOVOS CAMPOS -->
+      <!-- GRID DE INFORMAÇÕES ATUALIZADO -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base">
         <div class="p-3 bg-slate-800 rounded">
           <p class="text-xs text-gray-400">Rentabilidade Projetada</p>
@@ -172,51 +215,14 @@ if ($quantidade_cotas && !$cotas_vendidas) {
         </div>
 
         <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Prazo</p>
-          <?php 
-          $prazo = get_field('prazo_do_investimento');
-          $prazo_min = $prazo['prazo_min'] ?? null;
-          $prazo_max = $prazo['prazo_max'] ?? null;
-
-          if ($prazo_min && $prazo_max && $prazo_min != $prazo_max) {
-            $prazo_label = $prazo_min . ' a ' . $prazo_max . ' meses';
-          } elseif ($prazo_min) {
-            $prazo_label = $prazo_min . ' meses';
-          } else {
-            $prazo_label = '—';
-          }
-          ?>
-          <p class="mt-1 font-medium"><?= esc_html($prazo_label) ?></p>
-        </div>
-
-        <div class="p-3 bg-slate-800 rounded">
           <p class="text-xs text-gray-400">Aporte Mínimo</p>
           <p class="mt-1 font-medium">R$ <?= number_format(get_field('aporte_minimo'),0,',','.') ?></p>
-        </div>
-
-        <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Moeda Aceita</p>
-          <p class="mt-1 space-x-1">
-            <?php
-            $moedas = (array) get_field('moeda_aceita');
-            if ( $moedas ) {
-              foreach ( $moedas as $m ) {
-                printf(
-                  '<span class="inline-block bg-secondary text-primary text-xs font-bold rounded px-2 py-1">%s</span>',
-                  esc_html($m)
-                );
-              }
-            } else {
-              echo '—';
-            }
-            ?>
-          </p>
         </div>
 
         <!-- NOVOS CAMPOS ADICIONAIS -->
         <?php if ($quantidade_cotas) : ?>
         <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Quantidade de Cotas</p>
+          <p class="text-xs text-gray-400">Cotas</p>
           <p class="mt-1 font-medium">
             <?php if ($cotas_vendidas) : ?>
               <span class="text-secondary"><?= number_format($cotas_vendidas, 0, ',', '.') ?></span>
@@ -235,26 +241,21 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 
         <?php if ($regiao_projeto) : ?>
         <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Região do Projeto</p>
+          <p class="text-xs text-gray-400">Região</p>
           <p class="mt-1 font-medium"><?= esc_html($regiao_projeto) ?></p>
         </div>
         <?php endif; ?>
 
         <?php if ($data_lancamento) : ?>
         <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Data de Lançamento</p>
+          <p class="text-xs text-gray-400">Lançamento</p>
           <p class="mt-1 font-medium"><?= esc_html($data_lancamento) ?></p>
         </div>
         <?php endif; ?>
 
         <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Data de Início</p>
+          <p class="text-xs text-gray-400">Início da Captação</p>
           <p class="mt-1 font-medium"><?= esc_html($display_inicio) ?></p>
-        </div>
-
-        <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Fim da Captação</p>
-          <p class="mt-1 font-medium"><?= esc_html($display_fim) ?></p>
         </div>
 
         <?php 
@@ -266,21 +267,6 @@ if ($quantidade_cotas && !$cotas_vendidas) {
             <?php foreach ($impostos as $imposto) : ?>
               <span class="inline-block bg-yellow-500/20 text-yellow-400 text-xs font-bold rounded px-2 py-1">
                 <?= esc_html($imposto->name) ?>
-              </span>
-            <?php endforeach; ?>
-          </p>
-        </div>
-        <?php endif; ?>
-
-        <?php 
-        $modalidades = wp_get_post_terms(get_the_ID(), 'modalidade');
-        if (!empty($modalidades) && !is_wp_error($modalidades)) : ?>
-        <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Modalidade</p>
-          <p class="mt-1 space-x-1">
-            <?php foreach ($modalidades as $modalidade) : ?>
-              <span class="inline-block bg-accent/20 text-secondary text-xs font-bold rounded px-2 py-1">
-                <?= esc_html($modalidade->name) ?>
               </span>
             <?php endforeach; ?>
           </p>
@@ -302,11 +288,11 @@ if ($quantidade_cotas && !$cotas_vendidas) {
           }
           ?>
         </div>
-
       </div>
     </div>
   </section>
 
+  <!-- RESTO DO CÓDIGO PERMANECE IGUAL (seção de tabs) -->
   <section class="bg-gray-100 text-primary py-10" x-data="investmentTabs()">
     <div class="max-w-[1440px] mx-auto px-4">
       <?php

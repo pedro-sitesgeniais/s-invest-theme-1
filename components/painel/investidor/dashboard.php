@@ -23,26 +23,25 @@ $total_atual = max(0, $estatisticas['valor_atual_total']);
 $aportes_ativos = max(0, $estatisticas['aportes_ativos']);
 $aportes_vendidos = max(0, $estatisticas['aportes_vendidos']);
 
-// ===== CORREÇÃO 1: RENTABILIDADE PROJETADA = ÚLTIMO VALOR DO HISTÓRICO =====
+// RENTABILIDADE PROJETADA = Último valor do histórico (aportes Trade ativos)
 $rentabilidade_projetada = max(0, $estatisticas['rentabilidade_projetada']);
 
-// ===== CORREÇÃO 2: RENTABILIDADE CONSOLIDADA = VALOR TOTAL RECEBIDO DAS VENDAS =====
+// RENTABILIDADE CONSOLIDADA = Total de vendas realizadas + dividendos recebidos
 $vendas = $estatisticas['vendas'];
 $total_investido_vendido = max(0, $vendas['total_compra']);      
 $total_recebido_vendas = max(0, $vendas['total_venda']);         
-$rentabilidade_consolidada = max(0, $vendas['total_rentabilidade']); // AGORA É O VALOR RECEBIDO
+$rentabilidade_vendas = max(0, $vendas['total_rentabilidade']);
 
 $total_investido_geral = $total_investido_ativo + $total_investido_vendido;
 
-// ========== INICIALIZAR ARRAYS COM O 3º DATASET ==========
+// Arrays para dados do gráfico
 $distribuicao = [];
 $ultimos = [];
-$movimentos_completos = []; // NOVO: Array para todos os movimentos
+$movimentos_completos = [];
 
-// Arrays para organizar dados do gráfico por mês/ano - AGORA COM 3 DATASETS
 $investidoPorMesAno = [];
 $rentabilidadePorMesAno = [];
-$rentabilidadeConsolidadaPorMesAno = []; // ← NOVO DATASET
+$rentabilidadeConsolidadaPorMesAno = [];
 
 $mesesTraducao = [
     'Jan' => 'Jan', 'Feb' => 'Fev', 'Mar' => 'Mar', 'Apr' => 'Abr',
@@ -61,66 +60,58 @@ $args_aportes = [
 
 $aportes = get_posts($args_aportes);
 
-// ===== CÁLCULO DOS APORTES SCP (PRIVATE) CONCLUÍDOS =====
+// ===== CÁLCULO DOS SCPs ATIVOS (dentro do prazo, não vendidos) =====
 $total_investido_scp = 0;
-$dividendos_recebidos = 0;
+$dividendos_recebidos_total = 0;
 $quantidade_scp = 0;
 
-// Buscar aportes do usuário e verificar quais são SCP/Private
 foreach ($aportes as $aporte) {
     $aporte_id = $aporte->ID;
     $investment_id = get_field('investment_id', $aporte_id);
+    $venda_status = get_field('venda_status', $aporte_id);
     
-    if ($investment_id) {
-        // Verificar se é SCP/Private por taxonomia
-        $terms = wp_get_post_terms($investment_id, 'tipo_produto');
-        $eh_scp = false;
+    // Só processar aportes não vendidos
+    if ($investment_id && !$venda_status) {
+        // Verificar se é SCP/Private por função helper
+        $eh_scp = function_exists('s_invest_is_private_scp') ? s_invest_is_private_scp($investment_id) : false;
         
-        foreach ($terms as $term) {
-            // Detectar SCP/Private por nome da categoria
-            if (stripos($term->name, 'scp') !== false || 
-                stripos($term->name, 'private') !== false ||
-                stripos($term->name, 'capital semente') !== false ||
-                stripos($term->slug, 'scp') !== false ||
-                stripos($term->slug, 'private') !== false) {
-                $eh_scp = true;
-                break;
+        // Se não existe a função, verificar por taxonomia
+        if (!$eh_scp) {
+            $terms = wp_get_post_terms($investment_id, 'tipo_produto');
+            foreach ($terms as $term) {
+                if (stripos($term->name, 'scp') !== false || 
+                    stripos($term->name, 'private') !== false ||
+                    stripos($term->slug, 'scp') !== false ||
+                    stripos($term->slug, 'private') !== false) {
+                    $eh_scp = true;
+                    break;
+                }
             }
         }
         
-        // Se é SCP/Private e a captação foi encerrada (produto concluído)
-        $status_captacao = function_exists('s_invest_calcular_status_captacao') 
-            ? s_invest_calcular_status_captacao($investment_id)
-            : '';
-            
-        if ($eh_scp && in_array($status_captacao, ['encerrado_meta', 'encerrado'])) {
+        // SCP ativo (não vendido e dentro do prazo de captação/operação)
+        if ($eh_scp) {
             $quantidade_scp++;
             
-            // Somar valor total investido pelo usuário neste SCP
+            // Somar valor investido neste SCP
             $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
             foreach ($historico_aportes as $item) {
                 $total_investido_scp += floatval($item['valor_aporte'] ?? 0);
             }
             
-            // Somar dividendos já recebidos
+            // Somar dividendos recebidos deste SCP
             $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
             foreach ($historico_dividendos as $dividendo) {
-                $dividendos_recebidos += floatval($dividendo['valor'] ?? 0);
-            }
-            
-            // ALTERNATIVA: Se não há campo historico_dividendos ainda,
-            // pode usar a rentabilidade consolidada como proxy temporário
-            if (empty($historico_dividendos)) {
-                $rentabilidade_consolidada_temp = get_field('rentabilidade_consolidada', $aporte_id);
-                if ($rentabilidade_consolidada_temp) {
-                    $dividendos_recebidos += floatval($rentabilidade_consolidada_temp);
-                }
+                $dividendos_recebidos_total += floatval($dividendo['valor'] ?? 0);
             }
         }
     }
 }
 
-// ========== PROCESSAR TODOS OS APORTES COM 3 DATASETS ==========
+// RENTABILIDADE CONSOLIDADA = Vendas realizadas + Dividendos recebidos
+$rentabilidade_consolidada = $rentabilidade_vendas + $dividendos_recebidos_total;
+
+// ========== PROCESSAR TODOS OS APORTES PARA GRÁFICOS ==========
 if (!empty($aportes)) {
     foreach ($aportes as $aporte) {
         $aporte_id = $aporte->ID;
@@ -128,7 +119,7 @@ if (!empty($aportes)) {
         $venda_status = get_field('venda_status', $aporte_id);
         $nome_investimento = $investment_id ? get_the_title($investment_id) : 'Investimento não identificado';
         
-        // ========== PROCESSAR HISTÓRICO DE APORTES (DATASET 1: VALOR INVESTIDO) ==========
+        // PROCESSAR HISTÓRICO DE APORTES
         $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
         $total_aporte_investido = 0;
         
@@ -148,7 +139,6 @@ if (!empty($aportes)) {
                     $mesAno = $mes . ' ' . $ano;
                     
                     if ($mes) {
-                        // DATASET 1: Agrupar valor investido por mês/ano
                         if (!isset($investidoPorMesAno[$mesAno])) {
                             $investidoPorMesAno[$mesAno] = 0;
                         }
@@ -156,7 +146,7 @@ if (!empty($aportes)) {
                     }
                 }
                 
-                // Para a tabela de últimos movimentos (COMPATIBILIDADE)
+                // Para a tabela de movimentos
                 $status_movimento = $venda_status ? ' (Vendido)' : '';
                 $ultimos[] = [
                     'data' => $data_aporte,
@@ -165,7 +155,6 @@ if (!empty($aportes)) {
                     'vendido' => $venda_status ? true : false
                 ];
                 
-                // NOVO: Para o extrato completo
                 $movimentos_completos[] = [
                     'id' => "aporte_{$aporte_id}_{$index}",
                     'data' => $data_aporte,
@@ -180,7 +169,7 @@ if (!empty($aportes)) {
             }
         }
         
-        // ========== PROCESSAR HISTÓRICO DE DIVIDENDOS (DATASET 3: RENTABILIDADE CONSOLIDADA) ==========
+        // PROCESSAR DIVIDENDOS
         $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
         
         foreach ($historico_dividendos as $index => $dividendo) {
@@ -197,7 +186,6 @@ if (!empty($aportes)) {
                     $mesAno = $mes . ' ' . $ano;
                     
                     if ($mes) {
-                        // DATASET 3: Agrupar dividendos por mês/ano
                         if (!isset($rentabilidadeConsolidadaPorMesAno[$mesAno])) {
                             $rentabilidadeConsolidadaPorMesAno[$mesAno] = 0;
                         }
@@ -219,7 +207,7 @@ if (!empty($aportes)) {
             }
         }
         
-        // ========== PROCESSAR VENDAS (DATASET 3: RENTABILIDADE CONSOLIDADA) ==========
+        // PROCESSAR VENDAS
         if ($venda_status) {
             $valor_recebido_venda = (float) get_field('venda_valor', $aporte_id);
             $data_venda = get_field('venda_data', $aporte_id);
@@ -233,7 +221,6 @@ if (!empty($aportes)) {
                     $mesAno = $mes . ' ' . $ano;
                     
                     if ($mes) {
-                        // DATASET 3: Agrupar vendas por mês/ano
                         if (!isset($rentabilidadeConsolidadaPorMesAno[$mesAno])) {
                             $rentabilidadeConsolidadaPorMesAno[$mesAno] = 0;
                         }
@@ -243,29 +230,53 @@ if (!empty($aportes)) {
             }
         }
         
-        // ========== PROCESSAR HISTÓRICO DE RENTABILIDADE (DATASET 2: APENAS APORTES ATIVOS) ==========
-        if (!$venda_status) { // Só processar rentabilidade de aportes ativos
-            $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id) ?: [];
+        // PROCESSAR HISTÓRICO DE RENTABILIDADE (apenas aportes Trade ativos)
+        if (!$venda_status) {
+            $eh_trade = true;
             
-            foreach ($rentabilidade_hist as $item) {
-                if (isset($item['data_rentabilidade']) && isset($item['valor'])) {
-                    $data_rentabilidade = $item['data_rentabilidade'];
-                    $valor_rentabilidade = (float) $item['valor'];
-                    
-                    if (!empty($data_rentabilidade) && $valor_rentabilidade > 0) {
-                        $data = DateTime::createFromFormat('d/m/Y', $data_rentabilidade);
-                        if ($data) {
-                            $mesIngles = $data->format('M');
-                            $ano = $data->format('Y');
-                            $mes = $mesesTraducao[$mesIngles] ?? '';
-                            $mesAno = $mes . ' ' . $ano;
-                            
-                            if ($mes) {
-                                // DATASET 2: Agrupar rentabilidade projetada por mês/ano
-                                if (!isset($rentabilidadePorMesAno[$mesAno])) {
-                                    $rentabilidadePorMesAno[$mesAno] = 0;
+            // Verificar se é SCP para excluir da rentabilidade projetada
+            if ($investment_id) {
+                $eh_scp = function_exists('s_invest_is_private_scp') ? s_invest_is_private_scp($investment_id) : false;
+                
+                if (!$eh_scp) {
+                    $terms = wp_get_post_terms($investment_id, 'tipo_produto');
+                    foreach ($terms as $term) {
+                        if (stripos($term->name, 'scp') !== false || 
+                            stripos($term->name, 'private') !== false ||
+                            stripos($term->slug, 'scp') !== false ||
+                            stripos($term->slug, 'private') !== false) {
+                            $eh_scp = true;
+                            break;
+                        }
+                    }
+                }
+                
+                $eh_trade = !$eh_scp;
+            }
+            
+            // Só processar rentabilidade de produtos Trade ativos
+            if ($eh_trade) {
+                $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id) ?: [];
+                
+                foreach ($rentabilidade_hist as $item) {
+                    if (isset($item['data_rentabilidade']) && isset($item['valor'])) {
+                        $data_rentabilidade = $item['data_rentabilidade'];
+                        $valor_rentabilidade = (float) $item['valor'];
+                        
+                        if (!empty($data_rentabilidade) && $valor_rentabilidade > 0) {
+                            $data = DateTime::createFromFormat('d/m/Y', $data_rentabilidade);
+                            if ($data) {
+                                $mesIngles = $data->format('M');
+                                $ano = $data->format('Y');
+                                $mes = $mesesTraducao[$mesIngles] ?? '';
+                                $mesAno = $mes . ' ' . $ano;
+                                
+                                if ($mes) {
+                                    if (!isset($rentabilidadePorMesAno[$mesAno])) {
+                                        $rentabilidadePorMesAno[$mesAno] = 0;
+                                    }
+                                    $rentabilidadePorMesAno[$mesAno] += $valor_rentabilidade;
                                 }
-                                $rentabilidadePorMesAno[$mesAno] += $valor_rentabilidade;
                             }
                         }
                     }
@@ -273,7 +284,7 @@ if (!empty($aportes)) {
             }
         }
         
-        // ========== DISTRIBUIÇÃO POR CATEGORIA (APENAS APORTES ATIVOS) ==========
+        // DISTRIBUIÇÃO POR CATEGORIA (apenas aportes ativos)
         if ($investment_id && $total_aporte_investido > 0 && !$venda_status) {
             $terms = wp_get_post_terms($investment_id, 'tipo_produto');
             
@@ -294,17 +305,14 @@ if (!empty($aportes)) {
     }
 }
 
-// ========== ORGANIZAR DADOS DO GRÁFICO CRONOLOGICAMENTE (AGORA COM 3 DATASETS) ==========
-// Combinar todos os meses/anos que têm dados
+// ========== ORGANIZAR DADOS DO GRÁFICO CRONOLOGICAMENTE ==========
 $todosMesesAno = array_unique(array_merge(
     array_keys($investidoPorMesAno),
     array_keys($rentabilidadePorMesAno),
-    array_keys($rentabilidadeConsolidadaPorMesAno) // ← INCLUIR O 3º DATASET
+    array_keys($rentabilidadeConsolidadaPorMesAno)
 ));
 
-// Ordenar cronologicamente
 usort($todosMesesAno, function($a, $b) {
-    // Extrair mês e ano
     $partes_a = explode(' ', $a);
     $partes_b = explode(' ', $b);
     
@@ -317,7 +325,6 @@ usort($todosMesesAno, function($a, $b) {
         return $ano_a - $ano_b;
     }
     
-    // Ordem dos meses
     $ordemMeses = ['Jan' => 1, 'Fev' => 2, 'Mar' => 3, 'Abr' => 4, 'Mai' => 5, 'Jun' => 6,
                    'Jul' => 7, 'Ago' => 8, 'Set' => 9, 'Out' => 10, 'Nov' => 11, 'Dez' => 12];
     
@@ -327,29 +334,25 @@ usort($todosMesesAno, function($a, $b) {
     return $mes_a - $mes_b;
 });
 
-// Preparar arrays finais para o gráfico COM 3 DATASETS
 $chartLabels = [];
 $chartInvestido = [];
 $chartRentabilidade = [];
-$chartRentabilidadeConsolidada = []; // ← NOVO DATASET
+$chartRentabilidadeConsolidada = [];
 
 foreach ($todosMesesAno as $mesAno) {
     $chartLabels[] = $mesAno;
     $chartInvestido[] = $investidoPorMesAno[$mesAno] ?? 0;
     $chartRentabilidade[] = $rentabilidadePorMesAno[$mesAno] ?? 0;
-    $chartRentabilidadeConsolidada[] = $rentabilidadeConsolidadaPorMesAno[$mesAno] ?? 0; // ← NOVO
+    $chartRentabilidadeConsolidada[] = $rentabilidadeConsolidadaPorMesAno[$mesAno] ?? 0;
 }
 
-// ========== ORDENAR MOVIMENTOS COMPLETOS ==========
-// Ordenar por timestamp (mais recente primeiro)
+// ========== ORDENAR MOVIMENTOS ==========
 usort($movimentos_completos, function ($a, $b) {
     return $b['timestamp'] - $a['timestamp'];
 });
 
-// Limitar para os últimos 100 movimentos para performance
 $movimentos_completos = array_slice($movimentos_completos, 0, 100);
 
-// Ordenar últimos movimentos (compatibilidade)
 usort($ultimos, function ($a, $b) {
     $dataA = DateTime::createFromFormat('d/m/Y', $a['data']);
     $dataB = DateTime::createFromFormat('d/m/Y', $b['data']);
@@ -431,7 +434,7 @@ $ultimos = array_slice($ultimos, 0, 10);
                         class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap"
                         style="display: none;"
                     >
-                        Soma do histórico de aportes dos seus investimentos ativos.
+                        Soma dos aportes que ainda não foram vendidos ou estão em captação.
                         <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
                     </div>
                 </div>
@@ -442,14 +445,14 @@ $ultimos = array_slice($ultimos, 0, 10);
             </p>
         </div>
 
-        <!-- Card 2: Rentabilidade Projetada -->
+        <!-- Card 2: Rentabilidade Projetada (Trade) -->
         <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                     <i class="fa-solid fa-money-bill-trend-up text-xl text-purple-600"></i>
                 </div>
                 <span class="text-xs font-medium px-2 py-1 <?php echo $rentabilidade_projetada >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'; ?> rounded-full">
-                    <?php echo $rentabilidade_projetada >= 0 ? 'Lucro' : 'Prejuízo'; ?>
+                    Trade
                 </span>
             </div>
             
@@ -477,7 +480,7 @@ $ultimos = array_slice($ultimos, 0, 10);
                         class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap"
                         style="display: none;"
                     >
-                        Último valor do histórico de rentabilidade dos seus aportes ativos.
+                        Valorizações dos produtos Trade ativos.
                         <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
                     </div>
                 </div>
@@ -495,7 +498,7 @@ $ultimos = array_slice($ultimos, 0, 10);
                     <i class="fas fa-hand-holding-usd text-xl text-orange-600"></i>
                 </div>
                 <span class="text-xs font-medium px-2 py-1 bg-orange-50 text-orange-600 rounded-full">
-                    <?php echo $aportes_vendidos; ?> vendido<?php echo $aportes_vendidos != 1 ? 's' : ''; ?>
+                    Realizada
                 </span>
             </div>
             
@@ -523,7 +526,7 @@ $ultimos = array_slice($ultimos, 0, 10);
                         class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap"
                         style="display: none;"
                     >
-                        Rentabilidade realizada em vendas já concretizadas e dividendos recebidos.
+                        Rentabilidade dos Trade vendidos + dividendos recebidos.
                         <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
                     </div>
                 </div>
@@ -534,7 +537,7 @@ $ultimos = array_slice($ultimos, 0, 10);
             </p>
         </div>
 
-        <!-- Card 4: SCP Concluídos -->
+        <!-- Card 4: SCP Ativos -->
         <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
@@ -546,7 +549,7 @@ $ultimos = array_slice($ultimos, 0, 10);
             </div>
             
             <div class="flex items-center gap-2 mb-1">
-                <h3 class="text-sm font-medium text-gray-600">SCP Concluídos</h3>
+                <h3 class="text-sm font-medium text-gray-600">SCP Ativos</h3>
                 
                 <div class="relative" x-data="{ showTooltip: false }">
                     <button 
@@ -569,36 +572,15 @@ $ultimos = array_slice($ultimos, 0, 10);
                         class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap"
                         style="display: none;"
                     >
-                        Produtos Private/SCP finalizados que geram dividendos.
+                        Produtos Private/SCP ativos ainda dentro do prazo.
                         <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
                     </div>
                 </div>
             </div>
             
-            <!-- Valor Total Investido em SCP -->
-            <p class="text-2xl font-bold text-gray-900 mb-3">
+            <p class="text-2xl font-bold text-gray-900">
                 R$ <?php echo number_format($total_investido_scp, 0, ',', '.'); ?>
             </p>
-            
-            <!-- Dividendos Recebidos -->
-            <div class="bg-emerald-50 p-3 rounded-lg">
-                <div class="flex justify-between items-center">
-                    <span class="text-emerald-600 text-sm font-medium">💰 Dividendos Recebidos</span>
-                    <div class="text-right">
-                        <span class="font-bold text-lg text-emerald-600">
-                            R$ <?php echo number_format($dividendos_recebidos, 0, ',', '.'); ?>
-                        </span>
-                        <?php if ($total_investido_scp > 0) : ?>
-                            <div class="text-xs text-emerald-500">
-                                <?php 
-                                $yield_percentual = ($dividendos_recebidos / $total_investido_scp) * 100;
-                                echo '+' . number_format($yield_percentual, 1, ',', '.'); 
-                                ?>% yield
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
