@@ -164,8 +164,8 @@ if ($venda_status_geral) {
 }
 
 // Atualizar variáveis para compatibilidade com o resto do código
-$valor_compra = $valor_investido_total;
-$valor_atual = $valor_atual_total;
+// $valor_compra = $valor_investido_total;
+// $valor_atual = $valor_atual_total;
 $venda_status = $venda_status_geral;
 $venda_valor = $venda_valor_total;
 $venda_rentabilidade = $venda_rentabilidade_total;
