@@ -63,6 +63,7 @@ if (function_exists('s_invest_get_product_type_class')) {
 // ===== PROCESSAR TODOS OS APORTES DO USUÁRIO =====
 $valor_investido_total = 0;
 $valor_atual_total = 0;
+$valor_compra_total = 0;
 $rentabilidade_projetada_total = 0;
 $venda_status_geral = false;
 $historico_aportes_consolidado = [];
@@ -85,7 +86,11 @@ foreach ($aporte_posts as $aporte_post) {
         $venda_status_geral = true;
     }
     
-    // Somar histórico de aportes
+    // ✅ CORRIGIDO: Somar campo valor_compra individual de cada aporte
+    $valor_compra_item = floatval(get_field('valor_compra', $aporte_id) ?: 0);
+    $valor_compra_total += $valor_compra_item;
+    
+    // Somar histórico de aportes (para valor investido)
     $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
     foreach ($historico_aportes as $item) {
         $valor_investido_total += floatval($item['valor_aporte'] ?? 0);
