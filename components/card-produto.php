@@ -407,47 +407,109 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
         </div>
 
         <?php if ($context === 'my-investments' && $dados_pessoais) : ?>
-            <div class="space-y-3">
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <span class="text-gray-600 block">Valor Investido</span>
-                        <span class="font-bold text-lg text-blue-600">
-                            R$ <?php echo number_format($dados_pessoais['valor_investido'], 0, ',', '.'); ?>
-                        </span>
-                    </div>
-                    <div>
-                        <span class="text-gray-600 block">
-                            <?php echo $dados_pessoais['status'] === 'vendido' ? 'Valor na Venda' : 'Valor Atual'; ?>
-                        </span>
-                        <span class="font-bold text-lg text-primary">
-                            R$ <?php echo number_format($dados_pessoais['valor_atual'], 0, ',', '.'); ?>
-                        </span>
-                    </div>
-                </div>
+            <?php 
+            // Verificar se é SCP
+            $is_scp = function_exists('s_invest_is_private_scp') ? s_invest_is_private_scp($id) : false;
+            
+            if ($is_scp) {
+                // Para SCP: calcular dividendos recebidos e cotas
+                $dividendos_recebidos = 0;
+                $total_cotas = 0;
                 
-                <div class="bg-gray-50 p-3 rounded-lg">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600 text-sm">
-                            <?php echo $dados_pessoais['status'] === 'vendido' ? 'Rentabilidade Consolidada' : 'Rentabilidade Projetada'; ?>
-                        </span>
-                        <div class="text-right">
-                            <span class="font-bold text-lg text-green-600">
-                                <?php 
-                                if ($dados_pessoais['status'] === 'vendido') {
-                                    echo 'R$ ' . number_format($dados_pessoais['valor_recebido'], 0, ',', '.');
-                                } else {
-                                    echo ($dados_pessoais['rentabilidade_reais'] >= 0 ? '+' : '') . 'R$ ' . number_format(abs($dados_pessoais['rentabilidade_reais']), 0, ',', '.');
-                                }
-                                ?>
+                foreach ($aportes_usuario as $aporte_item) {
+                    $aporte_id = $aporte_item->ID;
+                    
+                    // Somar dividendos
+                    $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
+                    foreach ($historico_dividendos as $dividendo) {
+                        $dividendos_recebidos += floatval($dividendo['valor'] ?? 0);
+                    }
+                    
+                    // Somar cotas
+                    $total_cotas += intval(get_field('quantidade_cotas', $aporte_id) ?: 0);
+                }
+                
+                $yield_percentual = $dados_pessoais['valor_investido'] > 0 ? 
+                    ($dividendos_recebidos / $dados_pessoais['valor_investido']) * 100 : 0;
+            ?>
+                <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600 block">Valor Investido</span>
+                            <span class="font-bold text-lg text-blue-600">
+                                R$ <?php echo number_format($dados_pessoais['valor_investido'], 0, ',', '.'); ?>
                             </span>
-                            <div class="text-xs <?php echo $dados_pessoais['rentabilidade_pct'] >= 0 ? 'text-green-500' : 'text-red-500'; ?>">
-                                (<?php echo ($dados_pessoais['rentabilidade_pct'] >= 0 ? '+' : ''); ?><?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
+                        </div>
+                        <div>
+                            <span class="text-gray-600 block">Cotas Adquiridas</span>
+                            <span class="font-bold text-lg text-purple-600">
+                                <?php echo number_format($total_cotas, 0, ',', '.'); ?>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                        <div class="flex justify-between items-center">
+                            <span class="text-green-700 text-sm font-medium">
+                                <i class="fas fa-coins mr-1"></i>
+                                Dividendos Recebidos
+                            </span>
+                            <div class="text-right">
+                                <span class="font-bold text-lg text-green-600">
+                                    R$ <?php echo number_format($dividendos_recebidos, 0, ',', '.'); ?>
+                                </span>
+                                <div class="text-xs text-green-500">
+                                    (+<?php echo number_format($yield_percentual, 1, ',', '.'); ?>% yield)
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        <?php else : ?>
+            <?php 
+            } else { 
+                // Para Trade: layout original
+            ?>
+                <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600 block">Valor Investido</span>
+                            <span class="font-bold text-lg text-blue-600">
+                                R$ <?php echo number_format($dados_pessoais['valor_investido'], 0, ',', '.'); ?>
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 block">
+                                <?php echo $dados_pessoais['status'] === 'vendido' ? 'Valor na Venda' : 'Valor Atual'; ?>
+                            </span>
+                            <span class="font-bold text-lg text-primary">
+                                R$ <?php echo number_format($dados_pessoais['valor_atual'], 0, ',', '.'); ?>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600 text-sm">
+                                <?php echo $dados_pessoais['status'] === 'vendido' ? 'Rentabilidade Consolidada' : 'Rentabilidade Projetada'; ?>
+                            </span>
+                            <div class="text-right">
+                                <span class="font-bold text-lg text-green-600">
+                                    <?php 
+                                    if ($dados_pessoais['status'] === 'vendido') {
+                                        echo 'R$ ' . number_format($dados_pessoais['valor_recebido'], 0, ',', '.');
+                                    } else {
+                                        echo ($dados_pessoais['rentabilidade_reais'] >= 0 ? '+' : '') . 'R$ ' . number_format(abs($dados_pessoais['rentabilidade_reais']), 0, ',', '.');
+                                    }
+                                    ?>
+                                </span>
+                                <div class="text-xs <?php echo $dados_pessoais['rentabilidade_pct'] >= 0 ? 'text-green-500' : 'text-red-500'; ?>">
+                                    (<?php echo ($dados_pessoais['rentabilidade_pct'] >= 0 ? '+' : ''); ?><?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php } ?>
             <div class="space-y-3">
                 <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>
