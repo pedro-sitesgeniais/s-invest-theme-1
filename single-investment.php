@@ -195,10 +195,10 @@ if ($quantidade_cotas && !$cotas_vendidas) {
         </div>
 
         <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Moeda Aceita</p>
+          <p class="text-xs text-gray-400">Região do Projeto</p>
           <p class="mt-1 space-x-1">
             <?php
-            $moedas = (array) get_field('moeda_aceita');
+            $moedas = (array) get_field('regiao_projeto');
             if ( $moedas ) {
               foreach ( $moedas as $m ) {
                 printf(
