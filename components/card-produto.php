@@ -512,18 +512,26 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                     <i class="fas fa-lock mr-2"></i>
                     <?php echo $status_captacao === 'encerrada' && $porcentagem >= 100 ? 'Esgotado' : 'Encerrado'; ?>
                 </button>
-            <?php elseif (!$disponivel_para_investir && $context !== 'my-investments') : ?>
-                <button disabled 
-                        class="w-full py-3 px-4 bg-blue-300 text-blue-700 rounded-lg cursor-not-allowed text-sm font-medium">
-                    <i class="fas fa-clock mr-2"></i>
-                    Em Breve
-                </button>
             <?php else : ?>
                 <a href="<?php echo $link; ?>" 
-                   class="w-full block text-center py-3 px-4 <?php echo ($dados_pessoais && $dados_pessoais['status'] === 'vendido') ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gradient-to-r from-accent to-secondary hover:from-blue-700 hover:to-blue-800'; ?> text-white rounded-lg transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm font-medium shadow-lg hover:shadow-xl"
-                   <?php if ($context === 'panel') echo 'target="_self" rel="noopener"'; ?>>
+                class="w-full block text-center py-3 px-4 <?php 
+                if ($dados_pessoais && $dados_pessoais['status'] === 'vendido') {
+                    echo 'bg-orange-600 hover:bg-orange-700';
+                } elseif ($status_captacao === 'em_breve' && $context !== 'my-investments') {
+                    echo 'bg-blue-600 hover:bg-blue-700 border-2 border-blue-300';
+                } else {
+                    echo 'bg-gradient-to-r from-accent to-secondary hover:from-blue-700 hover:to-blue-800';
+                }
+                ?> text-white rounded-lg transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm font-medium shadow-lg hover:shadow-xl"
+                <?php if ($context === 'panel') echo 'target="_self" rel="noopener"'; ?>>
                     <i class="fas <?php echo $button_icon; ?> mr-2"></i>
-                    <?php echo $button_text; ?>
+                    <?php 
+                    if ($status_captacao === 'em_breve' && $context !== 'my-investments') {
+                        echo 'Saiba Mais';
+                    } else {
+                        echo $button_text;
+                    }
+                    ?>
                 </a>
             <?php endif; ?>
         </div>
