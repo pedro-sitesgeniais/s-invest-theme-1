@@ -245,7 +245,14 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
     aria-labelledby="investment-title-<?php echo esc_attr($id); ?>"
     data-investment-id="<?php echo esc_attr($id); ?>"
     data-context="<?php echo esc_attr($context); ?>">
-    
+    <?php 
+        $regiao = get_field('regiao_projeto', $investment_id);
+        if ($regiao) : ?>
+        <div class="investment-region">
+            <i class="fas fa-map-marker-alt"></i>
+            <span><?php echo esc_html($regiao); ?></span>
+        </div>
+    <?php endif; ?>
     <?php if ($dados_pessoais && $dados_pessoais['status'] === 'vendido') : ?>
         <div class="absolute top-3 right-3 bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full z-10 shadow-lg">
             <i class="fas fa-hand-holding-usd mr-1"></i>
