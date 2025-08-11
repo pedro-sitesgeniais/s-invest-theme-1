@@ -706,8 +706,8 @@ $ultimos = array_slice($ultimos, 0, 10);
                     
                     <!-- 1. Classe de Ativos (PRIMEIRO) -->
                     <select x-model="filtros.classe_ativo" 
-                            @change="onClasseChange(); aplicarFiltros()" 
-                            class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        @change="filtros.situacao = ''; aplicarFiltros()" 
+                        class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Todas as Classes</option>
                         <?php foreach ($tipos_produto_extrato as $tipo) : ?>
                             <option value="<?= esc_attr($tipo->slug) ?>"><?= esc_html($tipo->name) ?></option>
@@ -720,68 +720,49 @@ $ultimos = array_slice($ultimos, 0, 10);
                                 @change="aplicarFiltros()" 
                                 class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Todas Situações</option>
-                            <!-- Trade: Ativo ou Vendido -->
-                            <template x-if="classeEhTrade()">
-                                <optgroup label="Trade">
-                                    <option value="ativo">Ativo</option>
-                                    <option value="vendido">Vendido</option>
-                                </optgroup>
-                            </template>
-                            <!-- SCP: Ativo ou Encerrado -->
-                            <template x-if="classeEhSCP()">
-                                <optgroup label="SCP/Private">
-                                    <option value="ativo">Ativo</option>
-                                    <option value="encerrado">Encerrado</option>
-                                </optgroup>
-                            </template>
-                            <!-- Outras classes: Todas as opções -->
-                            <template x-if="!classeEhTrade() && !classeEhSCP() && filtros.classe_ativo !== ''">
-                                <optgroup label="Outras Classes">
-                                    <option value="ativo">Ativo</option>
-                                    <option value="vendido">Vendido</option>
-                                    <option value="encerrado">Encerrado</option>
-                                </optgroup>
-                            </template>
+                            <option value="ativo">Ativo</option>
+                            <option value="vendido">Vendido</option>
+                            <option value="encerrado">Encerrado</option>
                         </select>
                     </div>
                     
                     <!-- 3. Período (CALENDÁRIO CORRIGIDO) -->
                     <div class="relative">
-                        <button @click="showCalendar = !showCalendar"
+                        <button @click="$data.showCalendar = !$data.showCalendar"
                                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between">
                             <span x-text="obterLabelPeriodo()">Selecionar período</span>
                             <i class="fas fa-calendar-alt text-gray-400"></i>
                         </button>
                         
                         <!-- DROPDOWN DO CALENDÁRIO CORRIGIDO -->
-                        <div x-show="showCalendar" 
-                             x-transition:enter="transition ease-out duration-200"
-                             x-transition:enter-start="opacity-0 scale-95"
-                             x-transition:enter-end="opacity-100 scale-100"
-                             x-transition:leave="transition ease-in duration-150"
-                             x-transition:leave-start="opacity-100 scale-100"
-                             x-transition:leave-end="opacity-0 scale-95"
-                             @click.away="showCalendar = false"
-                             class="absolute top-full left-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-4"
-                             style="display: none;">
+                        <div x-show="$data.showCalendar" 
+                                x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 scale-95"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-150"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-95"
+                                @click.away="$data.showCalendar = false"
+                                class="absolute top-full left-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-4"
+                                style="display: none;">
                             
                             <!-- OPÇÕES RÁPIDAS -->
                             <div class="mb-4">
                                 <h4 class="text-sm font-medium text-gray-700 mb-2">Períodos Rápidos</h4>
                                 <div class="grid grid-cols-2 gap-2">
-                                    <button @click="selecionarPeriodoRapido('7')" 
+                                    <button @click="filtros.periodo = '7'; filtros.data_inicio = ''; filtros.data_fim = ''; $data.showCalendar = false; aplicarFiltros()" 
                                             class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-left transition-colors">
                                         Últimos 7 dias
                                     </button>
-                                    <button @click="selecionarPeriodoRapido('30')" 
+                                    <button @click="filtros.periodo = '30'; filtros.data_inicio = ''; filtros.data_fim = ''; $data.showCalendar = false; aplicarFiltros()" 
                                             class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-left transition-colors">
                                         Últimos 30 dias
                                     </button>
-                                    <button @click="selecionarPeriodoRapido('90')" 
+                                    <button @click="filtros.periodo = '90'; filtros.data_inicio = ''; filtros.data_fim = ''; $data.showCalendar = false; aplicarFiltros()" 
                                             class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-left transition-colors">
                                         Últimos 3 meses
                                     </button>
-                                    <button @click="selecionarPeriodoRapido('365')" 
+                                    <button @click="filtros.periodo = '365'; filtros.data_inicio = ''; filtros.data_fim = ''; $data.showCalendar = false; aplicarFiltros()" 
                                             class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-left transition-colors">
                                         Último ano
                                     </button>
@@ -796,27 +777,27 @@ $ultimos = array_slice($ultimos, 0, 10);
                                         <div>
                                             <label class="block text-xs text-gray-600 mb-1">Data Inicial</label>
                                             <input type="date" 
-                                                   x-model="filtros.data_inicio"
-                                                   :max="getDataMaxima()"
-                                                   class="w-full text-xs border border-gray-300 rounded px-2 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                x-model="filtros.data_inicio"
+                                                :max="new Date().toISOString().split('T')[0]"
+                                                class="w-full text-xs border border-gray-300 rounded px-2 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                         </div>
                                         <div>
                                             <label class="block text-xs text-gray-600 mb-1">Data Final</label>
                                             <input type="date" 
-                                                   x-model="filtros.data_fim"
-                                                   :min="filtros.data_inicio"
-                                                   :max="getDataMaxima()"
-                                                   class="w-full text-xs border border-gray-300 rounded px-2 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                x-model="filtros.data_fim"
+                                                :min="filtros.data_inicio"
+                                                :max="new Date().toISOString().split('T')[0]"
+                                                class="w-full text-xs border border-gray-300 rounded px-2 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                         </div>
                                     </div>
                                     <div class="flex gap-2">
-                                        <button @click="aplicarPeriodoPersonalizado()" 
+                                        <button @click="if(filtros.data_inicio && filtros.data_fim) { filtros.periodo = ''; $data.showCalendar = false; aplicarFiltros(); }" 
                                                 :disabled="!filtros.data_inicio || !filtros.data_fim"
                                                 :class="filtros.data_inicio && filtros.data_fim ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'"
                                                 class="flex-1 text-xs px-3 py-2 rounded transition-colors">
                                             Aplicar
                                         </button>
-                                        <button @click="limparPeriodo()" 
+                                        <button @click="filtros.periodo = ''; filtros.data_inicio = ''; filtros.data_fim = ''; $data.showCalendar = false; aplicarFiltros()" 
                                                 class="text-xs bg-gray-200 text-gray-700 px-3 py-2 rounded hover:bg-gray-300 transition-colors">
                                             Limpar
                                         </button>
