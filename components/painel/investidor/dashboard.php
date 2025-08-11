@@ -689,253 +689,263 @@ $ultimos = array_slice($ultimos, 0, 10);
         </div>
     </div>
 
-    <!-- ========== EXTRATO DE MOVIMENTAÇÕES COM FILTROS MELHORADOS ========== -->
+    <!-- ========== EXTRATO DE MOVIMENTAÇÕES COM FILTROS CORRIGIDOS ========== -->
     <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden" 
-     x-data="extratoData()" x-init="init()">
+         x-data="extratoData()" x-init="init()">
 
-    <!-- HEADER COM FILTROS CORRIGIDOS -->
-    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-                <h3 class="text-lg font-semibold text-gray-900">Extrato de Movimentações</h3>
-                <p class="text-sm text-gray-600">Histórico completo de aportes e dividendos</p>
-            </div>
-            
-            <!-- FILTROS CORRIGIDOS: Classe → Situação (condicionada) → Período -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <!-- HEADER COM FILTROS CORRIGIDOS -->
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Extrato de Movimentações</h3>
+                    <p class="text-sm text-gray-600">Histórico completo de aportes e dividendos</p>
+                </div>
                 
-                <!-- 1. Classe de Ativos (PRIMEIRO) -->
-                <select x-model="filtros.classe_ativo" 
-                        @change="aplicarFiltros()" 
-                        class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">Todas as Classes</option>
-                    <?php foreach ($tipos_produto_extrato as $tipo) : ?>
-                        <option value="<?= esc_attr($tipo->slug) ?>"><?= esc_html($tipo->name) ?></option>
-                    <?php endforeach; ?>
-                </select>
-                
-                <!-- 2. Situação (CONDICIONADA À CLASSE) -->
-                <select x-model="filtros.situacao" 
-                        @change="aplicarFiltros()" 
-                        x-show="filtros.classe_ativo !== ''"
-                        class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">Todas Situações</option>
-                    <!-- Trade: Ativo ou Vendido -->
-                    <template x-if="classeEhTrade()">
-                        <div>
-                            <option value="ativo">Ativo</option>
-                            <option value="vendido">Vendido</option>
-                        </div>
-                    </template>
-                    <!-- SCP: Ativo ou Encerrado -->
-                    <template x-if="classeEhSCP()">
-                        <div>
-                            <option value="ativo">Ativo</option>
-                            <option value="encerrado">Encerrado</option>
-                        </div>
-                    </template>
-                    <!-- Outras classes: Todas as opções -->
-                    <template x-if="!classeEhTrade() && !classeEhSCP() && filtros.classe_ativo !== ''">
-                        <div>
-                            <option value="ativo">Ativo</option>
-                            <option value="vendido">Vendido</option>
-                            <option value="encerrado">Encerrado</option>
-                        </div>
-                    </template>
-                </select>
-                
-                <!-- 3. Período (CALENDÁRIO BANCÁRIO) -->
-                <div class="relative" x-data="{ showCalendar: false }">
-                    <button @click="showCalendar = !showCalendar"
-                            class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between">
-                        <span x-text="obterLabelPeriodo()">Selecionar período</span>
-                        <i class="fas fa-calendar-alt text-gray-400"></i>
-                    </button>
+                <!-- FILTROS CORRIGIDOS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     
-                    <!-- DROPDOWN DO CALENDÁRIO -->
-                    <div x-show="showCalendar" 
-                         x-transition:enter="transition ease-out duration-200"
-                         x-transition:enter-start="opacity-0 scale-95"
-                         x-transition:enter-end="opacity-100 scale-100"
-                         x-transition:leave="transition ease-in duration-150"
-                         x-transition:leave-start="opacity-100 scale-100"
-                         x-transition:leave-end="opacity-0 scale-95"
-                         @click.away="showCalendar = false"
-                         class="absolute top-full left-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4"
-                         style="display: none;">
+                    <!-- 1. Classe de Ativos (PRIMEIRO) -->
+                    <select x-model="filtros.classe_ativo" 
+                            @change="onClasseChange(); aplicarFiltros()" 
+                            class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Todas as Classes</option>
+                        <?php foreach ($tipos_produto_extrato as $tipo) : ?>
+                            <option value="<?= esc_attr($tipo->slug) ?>"><?= esc_html($tipo->name) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    
+                    <!-- 2. Situação (CONDICIONADA À CLASSE) -->
+                    <div x-show="filtros.classe_ativo !== ''" x-transition>
+                        <select x-model="filtros.situacao" 
+                                @change="aplicarFiltros()" 
+                                class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Todas Situações</option>
+                            <!-- Trade: Ativo ou Vendido -->
+                            <template x-if="classeEhTrade()">
+                                <optgroup label="Trade">
+                                    <option value="ativo">Ativo</option>
+                                    <option value="vendido">Vendido</option>
+                                </optgroup>
+                            </template>
+                            <!-- SCP: Ativo ou Encerrado -->
+                            <template x-if="classeEhSCP()">
+                                <optgroup label="SCP/Private">
+                                    <option value="ativo">Ativo</option>
+                                    <option value="encerrado">Encerrado</option>
+                                </optgroup>
+                            </template>
+                            <!-- Outras classes: Todas as opções -->
+                            <template x-if="!classeEhTrade() && !classeEhSCP() && filtros.classe_ativo !== ''">
+                                <optgroup label="Outras Classes">
+                                    <option value="ativo">Ativo</option>
+                                    <option value="vendido">Vendido</option>
+                                    <option value="encerrado">Encerrado</option>
+                                </optgroup>
+                            </template>
+                        </select>
+                    </div>
+                    
+                    <!-- 3. Período (CALENDÁRIO CORRIGIDO) -->
+                    <div class="relative">
+                        <button @click="showCalendar = !showCalendar"
+                                class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between">
+                            <span x-text="obterLabelPeriodo()">Selecionar período</span>
+                            <i class="fas fa-calendar-alt text-gray-400"></i>
+                        </button>
                         
-                        <!-- OPÇÕES RÁPIDAS -->
-                        <div class="mb-4">
-                            <h4 class="text-sm font-medium text-gray-700 mb-2">Períodos Rápidos</h4>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button @click="selecionarPeriodoRapido('7')" 
-                                        class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-left">
-                                    Últimos 7 dias
-                                </button>
-                                <button @click="selecionarPeriodoRapido('30')" 
-                                        class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-left">
-                                    Últimos 30 dias
-                                </button>
-                                <button @click="selecionarPeriodoRapido('90')" 
-                                        class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-left">
-                                    Últimos 3 meses
-                                </button>
-                                <button @click="selecionarPeriodoRapido('365')" 
-                                        class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-left">
-                                    Último ano
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- SELEÇÃO PERSONALIZADA -->
-                        <div class="border-t pt-4">
-                            <h4 class="text-sm font-medium text-gray-700 mb-2">Período Personalizado</h4>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="block text-xs text-gray-600 mb-1">Data Inicial</label>
-                                    <input type="date" 
-                                           x-model="filtros.data_inicio"
-                                           class="w-full text-xs border border-gray-300 rounded px-2 py-1">
-                                </div>
-                                <div>
-                                    <label class="block text-xs text-gray-600 mb-1">Data Final</label>
-                                    <input type="date" 
-                                           x-model="filtros.data_fim"
-                                           class="w-full text-xs border border-gray-300 rounded px-2 py-1">
+                        <!-- DROPDOWN DO CALENDÁRIO CORRIGIDO -->
+                        <div x-show="showCalendar" 
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             @click.away="showCalendar = false"
+                             class="absolute top-full left-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-4"
+                             style="display: none;">
+                            
+                            <!-- OPÇÕES RÁPIDAS -->
+                            <div class="mb-4">
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Períodos Rápidos</h4>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button @click="selecionarPeriodoRapido('7')" 
+                                            class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-left transition-colors">
+                                        Últimos 7 dias
+                                    </button>
+                                    <button @click="selecionarPeriodoRapido('30')" 
+                                            class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-left transition-colors">
+                                        Últimos 30 dias
+                                    </button>
+                                    <button @click="selecionarPeriodoRapido('90')" 
+                                            class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-left transition-colors">
+                                        Últimos 3 meses
+                                    </button>
+                                    <button @click="selecionarPeriodoRapido('365')" 
+                                            class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-left transition-colors">
+                                        Último ano
+                                    </button>
                                 </div>
                             </div>
-                            <div class="flex gap-2 mt-3">
-                                <button @click="aplicarPeriodoPersonalizado()" 
-                                        class="flex-1 text-xs bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700">
-                                    Aplicar
-                                </button>
-                                <button @click="limparPeriodo()" 
-                                        class="text-xs bg-gray-200 text-gray-700 px-3 py-2 rounded hover:bg-gray-300">
-                                    Limpar
-                                </button>
+                            
+                            <!-- SELEÇÃO PERSONALIZADA CORRIGIDA -->
+                            <div class="border-t pt-4">
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Período Personalizado</h4>
+                                <div class="space-y-3">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-xs text-gray-600 mb-1">Data Inicial</label>
+                                            <input type="date" 
+                                                   x-model="filtros.data_inicio"
+                                                   :max="getDataMaxima()"
+                                                   class="w-full text-xs border border-gray-300 rounded px-2 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-600 mb-1">Data Final</label>
+                                            <input type="date" 
+                                                   x-model="filtros.data_fim"
+                                                   :min="filtros.data_inicio"
+                                                   :max="getDataMaxima()"
+                                                   class="w-full text-xs border border-gray-300 rounded px-2 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button @click="aplicarPeriodoPersonalizado()" 
+                                                :disabled="!filtros.data_inicio || !filtros.data_fim"
+                                                :class="filtros.data_inicio && filtros.data_fim ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'"
+                                                class="flex-1 text-xs px-3 py-2 rounded transition-colors">
+                                            Aplicar
+                                        </button>
+                                        <button @click="limparPeriodo()" 
+                                                class="text-xs bg-gray-200 text-gray-700 px-3 py-2 rounded hover:bg-gray-300 transition-colors">
+                                            Limpar
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- RESUMO DOS FILTROS ATIVOS -->
-        <div x-show="temFiltrosAtivos()" class="mt-3 flex flex-wrap gap-2">
-            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                <span x-text="contarMovimentosFiltrados()"></span> movimentação(ões) encontrada(s)
-            </span>
-            <span x-show="filtros.classe_ativo" class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">
-                Classe: <span x-text="obterLabelClasse()"></span>
-            </span>
-            <span x-show="filtros.situacao" class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                Situação: <span x-text="obterLabelSituacao()"></span>
-            </span>
-            <span x-show="filtros.periodo || (filtros.data_inicio && filtros.data_fim)" class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
-                Período: <span x-text="obterLabelPeriodo()"></span>
-            </span>
-            <button @click="limparFiltros()" 
-                    class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full hover:bg-red-200">
-                <i class="fas fa-times mr-1"></i> Limpar todos
-            </button>
-        </div>
-    </div>
-    
-    <!-- TABELA (mantém a mesma estrutura) -->
-    <div class="overflow-x-auto">
-        <div x-show="carregando" class="flex items-center justify-center py-12">
-            <div class="flex items-center gap-2 text-gray-500">
-                <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span class="text-sm">Aplicando filtros...</span>
-            </div>
-        </div>
-        
-        <div x-show="!carregando">
-            <template x-if="movimentosFiltrados.length > 0">
-                <table class="w-full">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investimento</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Situação</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        <template x-for="movimento in movimentosFiltrados.slice(0, limite)" :key="movimento.id">
-                            <tr class="hover:bg-gray-50 transition-colors">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="movimento.data"></td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span :class="movimento.tipo === 'aporte' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'" 
-                                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
-                                        <i :class="movimento.tipo === 'aporte' ? 'fas fa-arrow-up' : 'fas fa-arrow-down'" class="mr-1"></i>
-                                        <span x-text="movimento.tipo === 'aporte' ? 'Aporte' : 'Dividendo'"></span>
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">
-                                    <div class="max-w-xs truncate" x-text="movimento.investimento"></div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <span :class="movimento.tipo === 'aporte' ? 'text-red-600' : 'text-green-600'">
-                                        <span x-text="movimento.tipo === 'aporte' ? '-' : '+'"></span>R$ <span x-text="movimento.valor_formatado"></span>
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span :class="movimento.situacao === 'ativo' ? 'bg-green-100 text-green-800' : (movimento.situacao === 'vendido' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800')" 
-                                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
-                                        <i :class="movimento.situacao === 'ativo' ? 'fas fa-chart-line' : (movimento.situacao === 'vendido' ? 'fas fa-hand-holding-usd' : 'fas fa-times-circle')" class="mr-1"></i>
-                                        <span x-text="movimento.situacao === 'ativo' ? 'Ativo' : (movimento.situacao === 'vendido' ? 'Vendido' : 'Encerrado')"></span>
-                                    </span>
-                                </td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-            </template>
             
-            <!-- ESTADO VAZIO -->
-            <template x-if="movimentosFiltrados.length === 0">
-                <div class="px-6 py-12 text-center">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-filter text-2xl text-gray-400"></i>
-                    </div>
-                    <h3 class="text-sm font-medium text-gray-900 mb-2">Nenhum movimento encontrado</h3>
-                    <p class="text-sm text-gray-500 mb-4">
-                        Ajuste os filtros para encontrar suas movimentações.
-                    </p>
-                    <button @click="limparFiltros()" 
-                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-slate-950">
-                        Limpar filtros
-                    </button>
-                </div>
-            </template>
-        </div>
-    </div>
-    
-    <!-- FOOTER COM PAGINAÇÃO --> 
-    <div x-show="movimentosFiltrados.length > limite" class="px-6 py-4 bg-gray-50 border-t border-gray-100">
-        <div class="flex items-center justify-between">
-            <p class="text-sm text-gray-700">
-                Mostrando <span x-text="Math.min(limite, movimentosFiltrados.length)"></span> de 
-                <span x-text="movimentosFiltrados.length"></span> movimentações
-            </p>
-            <div class="flex gap-2">
-                <button @click="limite = limite + 10" 
-                        x-show="limite < movimentosFiltrados.length"
-                        class="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">
-                    Carregar mais
+            <!-- RESUMO DOS FILTROS ATIVOS -->
+            <div x-show="temFiltrosAtivos()" x-transition class="mt-3 flex flex-wrap gap-2">
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    <span x-text="contarMovimentosFiltrados()"></span> movimentação(ões) encontrada(s)
+                </span>
+                <span x-show="filtros.classe_ativo" class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">
+                    Classe: <span x-text="obterLabelClasse()"></span>
+                </span>
+                <span x-show="filtros.situacao" class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    Situação: <span x-text="obterLabelSituacao()"></span>
+                </span>
+                <span x-show="filtros.periodo || (filtros.data_inicio && filtros.data_fim)" class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                    Período: <span x-text="obterLabelPeriodo()"></span>
+                </span>
+                <button @click="limparFiltros()" 
+                        class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full hover:bg-red-200 transition-colors">
+                    <i class="fas fa-times mr-1"></i> Limpar todos
                 </button>
-                <a href="?secao=meus-investimentos" 
-                   class="px-3 py-1 text-sm text-primary hover:text-slate-950 font-medium">
-                    Ver todos →
-                </a>
+            </div>
+        </div>
+        
+        <!-- TABELA -->
+        <div class="overflow-x-auto">
+            <div x-show="carregando" class="flex items-center justify-center py-12">
+                <div class="flex items-center gap-2 text-gray-500">
+                    <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm">Aplicando filtros...</span>
+                </div>
+            </div>
+            
+            <div x-show="!carregando">
+                <template x-if="movimentosFiltrados.length > 0">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investimento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Situação</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <template x-for="movimento in movimentosFiltrados.slice(0, limite)" :key="movimento.id">
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="movimento.data"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span :class="movimento.tipo === 'aporte' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'" 
+                                              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                                            <i :class="movimento.tipo === 'aporte' ? 'fas fa-arrow-up' : 'fas fa-arrow-down'" class="mr-1"></i>
+                                            <span x-text="movimento.tipo === 'aporte' ? 'Aporte' : 'Dividendo'"></span>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">
+                                        <div class="max-w-xs truncate" x-text="movimento.investimento"></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <span :class="movimento.tipo === 'aporte' ? 'text-red-600' : 'text-green-600'">
+                                            <span x-text="movimento.tipo === 'aporte' ? '-' : '+'"></span>R$ <span x-text="movimento.valor_formatado"></span>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span :class="movimento.situacao === 'ativo' ? 'bg-green-100 text-green-800' : (movimento.situacao === 'vendido' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800')" 
+                                              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                                            <i :class="movimento.situacao === 'ativo' ? 'fas fa-chart-line' : (movimento.situacao === 'vendido' ? 'fas fa-hand-holding-usd' : 'fas fa-times-circle')" class="mr-1"></i>
+                                            <span x-text="movimento.situacao === 'ativo' ? 'Ativo' : (movimento.situacao === 'vendido' ? 'Vendido' : 'Encerrado')"></span>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </template>
+                
+                <!-- ESTADO VAZIO -->
+                <template x-if="movimentosFiltrados.length === 0">
+                    <div class="px-6 py-12 text-center">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-filter text-2xl text-gray-400"></i>
+                        </div>
+                        <h3 class="text-sm font-medium text-gray-900 mb-2">Nenhum movimento encontrado</h3>
+                        <p class="text-sm text-gray-500 mb-4">
+                            Ajuste os filtros para encontrar suas movimentações.
+                        </p>
+                        <button @click="limparFiltros()" 
+                                class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-slate-950">
+                            Limpar filtros
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </div>
+        
+        <!-- FOOTER COM PAGINAÇÃO --> 
+        <div x-show="movimentosFiltrados.length > limite" class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-700">
+                    Mostrando <span x-text="Math.min(limite, movimentosFiltrados.length)"></span> de 
+                    <span x-text="movimentosFiltrados.length"></span> movimentações
+                </p>
+                <div class="flex gap-2">
+                    <button @click="limite = limite + 10" 
+                            x-show="limite < movimentosFiltrados.length"
+                            class="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">
+                        Carregar mais
+                    </button>
+                    <a href="?secao=meus-investimentos" 
+                       class="px-3 py-1 text-sm text-primary hover:text-slate-950 font-medium">
+                        Ver todos →
+                    </a>
+                </div>
             </div>
         </div>
     </div>
+
 </div>
 
 <?php if (!empty($distribuicao) || !empty($chartLabels)): ?>
@@ -969,7 +979,7 @@ window.dashboardFiltrosDados = {
 window.dashboardUltimos = <?php echo json_encode($ultimos); ?>;
 
 // Debug
-console.log('Dashboard carregado com filtros melhorados:', {
+console.log('Dashboard carregado com filtros corrigidos:', {
     aportes: <?php echo count($aportes); ?>,
     movimentos: window.dashboardMovimentos?.length || 0,
     distribuicao: Object.keys(window.dashboardChartData.distribuicaoData).length,
