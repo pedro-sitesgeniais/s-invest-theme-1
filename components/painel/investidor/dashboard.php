@@ -692,137 +692,137 @@ $ultimos = array_slice($ultimos, 0, 10);
     <!-- ========== EXTRATO DE MOVIMENTAÇÕES COM FILTROS CORRIGIDOS ========== -->
     <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden" 
          x-data="extratoData()" x-init="init()">
-                    <!-- OFFCANVAS DE FILTROS -->
-<div x-show="$data.showOffcanvas" 
-     x-transition:enter="transition ease-out duration-300" 
-     x-transition:enter-start="opacity-0" 
-     x-transition:enter-end="opacity-100"
-     x-transition:leave="transition ease-in duration-200" 
-     x-transition:leave-start="opacity-100" 
-     x-transition:leave-end="opacity-0"
-     class="fixed inset-0 bg-black bg-opacity-50 z-50" 
-     @click="$data.showOffcanvas = false"
-     style="display: none;">
-    
-    <div x-show="$data.showOffcanvas"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="transform translate-x-full"
-         x-transition:enter-end="transform translate-x-0"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="transform translate-x-0"
-         x-transition:leave-end="transform translate-x-full"
-         @click.stop
-         class="absolute right-0 top-0 h-full w-80 bg-white shadow-xl overflow-y-auto">
-        
-        <!-- Header -->
-        <div class="flex items-center justify-between p-4 border-b">
-            <h3 class="text-lg font-semibold">Filtros</h3>
-            <button @click="$data.showOffcanvas = false" 
-                    class="p-2 hover:bg-gray-100 rounded-lg">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        
-        <!-- Conteúdo -->
-        <div class="p-4 space-y-6">
-            
-            <!-- Classe de Ativos -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Classe de Ativos</label>
-                <select x-model="filtros.classe_ativo" 
-                        @change="filtros.situacao = ''; aplicarFiltros()" 
-                        class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">Todas as Classes</option>
-                    <?php foreach ($tipos_produto_extrato as $tipo) : ?>
-                        <option value="<?= esc_attr($tipo->slug) ?>"><?= esc_html($tipo->name) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            
-            <!-- Situação -->
-            <div x-show="filtros.classe_ativo !== ''" x-transition>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Situação</label>
-                <select x-model="filtros.situacao" 
-                        @change="aplicarFiltros()" 
-                        class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">Todas Situações</option>
-                    <option value="ativo">Ativo</option>
-                    <option value="vendido">Vendido</option>
-                    <option value="encerrado">Encerrado</option>
-                </select>
-            </div>
-            
-            <!-- Período -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Período</label>
+         <!-- OFFCANVAS DE FILTROS -->
+            <div x-show="$data.showOffcanvas" 
+                x-transition:enter="transition ease-out duration-300" 
+                x-transition:enter-start="opacity-0" 
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-200" 
+                x-transition:leave-start="opacity-100" 
+                x-transition:leave-end="opacity-0"
+                class="fixed inset-0 bg-black/50 z-50" 
+                @click="$data.showOffcanvas = false"
+                style="display: none;">
                 
-                <!-- Períodos Rápidos -->
-                <div class="mb-4">
-                    <div class="grid grid-cols-2 gap-2">
-                        <button @click="filtros.periodo = '7'; filtros.data_inicio = ''; filtros.data_fim = ''; aplicarFiltros()" 
-                                :class="filtros.periodo === '7' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-50 border-gray-300'"
-                                class="text-xs px-3 py-2 border rounded transition-colors">
-                            Últimos 7 dias
-                        </button>
-                        <button @click="filtros.periodo = '30'; filtros.data_inicio = ''; filtros.data_fim = ''; aplicarFiltros()" 
-                                :class="filtros.periodo === '30' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-50 border-gray-300'"
-                                class="text-xs px-3 py-2 border rounded transition-colors">
-                            Últimos 30 dias
-                        </button>
-                        <button @click="filtros.periodo = '90'; filtros.data_inicio = ''; filtros.data_fim = ''; aplicarFiltros()" 
-                                :class="filtros.periodo === '90' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-50 border-gray-300'"
-                                class="text-xs px-3 py-2 border rounded transition-colors">
-                            Últimos 3 meses
-                        </button>
-                        <button @click="filtros.periodo = '365'; filtros.data_inicio = ''; filtros.data_fim = ''; aplicarFiltros()" 
-                                :class="filtros.periodo === '365' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-50 border-gray-300'"
-                                class="text-xs px-3 py-2 border rounded transition-colors">
-                            Último ano
+                <div x-show="$data.showOffcanvas"
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="transform translate-x-full"
+                    x-transition:enter-end="transform translate-x-0"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="transform translate-x-0"
+                    x-transition:leave-end="transform translate-x-full"
+                    @click.stop
+                    class="absolute right-0 top-0 h-full w-80 bg-white shadow-xl overflow-y-auto">
+                    
+                    <!-- Header -->
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 sticky top-0 z-10">
+                        <h3 class="text-lg font-bold">Filtros</h3>
+                        <button @click="$data.showOffcanvas = false" 
+                                class="p-2 hover:bg-gray-100 rounded-lg">
+                            <i class="fas fa-times"></i>
                         </button>
                     </div>
-                </div>
-                
-                <!-- Período Personalizado -->
-                <div class="border-t pt-4">
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">Período Personalizado</h4>
-                    <div class="space-y-3">
+                    
+                    <!-- Conteúdo -->
+                    <div class="p-4 space-y-6">
+                        
+                        <!-- Classe de Ativos -->
                         <div>
-                            <label class="block text-xs text-gray-600 mb-1">Data Inicial</label>
-                            <input type="date" 
-                                   x-model="filtros.data_inicio"
-                                   :max="new Date().toISOString().split('T')[0]"
-                                   class="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Classe de Ativos</label>
+                            <select x-model="filtros.classe_ativo" 
+                                    @change="filtros.situacao = ''; aplicarFiltros()" 
+                                    class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Todas as Classes</option>
+                                <?php foreach ($tipos_produto_extrato as $tipo) : ?>
+                                    <option value="<?= esc_attr($tipo->slug) ?>"><?= esc_html($tipo->name) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
+                        
+                        <!-- Situação -->
+                        <div x-show="filtros.classe_ativo !== ''" x-transition>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Situação</label>
+                            <select x-model="filtros.situacao" 
+                                    @change="aplicarFiltros()" 
+                                    class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Todas Situações</option>
+                                <option value="ativo">Ativo</option>
+                                <option value="vendido">Vendido</option>
+                                <option value="encerrado">Encerrado</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Período -->
                         <div>
-                            <label class="block text-xs text-gray-600 mb-1">Data Final</label>
-                            <input type="date" 
-                                   x-model="filtros.data_fim"
-                                   :min="filtros.data_inicio"
-                                   :max="new Date().toISOString().split('T')[0]"
-                                   class="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Período</label>
+                            
+                            <!-- Períodos Rápidos -->
+                            <div class="mb-4">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button @click="filtros.periodo = '7'; filtros.data_inicio = ''; filtros.data_fim = ''; aplicarFiltros()" 
+                                            :class="filtros.periodo === '7' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-50 border-gray-300'"
+                                            class="text-xs px-3 py-2 border rounded transition-colors">
+                                        Últimos 7 dias
+                                    </button>
+                                    <button @click="filtros.periodo = '30'; filtros.data_inicio = ''; filtros.data_fim = ''; aplicarFiltros()" 
+                                            :class="filtros.periodo === '30' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-50 border-gray-300'"
+                                            class="text-xs px-3 py-2 border rounded transition-colors">
+                                        Últimos 30 dias
+                                    </button>
+                                    <button @click="filtros.periodo = '90'; filtros.data_inicio = ''; filtros.data_fim = ''; aplicarFiltros()" 
+                                            :class="filtros.periodo === '90' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-50 border-gray-300'"
+                                            class="text-xs px-3 py-2 border rounded transition-colors">
+                                        Últimos 3 meses
+                                    </button>
+                                    <button @click="filtros.periodo = '365'; filtros.data_inicio = ''; filtros.data_fim = ''; aplicarFiltros()" 
+                                            :class="filtros.periodo === '365' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-50 border-gray-300'"
+                                            class="text-xs px-3 py-2 border rounded transition-colors">
+                                        Último ano
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Período Personalizado -->
+                            <div class="border-t pt-4">
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Período Personalizado</h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs text-gray-600 mb-1">Data Inicial</label>
+                                        <input type="date" 
+                                            x-model="filtros.data_inicio"
+                                            :max="new Date().toISOString().split('T')[0]"
+                                            class="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-600 mb-1">Data Final</label>
+                                        <input type="date" 
+                                            x-model="filtros.data_fim"
+                                            :min="filtros.data_inicio"
+                                            :max="new Date().toISOString().split('T')[0]"
+                                            class="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="border-t p-4 bg-gray-50">
+                        <div class="flex gap-3">
+                            <button @click="limparFiltros()" 
+                                    class="flex-1 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                                Limpar Tudo
+                            </button>
+                            <button @click="$data.showOffcanvas = false" 
+                                    class="flex-1 px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-slate-950">
+                                Aplicar
+                            </button>
                         </div>
                     </div>
+                    
                 </div>
             </div>
-            
-        </div>
-        
-        <!-- Footer -->
-        <div class="border-t p-4 bg-gray-50">
-            <div class="flex gap-3">
-                <button @click="limparFiltros()" 
-                        class="flex-1 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                    Limpar Tudo
-                </button>
-                <button @click="$data.showOffcanvas = false" 
-                        class="flex-1 px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-slate-950">
-                    Aplicar
-                </button>
-            </div>
-        </div>
-        
-    </div>
-</div>
         <!-- HEADER COM FILTROS CORRIGIDOS -->
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
