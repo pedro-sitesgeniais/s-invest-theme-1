@@ -715,7 +715,7 @@ $ultimos = array_slice($ultimos, 0, 10);
                     class="absolute right-0 top-0 h-full w-80 bg-white shadow-xl overflow-y-auto">
                     
                     <!-- Header -->
-                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 sticky top-0 z-10">
+                    <div class="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                         <h3 class="text-lg font-bold">Filtros</h3>
                         <button @click="$data.showOffcanvas = false" 
                                 class="p-2 hover:bg-gray-100 rounded-lg">
