@@ -9,13 +9,13 @@ window.extratoData = function() {
         carregando: false,
         limite: 10,
         
-        // FILTROS ATUALIZADOS
+        // FILTROS CORRIGIDOS: Classe → Situação (condicionada) → Período
         filtros: {
-            situacao: '',        // ativo, vendido, encerrado
-            tipo: '',           // aporte, dividendo  
-            classe_ativo: '',   // slug da taxonomia tipo_produto
-            investimento_id: '', // ID do investimento específico
-            periodo: ''         // 30, 90, 180, 365
+            classe_ativo: '',    // slug da taxonomia tipo_produto
+            situacao: '',        // ativo, vendido, encerrado (baseado na classe)
+            periodo: '',         // 7, 30, 90, 365 para períodos rápidos
+            data_inicio: '',     // data personalizada início
+            data_fim: ''         // data personalizada fim
         },
         
         init() {
@@ -25,9 +25,7 @@ window.extratoData = function() {
         carregarMovimentos() {
             this.carregando = true;
             
-            // Simular delay de carregamento
             setTimeout(() => {
-                // Usar os dados globais do PHP
                 this.movimentos = this.processarMovimentos(window.dashboardMovimentos || []);
                 this.aplicarFiltros();
                 this.carregando = false;
@@ -47,27 +45,17 @@ window.extratoData = function() {
             setTimeout(() => {
                 let filtrados = [...this.movimentos];
                 
-                // Filtro por situação (ativo, vendido, encerrado)
-                if (this.filtros.situacao) {
-                    filtrados = filtrados.filter(mov => mov.situacao === this.filtros.situacao);
-                }
-                
-                // Filtro por tipo (aporte, dividendo)
-                if (this.filtros.tipo) {
-                    filtrados = filtrados.filter(mov => mov.tipo === this.filtros.tipo);
-                }
-                
                 // Filtro por classe de ativo
                 if (this.filtros.classe_ativo) {
                     filtrados = filtrados.filter(mov => mov.classe_ativo === this.filtros.classe_ativo);
                 }
                 
-                // Filtro por investimento específico
-                if (this.filtros.investimento_id) {
-                    filtrados = filtrados.filter(mov => mov.investment_id == this.filtros.investimento_id);
+                // Filtro por situação (condicionada à classe)
+                if (this.filtros.situacao) {
+                    filtrados = filtrados.filter(mov => mov.situacao === this.filtros.situacao);
                 }
                 
-                // Filtro por período
+                // Filtro por período (rápido ou personalizado)
                 if (this.filtros.periodo) {
                     const diasAtras = parseInt(this.filtros.periodo);
                     const dataLimite = new Date();
@@ -77,34 +65,100 @@ window.extratoData = function() {
                         const dataMovimento = this.parseData(mov.data);
                         return dataMovimento >= dataLimite;
                     });
+                } else if (this.filtros.data_inicio && this.filtros.data_fim) {
+                    // Período personalizado
+                    const dataInicio = new Date(this.filtros.data_inicio);
+                    const dataFim = new Date(this.filtros.data_fim);
+                    
+                    filtrados = filtrados.filter(mov => {
+                        const dataMovimento = this.parseData(mov.data);
+                        return dataMovimento >= dataInicio && dataMovimento <= dataFim;
+                    });
                 }
                 
                 this.movimentosFiltrados = filtrados;
-                this.limite = 10; // Resetar limite
+                this.limite = 10;
                 this.carregando = false;
             }, 150);
         },
         
+        // ========== LÓGICA PARA SITUAÇÃO CONDICIONADA ==========
+        classeEhTrade() {
+            const classeAtual = this.filtros.classe_ativo.toLowerCase();
+            return classeAtual.includes('trade') || 
+                   classeAtual.includes('trading') || 
+                   classeAtual === 'equity' ||
+                   classeAtual === 'renda-variavel';
+        },
+        
+        classeEhSCP() {
+            const classeAtual = this.filtros.classe_ativo.toLowerCase();
+            return classeAtual.includes('scp') || 
+                   classeAtual.includes('private') ||
+                   classeAtual.includes('private-scp');
+        },
+        
+        // ========== FUNÇÕES DO CALENDÁRIO BANCÁRIO ==========
+        selecionarPeriodoRapido(dias) {
+            this.filtros.periodo = dias;
+            this.filtros.data_inicio = '';
+            this.filtros.data_fim = '';
+            this.aplicarFiltros();
+            
+            // Fechar dropdown
+            this.$nextTick(() => {
+                const dropdown = this.$el.querySelector('[x-data] [x-show="showCalendar"]');
+                if (dropdown) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        },
+        
+        aplicarPeriodoPersonalizado() {
+            if (this.filtros.data_inicio && this.filtros.data_fim) {
+                this.filtros.periodo = ''; // Limpar período rápido
+                this.aplicarFiltros();
+                
+                // Fechar dropdown
+                this.$nextTick(() => {
+                    const dropdown = this.$el.querySelector('[x-data] [x-show="showCalendar"]');
+                    if (dropdown) {
+                        dropdown.style.display = 'none';
+                    }
+                });
+            }
+        },
+        
+        limparPeriodo() {
+            this.filtros.periodo = '';
+            this.filtros.data_inicio = '';
+            this.filtros.data_fim = '';
+            this.aplicarFiltros();
+        },
+        
         limparFiltros() {
             this.filtros = {
-                situacao: '',
-                tipo: '',
                 classe_ativo: '',
-                investimento_id: '',
-                periodo: ''
+                situacao: '',
+                periodo: '',
+                data_inicio: '',
+                data_fim: ''
             };
             this.aplicarFiltros();
         },
         
         temFiltrosAtivos() {
-            return Object.values(this.filtros).some(valor => valor !== '');
+            return this.filtros.classe_ativo !== '' || 
+                   this.filtros.situacao !== '' || 
+                   this.filtros.periodo !== '' ||
+                   (this.filtros.data_inicio !== '' && this.filtros.data_fim !== '');
         },
         
         contarMovimentosFiltrados() {
             return this.movimentosFiltrados.length;
         },
         
-        // FUNÇÕES PARA OBTER LABELS DOS FILTROS
+        // ========== FUNÇÕES PARA OBTER LABELS DOS FILTROS ==========
         obterLabelSituacao() {
             const labels = {
                 'ativo': 'Ativos',
@@ -122,25 +176,24 @@ window.extratoData = function() {
             return tipo ? tipo.name : this.filtros.classe_ativo;
         },
         
-        obterLabelInvestimento() {
-            if (!this.filtros.investimento_id) return '';
-            
-            const dados = window.dashboardFiltrosDados?.investimentosDisponiveis || [];
-            const investimento = dados.find(inv => inv.id == this.filtros.investimento_id);
-            return investimento ? investimento.title : '';
-        },
-        
         obterLabelPeriodo() {
-            const labels = {
-                '30': 'Últimos 30 dias',
-                '90': 'Últimos 3 meses',
-                '180': 'Últimos 6 meses',
-                '365': 'Último ano'
-            };
-            return labels[this.filtros.periodo] || '';
+            if (this.filtros.periodo) {
+                const labels = {
+                    '7': 'Últimos 7 dias',
+                    '30': 'Últimos 30 dias',
+                    '90': 'Últimos 3 meses',
+                    '365': 'Último ano'
+                };
+                return labels[this.filtros.periodo] || `Últimos ${this.filtros.periodo} dias`;
+            } else if (this.filtros.data_inicio && this.filtros.data_fim) {
+                const inicio = this.formatarDataBrasileira(this.filtros.data_inicio);
+                const fim = this.formatarDataBrasileira(this.filtros.data_fim);
+                return `${inicio} até ${fim}`;
+            }
+            return 'Selecionar período';
         },
         
-        // FUNÇÕES UTILITÁRIAS
+        // ========== FUNÇÕES UTILITÁRIAS ==========
         formatarValor(valor) {
             return parseFloat(valor || 0).toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
@@ -155,16 +208,53 @@ window.extratoData = function() {
                 return new Date(partes[2], partes[1] - 1, partes[0]);
             }
             return new Date();
+        },
+        
+        formatarDataBrasileira(dataISO) {
+            if (!dataISO) return '';
+            const data = new Date(dataISO);
+            return data.toLocaleDateString('pt-BR');
         }
     };
 };
+
+// ========== WATCH PARA LIMPAR SITUAÇÃO QUANDO CLASSE MUDA ==========
+document.addEventListener('alpine:init', () => {
+    Alpine.effect(() => {
+        // Quando a classe muda, limpar a situação se não for compatível
+        const filtros = Alpine.store('extratoFiltros');
+        if (filtros) {
+            Alpine.effect(() => {
+                const classe = filtros.classe_ativo;
+                const situacao = filtros.situacao;
+                
+                if (classe && situacao) {
+                    const ehTrade = classe.toLowerCase().includes('trade');
+                    const ehSCP = classe.toLowerCase().includes('scp') || classe.toLowerCase().includes('private');
+                    
+                    // Se mudou para Trade e situação é "encerrado", limpar
+                    if (ehTrade && situacao === 'encerrado') {
+                        filtros.situacao = '';
+                    }
+                    
+                    // Se mudou para SCP e situação é "vendido", limpar
+                    if (ehSCP && situacao === 'vendido') {
+                        filtros.situacao = '';
+                    }
+                }
+            });
+        }
+    });
+});
 // =============== ADICIONAR FUNÇÃO DE DEBUG ===============
-console.log('✅ ExtratoData carregado com novos filtros:', {
-    situacao: ['ativo', 'vendido', 'encerrado'],
-    tipo: ['aporte', 'dividendo'],
-    classe_ativo: 'taxonomia tipo_produto',
-    investimento_id: 'ID específico',
-    periodo: ['30', '90', '180', '365']
+console.log('✅ ExtratoData corrigido com lógica Trade/SCP:', {
+    filtros: {
+        classe_ativo: 'Primeiro - determina situações disponíveis',
+        situacao: 'Segundo - Trade: ativo/vendido | SCP: ativo/encerrado',
+        periodo: 'Terceiro - calendário bancário com opções rápidas'
+    },
+    removidos: ['tipo (entrada/saída)', 'investimento específico'],
+    calendario: ['7 dias', '30 dias', '3 meses', '1 ano', 'personalizado']
 });
 // Garantir que a função esteja disponível quando o Alpine carregar
 document.addEventListener('alpine:init', () => {
