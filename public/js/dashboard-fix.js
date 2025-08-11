@@ -67,9 +67,9 @@ window.extratoData = function() {
                         return dataMovimento >= dataLimite;
                     });
                 } else if (this.filtros.data_inicio && this.filtros.data_fim) {
-                    // Período personalizado
-                    const dataInicio = new Date(this.filtros.data_inicio);
-                    const dataFim = new Date(this.filtros.data_fim);
+                    // Período personalizado - normalizar datas para comparação
+                    const dataInicio = new Date(this.filtros.data_inicio + 'T00:00:00');
+                    const dataFim = new Date(this.filtros.data_fim + 'T23:59:59');
                     
                     filtrados = filtrados.filter(mov => {
                         const dataMovimento = this.parseData(mov.data);
@@ -221,10 +221,10 @@ window.extratoData = function() {
         },
         
         parseData(dataString) {
-            // Converte data do formato dd/mm/yyyy para objeto Date
+            // Converte data do formato dd/mm/yyyy para objeto Date (meio-dia para evitar problemas de timezone)
             const partes = dataString.split('/');
             if (partes.length === 3) {
-                return new Date(partes[2], partes[1] - 1, partes[0]);
+                return new Date(partes[2], partes[1] - 1, partes[0], 12, 0, 0);
             }
             return new Date();
         },
