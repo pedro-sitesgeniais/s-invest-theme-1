@@ -1,6 +1,6 @@
 <?php
 /**
- * Dashboard do Investidor - VERSÃO COMPLETA E OTIMIZADA COM 3º DATASET
+ * Dashboard do Investidor - VERSÃO COMPLETA E OTIMIZADA COM FILTROS MELHORADOS
  * components/painel/investidor/dashboard.php
  */
 date_default_timezone_set('America/Sao_Paulo');
@@ -33,6 +33,20 @@ $total_recebido_vendas = max(0, $vendas['total_venda']);
 $rentabilidade_vendas = max(0, $vendas['total_rentabilidade']);
 
 $total_investido_geral = $total_investido_ativo + $total_investido_vendido;
+
+// ========== BUSCAR DADOS PARA OS NOVOS FILTROS ==========
+$tipos_produto_extrato = get_terms([
+    'taxonomy' => 'tipo_produto',
+    'hide_empty' => false,
+]);
+
+$investimentos_disponiveis_extrato = get_posts([
+    'post_type' => 'investment',
+    'posts_per_page' => -1,
+    'post_status' => 'publish',
+    'orderby' => 'title',
+    'order' => 'ASC',
+]);
 
 // Arrays para dados do gráfico
 $distribuicao = [];
@@ -111,13 +125,53 @@ foreach ($aportes as $aporte) {
 // RENTABILIDADE CONSOLIDADA = Vendas realizadas + Dividendos recebidos
 $rentabilidade_consolidada = $rentabilidade_vendas + $dividendos_recebidos_total;
 
-// ========== PROCESSAR TODOS OS APORTES PARA GRÁFICOS ==========
+// ========== PROCESSAR TODOS OS APORTES PARA GRÁFICOS E MOVIMENTOS ==========
 if (!empty($aportes)) {
     foreach ($aportes as $aporte) {
         $aporte_id = $aporte->ID;
         $investment_id = get_field('investment_id', $aporte_id);
         $venda_status = get_field('venda_status', $aporte_id);
         $nome_investimento = $investment_id ? get_the_title($investment_id) : 'Investimento não identificado';
+        
+        // ========== OBTER INFORMAÇÕES ADICIONAIS DO INVESTIMENTO (PARA FILTROS) ==========
+        $classe_ativo = '';
+        $eh_scp = false;
+        $status_captacao = 'ativo';
+        
+        if ($investment_id) {
+            // Classe de ativo
+            $terms = wp_get_post_terms($investment_id, 'tipo_produto');
+            if (!empty($terms) && !is_wp_error($terms)) {
+                $classe_ativo = $terms[0]->slug;
+            }
+            
+            // Verificar se é SCP
+            $eh_scp = function_exists('s_invest_is_private_scp') ? s_invest_is_private_scp($investment_id) : false;
+            if (!$eh_scp) {
+                foreach ($terms as $term) {
+                    if (stripos($term->name, 'scp') !== false || 
+                        stripos($term->name, 'private') !== false ||
+                        stripos($term->slug, 'scp') !== false ||
+                        stripos($term->slug, 'private') !== false) {
+                        $eh_scp = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Status de captação (para SCPs)
+            if ($eh_scp && function_exists('s_invest_calcular_status_captacao')) {
+                $status_captacao = s_invest_calcular_status_captacao($investment_id);
+            }
+        }
+        
+        // Determinar situação do investimento
+        $situacao = 'ativo';
+        if ($venda_status) {
+            $situacao = 'vendido';
+        } elseif ($eh_scp && in_array($status_captacao, ['encerrado', 'encerrado_meta', 'encerrado_data', 'encerrado_manual'])) {
+            $situacao = 'encerrado';
+        }
         
         // PROCESSAR HISTÓRICO DE APORTES
         $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
@@ -155,6 +209,7 @@ if (!empty($aportes)) {
                     'vendido' => $venda_status ? true : false
                 ];
                 
+                // ========== MOVIMENTOS COMPLETOS COM NOVOS CAMPOS ==========
                 $movimentos_completos[] = [
                     'id' => "aporte_{$aporte_id}_{$index}",
                     'data' => $data_aporte,
@@ -164,7 +219,11 @@ if (!empty($aportes)) {
                     'vendido' => $venda_status ? true : false,
                     'aporte_id' => $aporte_id,
                     'investment_id' => $investment_id,
-                    'timestamp' => $data ? $data->getTimestamp() : time()
+                    'timestamp' => $data ? $data->getTimestamp() : time(),
+                    // ↓ NOVOS CAMPOS PARA FILTROS
+                    'classe_ativo' => $classe_ativo,
+                    'eh_scp' => $eh_scp,
+                    'situacao' => $situacao
                 ];
             }
         }
@@ -193,6 +252,7 @@ if (!empty($aportes)) {
                     }
                 }
                 
+                // ========== DIVIDENDOS COM NOVOS CAMPOS ==========
                 $movimentos_completos[] = [
                     'id' => "dividendo_{$aporte_id}_{$index}",
                     'data' => $data_dividendo,
@@ -202,7 +262,11 @@ if (!empty($aportes)) {
                     'vendido' => $venda_status ? true : false,
                     'aporte_id' => $aporte_id,
                     'investment_id' => $investment_id,
-                    'timestamp' => $data ? $data->getTimestamp() : time()
+                    'timestamp' => $data ? $data->getTimestamp() : time(),
+                    // ↓ NOVOS CAMPOS PARA FILTROS
+                    'classe_ativo' => $classe_ativo,
+                    'eh_scp' => $eh_scp,
+                    'situacao' => $situacao
                 ];
             }
         }
@@ -625,11 +689,11 @@ $ultimos = array_slice($ultimos, 0, 10);
         </div>
     </div>
 
-    <!-- EXTRATO DE MOVIMENTAÇÕES -->
+    <!-- ========== EXTRATO DE MOVIMENTAÇÕES COM FILTROS MELHORADOS ========== -->
     <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden" 
          x-data="extratoData()" x-init="init()">
     
-        <!-- HEADER COM FILTROS -->
+        <!-- HEADER COM FILTROS MELHORADOS -->
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
@@ -637,9 +701,20 @@ $ultimos = array_slice($ultimos, 0, 10);
                     <p class="text-sm text-gray-600">Histórico completo de aportes e dividendos</p>
                 </div>
                 
-                <!-- FILTROS DO EXTRATO -->
-                <div class="flex flex-wrap items-center gap-3">
-                    <!-- Tipo de Movimento -->
+                <!-- FILTROS MELHORADOS -->
+                <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+                    
+                    <!-- 1. Filtro de Situação (substitui o antigo "Status") -->
+                    <select x-model="filtros.situacao" 
+                            @change="aplicarFiltros()" 
+                            class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Todas Situações</option>
+                        <option value="ativo">Ativos</option>
+                        <option value="vendido">Vendidos</option>
+                        <option value="encerrado">Encerrados</option>
+                    </select>
+                    
+                    <!-- 2. Filtro de Tipo (melhorado) -->
                     <select x-model="filtros.tipo" 
                             @change="aplicarFiltros()" 
                             class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -648,16 +723,27 @@ $ultimos = array_slice($ultimos, 0, 10);
                         <option value="dividendo">Dividendos (Entrada)</option>
                     </select>
                     
-                    <!-- Status -->
-                    <select x-model="filtros.status" 
+                    <!-- 3. NOVO: Filtro de Classe de Ativos -->
+                    <select x-model="filtros.classe_ativo" 
                             @change="aplicarFiltros()" 
                             class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Todos Status</option>
-                        <option value="ativo">Investimentos Ativos</option>
-                        <option value="vendido">Investimentos Vendidos</option>
+                        <option value="">Todas as Classes</option>
+                        <?php foreach ($tipos_produto_extrato as $tipo) : ?>
+                            <option value="<?= esc_attr($tipo->slug) ?>"><?= esc_html($tipo->name) ?></option>
+                        <?php endforeach; ?>
                     </select>
                     
-                    <!-- Período -->
+                    <!-- 4. NOVO: Filtro de Investimento Específico -->
+                    <select x-model="filtros.investimento_id" 
+                            @change="aplicarFiltros()" 
+                            class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Todos Investimentos</option>
+                        <?php foreach ($investimentos_disponiveis_extrato as $inv) : ?>
+                            <option value="<?= esc_attr($inv->ID) ?>"><?= esc_html($inv->post_title) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    
+                    <!-- 5. Filtro de Período -->
                     <select x-model="filtros.periodo" 
                             @change="aplicarFiltros()" 
                             class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -668,25 +754,31 @@ $ultimos = array_slice($ultimos, 0, 10);
                         <option value="365">Último ano</option>
                     </select>
                     
-                    <!-- Botão Limpar -->
+                    <!-- 6. Botão Limpar -->
                     <button @click="limparFiltros()" 
-                            class="text-sm px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            class="text-sm px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center">
                         <i class="fas fa-eraser mr-1"></i>
                         Limpar
                     </button>
                 </div>
             </div>
             
-            <!-- RESUMO DOS FILTROS ATIVOS -->
+            <!-- RESUMO DOS FILTROS ATIVOS MELHORADO -->
             <div x-show="temFiltrosAtivos()" class="mt-3 flex flex-wrap gap-2">
                 <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                     <span x-text="contarMovimentosFiltrados()"></span> movimentação(ões) encontrada(s)
                 </span>
-                <span x-show="filtros.tipo" class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                <span x-show="filtros.situacao" class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    Situação: <span x-text="obterLabelSituacao()"></span>
+                </span>
+                <span x-show="filtros.tipo" class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
                     Tipo: <span x-text="filtros.tipo === 'aporte' ? 'Aportes' : 'Dividendos'"></span>
                 </span>
-                <span x-show="filtros.status" class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
-                    Status: <span x-text="filtros.status === 'ativo' ? 'Ativos' : 'Vendidos'"></span>
+                <span x-show="filtros.classe_ativo" class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">
+                    Classe: <span x-text="obterLabelClasse()"></span>
+                </span>
+                <span x-show="filtros.investimento_id" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                    Investimento: <span x-text="obterLabelInvestimento()"></span>
                 </span>
                 <span x-show="filtros.periodo" class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
                     Período: <span x-text="obterLabelPeriodo()"></span>
@@ -700,7 +792,7 @@ $ultimos = array_slice($ultimos, 0, 10);
                 <div class="flex items-center gap-2 text-gray-500">
                     <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     <span class="text-sm">Aplicando filtros...</span>
                 </div>
@@ -715,7 +807,7 @@ $ultimos = array_slice($ultimos, 0, 10);
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investimento</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Situação</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -738,10 +830,10 @@ $ultimos = array_slice($ultimos, 0, 10);
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span :class="movimento.vendido ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'" 
+                                        <span :class="movimento.situacao === 'ativo' ? 'bg-green-100 text-green-800' : (movimento.situacao === 'vendido' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800')" 
                                               class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
-                                            <i :class="movimento.vendido ? 'fas fa-hand-holding-usd' : 'fas fa-chart-line'" class="mr-1"></i>
-                                            <span x-text="movimento.vendido ? 'Vendido' : 'Ativo'"></span>
+                                            <i :class="movimento.situacao === 'ativo' ? 'fas fa-chart-line' : (movimento.situacao === 'vendido' ? 'fas fa-hand-holding-usd' : 'fas fa-times-circle')" class="mr-1"></i>
+                                            <span x-text="movimento.situacao === 'ativo' ? 'Ativo' : (movimento.situacao === 'vendido' ? 'Vendido' : 'Encerrado')"></span>
                                         </span>
                                     </td>
                                 </tr>
@@ -808,11 +900,22 @@ window.dashboardChartData = {
 // Dados para o extrato (NOVO)
 window.dashboardMovimentos = <?php echo json_encode($movimentos_completos); ?>;
 
+// ========== DADOS ADICIONAIS PARA OS NOVOS FILTROS ==========
+window.dashboardFiltrosDados = {
+    tiposAtivo: <?php echo json_encode(array_map(function($term) {
+        return ['slug' => $term->slug, 'name' => $term->name];
+    }, $tipos_produto_extrato)); ?>,
+    
+    investimentosDisponiveis: <?php echo json_encode(array_map(function($inv) {
+        return ['id' => $inv->ID, 'title' => $inv->post_title];
+    }, $investimentos_disponiveis_extrato)); ?>
+};
+
 // Compatibilidade com código existente
 window.dashboardUltimos = <?php echo json_encode($ultimos); ?>;
 
 // Debug
-console.log('Dashboard carregado com 3 datasets:', {
+console.log('Dashboard carregado com filtros melhorados:', {
     aportes: <?php echo count($aportes); ?>,
     movimentos: window.dashboardMovimentos?.length || 0,
     distribuicao: Object.keys(window.dashboardChartData.distribuicaoData).length,
@@ -820,6 +923,10 @@ console.log('Dashboard carregado com 3 datasets:', {
         investido: window.dashboardChartData.chartInvestido?.length || 0,
         rentabilidade: window.dashboardChartData.chartRentabilidade?.length || 0,
         consolidada: window.dashboardChartData.chartRentabilidadeConsolidada?.length || 0
+    },
+    filtros: {
+        tipos: window.dashboardFiltrosDados.tiposAtivo?.length || 0,
+        investimentos: window.dashboardFiltrosDados.investimentosDisponiveis?.length || 0
     }
 });
 </script>
