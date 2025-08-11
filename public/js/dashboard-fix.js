@@ -8,7 +8,7 @@ window.extratoData = function() {
         movimentosFiltrados: [],
         carregando: false,
         limite: 10,
-        showCalendar: false,
+        showOffcanvas: false,
         
         // FILTROS CORRIGIDOS: Classe → Situação (condicionada) → Período
         filtros: {
