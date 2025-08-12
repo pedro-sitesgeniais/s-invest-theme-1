@@ -7,7 +7,7 @@ defined('ABSPATH') || exit;
 
 // Sua lógica para listar todos os investimentos com documentos
 $investments = get_posts([
-    'post_type' => 'investimento',
+    'post_type' => 'investment',
     'posts_per_page' => -1,
     'meta_query' => [
         [

@@ -72,7 +72,8 @@ else {
                 <ul class="space-y-2" aria-labelledby="documents-heading">
                     <?php foreach ($investment_data['docs'] as $doc) : 
                         $title = esc_html($doc['title'] ?? '');
-                        $url = esc_url($doc['url']['url'] ?? '');
+                        $att_id = !empty($doc['url']['ID']) ? (int)$doc['url']['ID'] : 0;
+                        $url    = $att_id ? esc_url( sip_get_protected_document_url($att_id) ) : '';
                         $file_type = wp_check_filetype($url);
                     ?>
                         <li class="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b last:border-b-0">
@@ -111,7 +112,7 @@ else {
             <!-- LISTA GERAL DE INVESTIMENTOS COM DOCUMENTOS -->
             <?php
             $investments = get_posts([
-                'post_type' => 'investimento',
+                'post_type' => 'investment',
                 'posts_per_page' => -1,
                 'meta_query' => [
                     [

@@ -399,9 +399,9 @@ $docs = get_field('documentos', $inv_id) ?: [];
     <!-- BOTÕES DE AÇÃO -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 my-6 md:my-12">
         <!-- Contrato -->
-        <?php if ($contrato && isset($contrato['url'])) : ?>
-            <a href="<?php echo esc_url($contrato['url']); ?>" 
-               class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-blue-900 border border-blue-800 hover:bg-blue-600 transition-colors"
+        <?php if (is_array($contrato) && !empty($contrato['ID'])) :
+    $url = sip_get_protected_document_url((int)$contrato['ID']); ?>
+    <a href="<?php echo esc_url($url); ?>" target="_blank" rel="noopener" class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-blue-900 border border-blue-800 hover:bg-blue-600 transition-colors"
                target="_blank" 
                rel="noopener noreferrer">
                 <i class="fas fa-file-contract text-lg"></i>
@@ -421,20 +421,23 @@ $docs = get_field('documentos', $inv_id) ?: [];
         <?php endif; ?>
         
         <!-- Lâmina Técnica -->
-        <?php if ($lamina_tecnica) : ?>
-            <a href="<?php echo esc_url($lamina_tecnica); ?>" 
-               class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-blue-900 border border-blue-800 hover:bg-blue-600 transition-colors"
+        <?php if ($lamina_tecnica) :
+    $lamina_id = attachment_url_to_postid($lamina_tecnica);
+    if ($lamina_id) :
+        $lamina_url_protegida = sip_get_protected_document_url($lamina_id); ?>
+        <a href="<?php echo esc_url($lamina_url_protegida); ?>" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-blue-900 border border-blue-800 hover:bg-blue-600 transition-colors"
                target="_blank" 
                rel="noopener noreferrer">
                 <i class="fas fa-file-invoice-dollar text-lg"></i>
                 Lâmina Técnica
-            </a>
-        <?php endif; ?>
+        </a>
+    <?php endif;
+endif; ?>
         
         <!-- Sobre o Investimento -->
         <a href="<?php echo esc_url($link_produto); ?>" 
            class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-blue-900 border border-blue-800 hover:bg-blue-600 transition-colors"
-           target="_self" 
+           target="_blank" 
            rel="noopener noreferrer">
             <i class="fa-regular fa-circle-question text-lg"></i>
             Sobre o Investimento
