@@ -184,12 +184,6 @@ foreach ($aportes as $aporte) {
         // ===== TRADE ATIVO =====
         $quantidade_trades_ativos++;
         $aportes_ativos += $valor_investido_aporte;
-        
-        // Rentabilidade projetada = valor atual - valor investido
-        $valor_atual = floatval(get_field('valor_atual', $aporte_id));
-        if ($valor_atual > 0) {
-            $rentabilidade_projetada += ($valor_atual - $valor_investido_aporte);
-        }
     }
     
     // ===== PROCESSAR DADOS PARA GRÁFICOS (mantém lógica atual) =====
