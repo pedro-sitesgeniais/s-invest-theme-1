@@ -434,7 +434,7 @@ $docs = get_field('documentos', $inv_id) ?: [];
         <!-- Sobre o Investimento -->
         <a href="<?php echo esc_url($link_produto); ?>" 
            class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-blue-900 border border-blue-800 hover:bg-blue-600 transition-colors"
-           target="_blank" 
+           target="_self" 
            rel="noopener noreferrer">
             <i class="fa-regular fa-circle-question text-lg"></i>
             Sobre o Investimento

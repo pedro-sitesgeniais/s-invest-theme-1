@@ -11,6 +11,16 @@ $user = wp_get_current_user();
 $nome_completo = trim($user->first_name . ' ' . $user->last_name) ?: $user->display_name;
 $atualizado_em = date('d/m/Y H:i');
 
+$aportes_ativos = 0;           // Trades ativos + SCPs em captação
+$aportes_concluidos = 0;       // SCPs que finalizaram captação mas não venceram
+$rentabilidade_projetada = 0;  // Valorização dos trades ativos
+$rentabilidade_consolidada = 0; // Vendas + dividendos recebidos
+// ===== CONTADORES =====
+$quantidade_trades_ativos = 0;
+$quantidade_scp_captacao = 0;
+$quantidade_scp_concluidos = 0;
+$quantidade_vendidos = 0;
+
 $cache_key = 'dashboard_stats_' . $user_id;
 $estatisticas = wp_cache_get($cache_key, 'user_stats');
 
@@ -93,299 +103,241 @@ foreach ($aportes as $aporte) {
     $aporte_id = $aporte->ID;
     $investment_id = get_field('investment_id', $aporte_id);
     $venda_status = get_field('venda_status', $aporte_id);
-
-    // Só processar aportes não vendidos
-    if ($investment_id && !$venda_status) {
-        // Verificar se é SCP/Private por função helper
+    $nome_investimento = $investment_id ? get_the_title($investment_id) : 'Investimento não identificado';
+    
+    // Verificar se é SCP
+    $eh_scp = false;
+    $status_captacao = 'ativo';
+    $classe_ativo = '';
+    
+    if ($investment_id) {
+        // Verificar tipo por função helper do tema
         $eh_scp = function_exists('s_invest_is_private_scp') ? s_invest_is_private_scp($investment_id) : false;
-
-        // Se não existe a função, verificar por taxonomia
+        
+        // Fallback: verificar por taxonomia
         if (!$eh_scp) {
             $terms = wp_get_post_terms($investment_id, 'tipo_produto');
             foreach ($terms as $term) {
-                if (
-                    stripos($term->name, 'scp') !== false ||
+                if (stripos($term->name, 'scp') !== false || 
                     stripos($term->name, 'private') !== false ||
                     stripos($term->slug, 'scp') !== false ||
-                    stripos($term->slug, 'private') !== false
-                ) {
+                    stripos($term->slug, 'private') !== false) {
                     $eh_scp = true;
+                    $classe_ativo = $term->slug;
                     break;
                 }
             }
         }
-
-        // SCP ativo (não vendido e dentro do prazo de captação/operação)
+        
+        // Status de captação para SCPs
+        if ($eh_scp && function_exists('s_invest_calcular_status_captacao')) {
+            $status_captacao = s_invest_calcular_status_captacao($investment_id);
+        }
+    }
+    
+    // Calcular valor total investido neste aporte
+    $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
+    $valor_investido_aporte = 0;
+    
+    foreach ($historico_aportes as $item) {
+        $valor_investido_aporte += floatval($item['valor_aporte'] ?? 0);
+    }
+    
+    // Se não tem histórico, usar valor_compra ou valor_aportado
+    if ($valor_investido_aporte == 0) {
         if ($eh_scp) {
-            $quantidade_scp++;
-
-            // Somar valor investido neste SCP
-            $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
-            foreach ($historico_aportes as $item) {
-                $total_investido_scp += floatval($item['valor_aporte'] ?? 0);
-            }
-
-            // Somar dividendos recebidos deste SCP
-            $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
-            foreach ($historico_dividendos as $dividendo) {
-                $dividendos_recebidos_total += floatval($dividendo['valor'] ?? 0);
-            }
+            $valor_investido_aporte = floatval(get_field('valor_aportado', $aporte_id));
+        } else {
+            $valor_investido_aporte = floatval(get_field('valor_compra', $aporte_id));
         }
     }
-}
-
-// RENTABILIDADE CONSOLIDADA = Vendas realizadas + Dividendos recebidos
-$rentabilidade_consolidada = $rentabilidade_vendas + $dividendos_recebidos_total;
-
-// ========== PROCESSAR TODOS OS APORTES PARA GRÁFICOS E MOVIMENTOS ==========
-if (!empty($aportes)) {
-    foreach ($aportes as $aporte) {
-        $aporte_id = $aporte->ID;
-        $investment_id = get_field('investment_id', $aporte_id);
-        $venda_status = get_field('venda_status', $aporte_id);
-        $nome_investimento = $investment_id ? get_the_title($investment_id) : 'Investimento não identificado';
-
-        // ========== OBTER INFORMAÇÕES ADICIONAIS DO INVESTIMENTO (PARA FILTROS) ==========
-        $classe_ativo = '';
-        $eh_scp = false;
-        $status_captacao = 'ativo';
-
-        if ($investment_id) {
-            // Classe de ativo
-            $terms = wp_get_post_terms($investment_id, 'tipo_produto');
-            if (!empty($terms) && !is_wp_error($terms)) {
-                $classe_ativo = $terms[0]->slug;
-            }
-
-            // Verificar se é SCP
-            $eh_scp = function_exists('s_invest_is_private_scp') ? s_invest_is_private_scp($investment_id) : false;
-            if (!$eh_scp) {
-                foreach ($terms as $term) {
-                    if (
-                        stripos($term->name, 'scp') !== false ||
-                        stripos($term->name, 'private') !== false ||
-                        stripos($term->slug, 'scp') !== false ||
-                        stripos($term->slug, 'private') !== false
-                    ) {
-                        $eh_scp = true;
-                        break;
-                    }
-                }
-            }
-
-            // Status de captação (para SCPs)
-            if ($eh_scp && function_exists('s_invest_calcular_status_captacao')) {
-                $status_captacao = s_invest_calcular_status_captacao($investment_id);
-            }
+    
+    // ===== CLASSIFICAR APORTE PELOS 4 INDICADORES =====
+    
+    if ($venda_status) {
+        // ===== VENDIDO: Vai para rentabilidade consolidada =====
+        $quantidade_vendidos++;
+        $valor_recebido = floatval(get_field('venda_valor', $aporte_id));
+        $rentabilidade_consolidada += $valor_recebido;
+        
+    } elseif ($eh_scp) {
+        // ===== SCP: Verificar status de captação =====
+        
+        if (in_array($status_captacao, ['encerrado', 'encerrado_meta', 'encerrado_data', 'encerrado_manual'])) {
+            // SCP CONCLUÍDO (finalizou captação, aguardando vencimento)
+            $quantidade_scp_concluidos++;
+            $aportes_concluidos += $valor_investido_aporte;
+            
+        } else {
+            // SCP ATIVO (ainda em captação)
+            $quantidade_scp_captacao++;
+            $aportes_ativos += $valor_investido_aporte;
         }
-
-        // Determinar situação do investimento
-        $situacao = 'ativo';
-        if ($venda_status) {
-            $situacao = 'vendido';
-        } elseif ($eh_scp && in_array($status_captacao, ['encerrado', 'encerrado_meta', 'encerrado_data', 'encerrado_manual'])) {
-            $situacao = 'encerrado';
-        }
-
-        // PROCESSAR HISTÓRICO DE APORTES
-        $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
-        $total_aporte_investido = 0;
-
-        foreach ($historico_aportes as $index => $item) {
-            $valor_aporte_item = (float) ($item['valor_aporte'] ?? 0);
-            $data_aporte = $item['data_aporte'] ?? '';
-
-            if ($valor_aporte_item > 0 && !empty($data_aporte)) {
-                $total_aporte_investido += $valor_aporte_item;
-
-                // Processar data para o gráfico
-                $data = DateTime::createFromFormat('d/m/Y', $data_aporte);
-                if ($data) {
-                    $mesIngles = $data->format('M');
-                    $ano = $data->format('Y');
-                    $mes = $mesesTraducao[$mesIngles] ?? '';
-                    $mesAno = $mes . ' ' . $ano;
-
-                    if ($mes) {
-                        if (!isset($investidoPorMesAno[$mesAno])) {
-                            $investidoPorMesAno[$mesAno] = 0;
-                        }
-                        $investidoPorMesAno[$mesAno] += $valor_aporte_item;
-                    }
-                }
-
-                // Para a tabela de movimentos
-                $status_movimento = $venda_status ? ' (Vendido)' : '';
-                $ultimos[] = [
-                    'data' => $data_aporte,
-                    'valor' => $valor_aporte_item,
-                    'investimento' => $nome_investimento . $status_movimento,
-                    'vendido' => $venda_status ? true : false
-                ];
-
-                // ========== MOVIMENTOS COMPLETOS COM NOVOS CAMPOS ==========
-                $movimentos_completos[] = [
-                    'id' => "aporte_{$aporte_id}_{$index}",
-                    'data' => $data_aporte,
-                    'tipo' => 'aporte',
-                    'investimento' => $nome_investimento,
-                    'valor' => $valor_aporte_item,
-                    'vendido' => $venda_status ? true : false,
-                    'aporte_id' => $aporte_id,
-                    'investment_id' => $investment_id,
-                    'timestamp' => $data ? $data->getTimestamp() : time(),
-                    // ↓ NOVOS CAMPOS PARA FILTROS
-                    'classe_ativo' => $classe_ativo,
-                    'eh_scp' => $eh_scp,
-                    'situacao' => $situacao
-                ];
-            }
-        }
-
-        // PROCESSAR DIVIDENDOS
+        
+        // Somar dividendos recebidos (para rentabilidade consolidada)
         $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
-
-        foreach ($historico_dividendos as $index => $dividendo) {
-            $valor_dividendo = (float) ($dividendo['valor'] ?? 0);
-            $data_dividendo = $dividendo['data_dividendo'] ?? $dividendo['data'] ?? '';
-
-            if ($valor_dividendo > 0 && !empty($data_dividendo)) {
-                $data = DateTime::createFromFormat('d/m/Y', $data_dividendo);
-
-                if ($data) {
-                    $mesIngles = $data->format('M');
-                    $ano = $data->format('Y');
-                    $mes = $mesesTraducao[$mesIngles] ?? '';
-                    $mesAno = $mes . ' ' . $ano;
-
-                    if ($mes) {
-                        if (!isset($rentabilidadeConsolidadaPorMesAno[$mesAno])) {
-                            $rentabilidadeConsolidadaPorMesAno[$mesAno] = 0;
-                        }
-                        $rentabilidadeConsolidadaPorMesAno[$mesAno] += $valor_dividendo;
-                    }
-                }
-
-                // ========== DIVIDENDOS COM NOVOS CAMPOS ==========
-                $movimentos_completos[] = [
-                    'id' => "dividendo_{$aporte_id}_{$index}",
-                    'data' => $data_dividendo,
-                    'tipo' => 'dividendo',
-                    'investimento' => $nome_investimento,
-                    'valor' => $valor_dividendo,
-                    'vendido' => $venda_status ? true : false,
-                    'aporte_id' => $aporte_id,
-                    'investment_id' => $investment_id,
-                    'timestamp' => $data ? $data->getTimestamp() : time(),
-                    // ↓ NOVOS CAMPOS PARA FILTROS
-                    'classe_ativo' => $classe_ativo,
-                    'eh_scp' => $eh_scp,
-                    'situacao' => $situacao
-                ];
-            }
+        foreach ($historico_dividendos as $dividendo) {
+            $rentabilidade_consolidada += floatval($dividendo['valor'] ?? 0);
         }
-
-        // PROCESSAR VENDAS
-        if ($venda_status) {
-            $valor_recebido_venda = (float) get_field('venda_valor', $aporte_id);
-            $data_venda = get_field('venda_data', $aporte_id);
-
-            if ($valor_recebido_venda > 0 && !empty($data_venda)) {
-                $data = DateTime::createFromFormat('d/m/Y', $data_venda);
-                if ($data) {
-                    $mesIngles = $data->format('M');
-                    $ano = $data->format('Y');
-                    $mes = $mesesTraducao[$mesIngles] ?? '';
-                    $mesAno = $mes . ' ' . $ano;
-
-                    if ($mes) {
-                        if (!isset($rentabilidadeConsolidadaPorMesAno[$mesAno])) {
-                            $rentabilidadeConsolidadaPorMesAno[$mesAno] = 0;
-                        }
-                        $rentabilidadeConsolidadaPorMesAno[$mesAno] += $valor_recebido_venda;
-                    }
-                }
-            }
+        
+    } else {
+        // ===== TRADE ATIVO =====
+        $quantidade_trades_ativos++;
+        $aportes_ativos += $valor_investido_aporte;
+        
+        // Rentabilidade projetada = valor atual - valor investido
+        $valor_atual = floatval(get_field('valor_atual', $aporte_id));
+        if ($valor_atual > 0) {
+            $rentabilidade_projetada += ($valor_atual - $valor_investido_aporte);
         }
-
-        // PROCESSAR HISTÓRICO DE RENTABILIDADE (apenas aportes Trade ativos)
-        if (!$venda_status) {
-            $eh_trade = true;
-
-            // Verificar se é SCP para excluir da rentabilidade projetada
-            if ($investment_id) {
-                $eh_scp = function_exists('s_invest_is_private_scp') ? s_invest_is_private_scp($investment_id) : false;
-
-                if (!$eh_scp) {
-                    $terms = wp_get_post_terms($investment_id, 'tipo_produto');
-                    foreach ($terms as $term) {
-                        if (
-                            stripos($term->name, 'scp') !== false ||
-                            stripos($term->name, 'private') !== false ||
-                            stripos($term->slug, 'scp') !== false ||
-                            stripos($term->slug, 'private') !== false
-                        ) {
-                            $eh_scp = true;
-                            break;
-                        }
-                    }
-                }
-
-                $eh_trade = !$eh_scp;
+    }
+    
+    // ===== PROCESSAR DADOS PARA GRÁFICOS (mantém lógica atual) =====
+    
+    // Distribuição (apenas ativos e concluídos)
+    if (!$venda_status && $investment_id && $valor_investido_aporte > 0) {
+        $terms = wp_get_post_terms($investment_id, 'tipo_produto');
+        if (!empty($terms) && !is_wp_error($terms)) {
+            $categoria = $terms[0]->name;
+            if (!isset($distribuicao[$categoria])) {
+                $distribuicao[$categoria] = 0;
             }
-
-            // Só processar rentabilidade de produtos Trade ativos
-            if ($eh_trade) {
-                $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id) ?: [];
-
-                foreach ($rentabilidade_hist as $item) {
-                    if (isset($item['data_rentabilidade']) && isset($item['valor'])) {
-                        $data_rentabilidade = $item['data_rentabilidade'];
-                        $valor_rentabilidade = (float) $item['valor'];
-
-                        if (!empty($data_rentabilidade) && $valor_rentabilidade > 0) {
-                            $data = DateTime::createFromFormat('d/m/Y', $data_rentabilidade);
-                            if ($data) {
-                                $mesIngles = $data->format('M');
-                                $ano = $data->format('Y');
-                                $mes = $mesesTraducao[$mesIngles] ?? '';
-                                $mesAno = $mes . ' ' . $ano;
-
-                                if ($mes) {
-                                    if (!isset($rentabilidadePorMesAno[$mesAno])) {
-                                        $rentabilidadePorMesAno[$mesAno] = 0;
-                                    }
-                                    $rentabilidadePorMesAno[$mesAno] += $valor_rentabilidade;
-                                }
+            $distribuicao[$categoria] += $valor_investido_aporte;
+        }
+    }
+    
+    // Histórico para gráfico de barras
+    foreach ($historico_aportes as $index => $item) {
+        $valor_aporte_item = floatval($item['valor_aporte'] ?? 0);
+        $data_aporte = $item['data_aporte'] ?? '';
+        
+        if ($valor_aporte_item > 0 && !empty($data_aporte)) {
+            // Para o gráfico mensal
+            $data = DateTime::createFromFormat('d/m/Y', $data_aporte);
+            if ($data) {
+                $mesIngles = $data->format('M');
+                $ano = $data->format('Y');
+                $mes = $mesesTraducao[$mesIngles] ?? '';
+                $mesAno = $mes . ' ' . $ano;
+                
+                if ($mes) {
+                    if (!isset($investidoPorMesAno[$mesAno])) {
+                        $investidoPorMesAno[$mesAno] = 0;
+                    }
+                    $investidoPorMesAno[$mesAno] += $valor_aporte_item;
+                }
+            }
+            
+            // Para tabela de últimos movimentos
+            $ultimos[] = [
+                'data' => $data_aporte,
+                'valor' => $valor_aporte_item,
+                'investimento' => $nome_investimento . ($venda_status ? ' (Vendido)' : ''),
+                'vendido' => $venda_status ? true : false
+            ];
+            
+            // Para o extrato completo com filtros
+            $situacao = 'ativo';
+            if ($venda_status) {
+                $situacao = 'vendido';
+            } elseif ($eh_scp && in_array($status_captacao, ['encerrado', 'encerrado_meta', 'encerrado_data', 'encerrado_manual'])) {
+                $situacao = 'encerrado';
+            }
+            
+            $movimentos_completos[] = [
+                'id' => "aporte_{$aporte_id}_{$index}",
+                'data' => $data_aporte,
+                'tipo' => 'aporte',
+                'investimento' => $nome_investimento,
+                'valor' => $valor_aporte_item,
+                'vendido' => $venda_status ? true : false,
+                'aporte_id' => $aporte_id,
+                'investment_id' => $investment_id,
+                'timestamp' => $data ? $data->getTimestamp() : time(),
+                'classe_ativo' => $classe_ativo,
+                'eh_scp' => $eh_scp,
+                'situacao' => $situacao
+            ];
+        }
+    }
+    
+    // Processar dividendos
+    $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
+    foreach ($historico_dividendos as $index => $dividendo) {
+        $valor_dividendo = floatval($dividendo['valor'] ?? 0);
+        $data_dividendo = $dividendo['data_dividendo'] ?? $dividendo['data'] ?? '';
+        
+        if ($valor_dividendo > 0 && !empty($data_dividendo)) {
+            $data = DateTime::createFromFormat('d/m/Y', $data_dividendo);
+            if ($data) {
+                $mesIngles = $data->format('M');
+                $ano = $data->format('Y');
+                $mes = $mesesTraducao[$mesIngles] ?? '';
+                $mesAno = $mes . ' ' . $ano;
+                
+                if ($mes) {
+                    if (!isset($rentabilidadeConsolidadaPorMesAno[$mesAno])) {
+                        $rentabilidadeConsolidadaPorMesAno[$mesAno] = 0;
+                    }
+                    $rentabilidadeConsolidadaPorMesAno[$mesAno] += $valor_dividendo;
+                }
+            }
+            
+            // Para o extrato
+            $situacao = 'ativo';
+            if ($venda_status) {
+                $situacao = 'vendido';
+            } elseif ($eh_scp && in_array($status_captacao, ['encerrado', 'encerrado_meta', 'encerrado_data', 'encerrado_manual'])) {
+                $situacao = 'encerrado';
+            }
+            
+            $movimentos_completos[] = [
+                'id' => "dividendo_{$aporte_id}_{$index}",
+                'data' => $data_dividendo,
+                'tipo' => 'dividendo',
+                'investimento' => $nome_investimento,
+                'valor' => $valor_dividendo,
+                'vendido' => $venda_status ? true : false,
+                'aporte_id' => $aporte_id,
+                'investment_id' => $investment_id,
+                'timestamp' => $data ? $data->getTimestamp() : time(),
+                'classe_ativo' => $classe_ativo,
+                'eh_scp' => $eh_scp,
+                'situacao' => $situacao
+            ];
+        }
+    }
+    
+    // Processar histórico de rentabilidade (apenas trades ativos)
+    if (!$venda_status && !$eh_scp) {
+        $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id) ?: [];
+        foreach ($rentabilidade_hist as $item) {
+            if (isset($item['data_rentabilidade']) && isset($item['valor'])) {
+                $data_rentabilidade = $item['data_rentabilidade'];
+                $valor_rentabilidade = floatval($item['valor']);
+                
+                if (!empty($data_rentabilidade) && $valor_rentabilidade > 0) {
+                    $data = DateTime::createFromFormat('d/m/Y', $data_rentabilidade);
+                    if ($data) {
+                        $mesIngles = $data->format('M');
+                        $ano = $data->format('Y');
+                        $mes = $mesesTraducao[$mesIngles] ?? '';
+                        $mesAno = $mes . ' ' . $ano;
+                        
+                        if ($mes) {
+                            if (!isset($rentabilidadePorMesAno[$mesAno])) {
+                                $rentabilidadePorMesAno[$mesAno] = 0;
                             }
+                            $rentabilidadePorMesAno[$mesAno] += $valor_rentabilidade;
                         }
                     }
                 }
-            }
-        }
-
-        // DISTRIBUIÇÃO POR CATEGORIA (apenas aportes ativos)
-        if ($investment_id && $total_aporte_investido > 0 && !$venda_status) {
-            $terms = wp_get_post_terms($investment_id, 'tipo_produto');
-
-            if (!empty($terms) && !is_wp_error($terms)) {
-                $categoria = $terms[0]->name;
-
-                if (!isset($distribuicao[$categoria])) {
-                    $distribuicao[$categoria] = 0;
-                }
-                $distribuicao[$categoria] += $total_aporte_investido;
-            } else {
-                if (!isset($distribuicao['Outros'])) {
-                    $distribuicao['Outros'] = 0;
-                }
-                $distribuicao['Outros'] += $total_aporte_investido;
             }
         }
     }
 }
 
-// ========== ORGANIZAR DADOS DO GRÁFICO CRONOLOGICAMENTE ==========
+// ===== ORGANIZAR DADOS PARA GRÁFICOS =====
 $todosMesesAno = array_unique(array_merge(
     array_keys($investidoPorMesAno),
     array_keys($rentabilidadePorMesAno),
@@ -395,34 +347,25 @@ $todosMesesAno = array_unique(array_merge(
 usort($todosMesesAno, function ($a, $b) {
     $partes_a = explode(' ', $a);
     $partes_b = explode(' ', $b);
-
+    
     if (count($partes_a) != 2 || count($partes_b) != 2) return 0;
-
+    
     $ano_a = (int)$partes_a[1];
     $ano_b = (int)$partes_b[1];
-
+    
     if ($ano_a != $ano_b) {
         return $ano_a - $ano_b;
     }
-
+    
     $ordemMeses = [
-        'Jan' => 1,
-        'Fev' => 2,
-        'Mar' => 3,
-        'Abr' => 4,
-        'Mai' => 5,
-        'Jun' => 6,
-        'Jul' => 7,
-        'Ago' => 8,
-        'Set' => 9,
-        'Out' => 10,
-        'Nov' => 11,
-        'Dez' => 12
+        'Jan' => 1, 'Fev' => 2, 'Mar' => 3, 'Abr' => 4,
+        'Mai' => 5, 'Jun' => 6, 'Jul' => 7, 'Ago' => 8,
+        'Set' => 9, 'Out' => 10, 'Nov' => 11, 'Dez' => 12
     ];
-
+    
     $mes_a = $ordemMeses[$partes_a[0]] ?? 0;
     $mes_b = $ordemMeses[$partes_b[0]] ?? 0;
-
+    
     return $mes_a - $mes_b;
 });
 
@@ -438,25 +381,38 @@ foreach ($todosMesesAno as $mesAno) {
     $chartRentabilidadeConsolidada[] = $rentabilidadeConsolidadaPorMesAno[$mesAno] ?? 0;
 }
 
-// ========== ORDENAR MOVIMENTOS ==========
+// Ordenar movimentos
 usort($movimentos_completos, function ($a, $b) {
     return $b['timestamp'] - $a['timestamp'];
 });
-
 $movimentos_completos = array_slice($movimentos_completos, 0, 100);
 
 usort($ultimos, function ($a, $b) {
     $dataA = DateTime::createFromFormat('d/m/Y', $a['data']);
     $dataB = DateTime::createFromFormat('d/m/Y', $b['data']);
-
+    
     if (!$dataA || !$dataB) {
         return 0;
     }
-
+    
     return $dataB->getTimestamp() - $dataA->getTimestamp();
 });
-
 $ultimos = array_slice($ultimos, 0, 10);
+
+// ===== BUSCAR DADOS PARA FILTROS =====
+$tipos_produto_extrato = get_terms([
+    'taxonomy' => 'tipo_produto',
+    'hide_empty' => false,
+]);
+
+$investimentos_disponiveis_extrato = get_posts([
+    'post_type' => 'investment',
+    'posts_per_page' => -1,
+    'post_status' => 'publish',
+    'orderby' => 'title',
+    'order' => 'ASC',
+]);
+
 ?>
 
 <div x-data="dashboardData()" class="space-y-6 lg:py-10 main-content-mobile min-h-screen">
@@ -498,44 +454,84 @@ $ultimos = array_slice($ultimos, 0, 10);
                     <i class="fas fa-chart-line text-xl text-blue-600"></i>
                 </div>
                 <span class="text-xs font-medium px-2 py-1 bg-blue-50 text-blue-600 rounded-full">
-                    <?php echo $aportes_ativos; ?> ativo<?php echo $aportes_ativos != 1 ? 's' : ''; ?>
+                    <?php echo ($quantidade_trades_ativos + $quantidade_scp_captacao); ?> ativo<?php echo ($quantidade_trades_ativos + $quantidade_scp_captacao) != 1 ? 's' : ''; ?>
                 </span>
             </div>
 
             <div class="flex items-center gap-2 mb-1">
                 <h3 class="text-sm font-medium text-gray-600">Aportes Ativos</h3>
-
                 <div class="relative" x-data="{ showTooltip: false }">
                     <button
                         @mouseenter="showTooltip = true"
                         @mouseleave="showTooltip = false"
-                        @click="showTooltip = !showTooltip"
                         class="w-4 h-4 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors">
                         <i class="fas fa-question text-xs text-gray-500"></i>
                     </button>
-
                     <div
                         x-show="showTooltip"
-                        x-transition:enter="transition ease-out duration-200"
-                        x-transition:enter-start="opacity-0 transform scale-95"
-                        x-transition:enter-end="opacity-100 transform scale-100"
-                        x-transition:leave="transition ease-in duration-150"
-                        x-transition:leave-start="opacity-100 transform scale-100"
-                        x-transition:leave-end="opacity-0 transform scale-95"
+                        x-transition
                         class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap"
                         style="display: none;">
-                        Soma dos aportes que ainda não foram vendidos ou estão em captação.
+                        Trades ativos + SCPs ainda em captação
                         <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
                     </div>
                 </div>
             </div>
 
             <p class="text-2xl font-bold text-gray-900">
-                R$ <?php echo number_format($total_investido_ativo, 0, ',', '.'); ?>
+                R$ <?php echo number_format($aportes_ativos, 0, ',', '.'); ?>
+            </p>
+            
+            <?php if ($quantidade_trades_ativos > 0 || $quantidade_scp_captacao > 0): ?>
+                <p class="text-xs text-gray-500 mt-2">
+                    <?php if ($quantidade_trades_ativos > 0): ?>
+                        <?php echo $quantidade_trades_ativos; ?> Trade<?php echo $quantidade_trades_ativos != 1 ? 's' : ''; ?>
+                    <?php endif; ?>
+                    <?php if ($quantidade_trades_ativos > 0 && $quantidade_scp_captacao > 0): ?> • <?php endif; ?>
+                    <?php if ($quantidade_scp_captacao > 0): ?>
+                        <?php echo $quantidade_scp_captacao; ?> SCP<?php echo $quantidade_scp_captacao != 1 ? 's' : ''; ?>
+                    <?php endif; ?>
+                </p>
+            <?php endif; ?>
+        </div>
+
+        <!-- Card 2: Aportes Concluídos -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-building text-xl text-indigo-600"></i>
+                </div>
+                <span class="text-xs font-medium px-2 py-1 bg-indigo-50 text-indigo-600 rounded-full">
+                    <?php echo $quantidade_scp_concluidos; ?> concluído<?php echo $quantidade_scp_concluidos != 1 ? 's' : ''; ?>
+                </span>
+            </div>
+
+            <div class="flex items-center gap-2 mb-1">
+                <h3 class="text-sm font-medium text-gray-600">Aportes Concluídos</h3>
+                <div class="relative" x-data="{ showTooltip: false }">
+                    <button
+                        @mouseenter="showTooltip = true"
+                        @mouseleave="showTooltip = false"
+                        class="w-4 h-4 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors">
+                        <i class="fas fa-question text-xs text-gray-500"></i>
+                    </button>
+                    <div
+                        x-show="showTooltip"
+                        x-transition
+                        class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap"
+                        style="display: none;">
+                        SCPs que finalizaram captação, aguardando vencimento
+                        <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-2xl font-bold text-gray-900">
+                R$ <?php echo number_format($aportes_concluidos, 0, ',', '.'); ?>
             </p>
         </div>
 
-        <!-- Card 2: Rentabilidade Projetada (Trade) -->
+        <!-- Card 3: Rentabilidade Projetada (Trade) -->
         <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -548,27 +544,19 @@ $ultimos = array_slice($ultimos, 0, 10);
 
             <div class="flex items-center gap-2 mb-1">
                 <h3 class="text-sm font-medium text-gray-600">Rentabilidade Projetada</h3>
-
                 <div class="relative" x-data="{ showTooltip: false }">
                     <button
                         @mouseenter="showTooltip = true"
                         @mouseleave="showTooltip = false"
-                        @click="showTooltip = !showTooltip"
                         class="w-4 h-4 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors">
                         <i class="fas fa-question text-xs text-gray-500"></i>
                     </button>
-
                     <div
                         x-show="showTooltip"
-                        x-transition:enter="transition ease-out duration-200"
-                        x-transition:enter-start="opacity-0 transform scale-95"
-                        x-transition:enter-end="opacity-100 transform scale-100"
-                        x-transition:leave="transition ease-in duration-150"
-                        x-transition:leave-start="opacity-100 transform scale-100"
-                        x-transition:leave-end="opacity-0 transform scale-95"
+                        x-transition
                         class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap"
                         style="display: none;">
-                        Valorizações dos produtos Trade ativos.
+                        Valorização dos produtos Trade ativos
                         <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
                     </div>
                 </div>
@@ -579,91 +567,39 @@ $ultimos = array_slice($ultimos, 0, 10);
             </p>
         </div>
 
-        <!-- Card 3: Rentabilidade Consolidada -->
+        <!-- Card 4: Rentabilidade Consolidada -->
         <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
             <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-hand-holding-usd text-xl text-orange-600"></i>
+                <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-hand-holding-usd text-xl text-emerald-600"></i>
                 </div>
-                <span class="text-xs font-medium px-2 py-1 bg-orange-50 text-orange-600 rounded-full">
+                <span class="text-xs font-medium px-2 py-1 bg-emerald-50 text-emerald-600 rounded-full">
                     Realizada
                 </span>
             </div>
 
             <div class="flex items-center gap-2 mb-1">
                 <h3 class="text-sm font-medium text-gray-600">Rentabilidade Consolidada</h3>
-
                 <div class="relative" x-data="{ showTooltip: false }">
                     <button
                         @mouseenter="showTooltip = true"
                         @mouseleave="showTooltip = false"
-                        @click="showTooltip = !showTooltip"
                         class="w-4 h-4 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors">
                         <i class="fas fa-question text-xs text-gray-500"></i>
                     </button>
-
                     <div
                         x-show="showTooltip"
-                        x-transition:enter="transition ease-out duration-200"
-                        x-transition:enter-start="opacity-0 transform scale-95"
-                        x-transition:enter-end="opacity-100 transform scale-100"
-                        x-transition:leave="transition ease-in duration-150"
-                        x-transition:leave-start="opacity-100 transform scale-100"
-                        x-transition:leave-end="opacity-0 transform scale-95"
+                        x-transition
                         class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap"
                         style="display: none;">
-                        Rentabilidade dos Trade vendidos + dividendos recebidos.
+                        Trade vendidos + dividendos recebidos dos SCPs
                         <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
                     </div>
                 </div>
             </div>
 
-            <p class="text-2xl font-bold text-green-800">
+            <p class="text-2xl font-bold text-emerald-600">
                 R$ <?php echo number_format($rentabilidade_consolidada, 0, ',', '.'); ?>
-            </p>
-        </div>
-
-        <!-- Card 4: SCP Ativos -->
-        <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-building text-xl text-emerald-600"></i>
-                </div>
-                <span class="text-xs font-medium px-2 py-1 bg-emerald-50 text-emerald-600 rounded-full">
-                    <?php echo $quantidade_scp; ?> SCP<?php echo $quantidade_scp != 1 ? 's' : ''; ?>
-                </span>
-            </div>
-
-            <div class="flex items-center gap-2 mb-1">
-                <h3 class="text-sm font-medium text-gray-600">SCP Ativos</h3>
-
-                <div class="relative" x-data="{ showTooltip: false }">
-                    <button
-                        @mouseenter="showTooltip = true"
-                        @mouseleave="showTooltip = false"
-                        @click="showTooltip = !showTooltip"
-                        class="w-4 h-4 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors">
-                        <i class="fas fa-question text-xs text-gray-500"></i>
-                    </button>
-
-                    <div
-                        x-show="showTooltip"
-                        x-transition:enter="transition ease-out duration-200"
-                        x-transition:enter-start="opacity-0 transform scale-95"
-                        x-transition:enter-end="opacity-100 transform scale-100"
-                        x-transition:leave="transition ease-in duration-150"
-                        x-transition:leave-start="opacity-100 transform scale-100"
-                        x-transition:leave-end="opacity-0 transform scale-95"
-                        class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap"
-                        style="display: none;">
-                        Produtos Private/SCP ativos ainda dentro do prazo.
-                        <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
-                    </div>
-                </div>
-            </div>
-
-            <p class="text-2xl font-bold text-gray-900">
-                R$ <?php echo number_format($total_investido_scp, 0, ',', '.'); ?>
             </p>
         </div>
     </div>
