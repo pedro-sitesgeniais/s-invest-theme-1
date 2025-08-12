@@ -39,8 +39,6 @@ $rentabilidade_projetada = max(0, $estatisticas['rentabilidade_projetada']);
 
 // RENTABILIDADE CONSOLIDADA = Total de vendas realizadas + dividendos recebidos
 $vendas = $estatisticas['vendas'];
-$total_investido_vendido = max(0, $vendas['total_compra']);
-$total_recebido_vendas = max(0, $vendas['total_venda']);
 $rentabilidade_vendas = max(0, $vendas['total_rentabilidade']);
 
 $total_investido_geral = $total_investido_ativo + $total_investido_vendido;
