@@ -41,8 +41,6 @@ $rentabilidade_projetada = max(0, $estatisticas['rentabilidade_projetada']);
 $vendas = $estatisticas['vendas'];
 $rentabilidade_vendas = max(0, $vendas['total_rentabilidade']);
 
-$total_investido_geral = $total_investido_ativo + $total_investido_vendido;
-
 // ========== BUSCAR DADOS PARA OS NOVOS FILTROS ==========
 $tipos_produto_extrato = get_terms([
     'taxonomy' => 'tipo_produto',
