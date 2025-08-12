@@ -95,7 +95,10 @@ $risco_badge_map  = [
 ];
 $risco_badge_class = $risco_badge_map[ $risco ] ?? 'bg-gray-600';
 
-$lamina_url    = get_field('6812bf7eb98e1');
+$lamina_url = get_field('6812bf7eb98e1'); // ACF
+if (is_array($lamina_url) && isset($lamina_url['url'])) {
+  $lamina_url = $lamina_url['url'];
+}
 $whatsapp_no   = get_field('whatsapp_contato') 
                  ?: '5599999999999';
 $investment_title = urlencode( get_the_title() );
@@ -130,14 +133,12 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 
       <div class="mt-6 flex flex-col space-y-4">
         <div class="flex flex-wrap gap-4">
-          <?php if ( $lamina_url ) : ?>
-            
-              href="<?= esc_url( $lamina_url ); ?>"
+          <?php if ( ! empty($lamina_url) ) : ?>
+            <a href="<?= esc_url($lamina_url); ?>"
               target="_blank" rel="noopener noreferrer"
               class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2
-                     border-2 border-secondary text-secondary px-6 py-3 text-base font-semibold
-                     rounded hover:bg-secondary hover:text-primary hover:border-primary transition"
-            >
+                      border-2 border-secondary text-secondary px-6 py-3 text-base font-semibold
+                      rounded hover:bg-secondary hover:text-primary hover:border-primary transition">
               <i class="fas fa-file-alt"></i>
               Lâmina Técnica
             </a>
