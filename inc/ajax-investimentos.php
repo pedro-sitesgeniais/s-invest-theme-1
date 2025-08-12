@@ -141,7 +141,7 @@ function s_invest_ajax_filtrar_investimentos_painel() {
     if (!empty($investments_pag)) : ?>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 xl:gap-8">
             <?php foreach ($investments_pag as $id) : ?>
-                <?php get_template_part('components/card-produto', null, ['id' => $id, 'context' => 'panel']); ?>
+                <?php get_template_part('components/card-produto', null, ['id' => $id, 'context' => 'public']); ?>
             <?php endforeach; ?>
         </div>
     <?php else : ?>
