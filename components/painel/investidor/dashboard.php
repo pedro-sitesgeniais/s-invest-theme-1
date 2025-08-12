@@ -582,7 +582,7 @@ $investimentos_disponiveis_extrato = get_posts([
                         x-transition
                         class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap"
                         style="display: none;">
-                        Trade vendidos + dividendos recebidos dos SCPs
+                        Trade vendidos + recebiveis recebidos dos SCPs
                         <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
                     </div>
                 </div>
@@ -776,7 +776,7 @@ $investimentos_disponiveis_extrato = get_posts([
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
                     <h3 class="text-lg font-semibold text-gray-900">Extrato de Movimentações</h3>
-                    <p class="text-sm text-gray-600">Histórico completo de aportes e dividendos</p>
+                    <p class="text-sm text-gray-600">Histórico completo de aportes e recebivies</p>
                 </div>
 
                 <!-- BOTÃO FILTROS -->
