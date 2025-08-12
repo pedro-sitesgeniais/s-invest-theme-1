@@ -55,11 +55,7 @@ $investimento_ids = array_unique($investimento_ids);
             <div class="bg-gray-50 rounded-lg p-8 text-center">
                 <svg class="animate-spin h-6 w-6 text-blue-500 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor"
-                    d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4
-                        zm2 5.291
-                        A7.962 7.962 0 0,1 4,12
-                        H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+
                 </svg>
 
                 <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhum investimento encontrado</h3>
@@ -78,11 +74,7 @@ $investimento_ids = array_unique($investimento_ids);
                 <div class="text-center">
                     <svg class="animate-spin h-6 w-6 text-blue-500 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor"
-                            d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4
-                                zm2 5.291
-                                A7.962 7.962 0 0,1 4,12
-                                H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+
                     </svg>
 
                     <p class="text-gray-500">Carregando seus investimentos...</p>
@@ -100,11 +92,7 @@ $investimento_ids = array_unique($investimento_ids);
                     <div class="text-center">
                         <svg class="animate-spin h-6 w-6 text-blue-500 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor"
-                                    d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4
-                                    zm2 5.291
-                                    A7.962 7.962 0 0,1 4,12
-                                    H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+
                         </svg>
 
                         <p class="text-sm text-gray-600">Atualizando filtros...</p>
