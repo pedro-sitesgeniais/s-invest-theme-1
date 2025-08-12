@@ -3,7 +3,13 @@
  * Seção Detalhes de Investimento - VERSÃO CORRIGIDA COM SISTEMA PRIVATE/SCP
  */
 defined('ABSPATH') || exit;
-
+// DEBUG - remover após teste
+if (isset($_GET['debug'])) {
+    echo "Class exists: " . (class_exists('SIP_Private_URLs_Extended') ? 'YES' : 'NO') . "<br>";
+    $senha = get_field('documento_senha', $inv_id);
+    echo "Senha configurada: " . ($senha ? 'YES' : 'NO') . "<br>";
+    if ($senha) echo "Senha: " . substr($senha, 0, 3) . "***<br>";
+}
 // Verificações básicas
 $inv_id = isset($_GET['id']) ? absint($_GET['id']) : 0;
 if (!$inv_id || !get_post($inv_id)) {
@@ -400,8 +406,10 @@ $docs = get_field('documentos', $inv_id) ?: [];
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 my-6 md:my-12">
         <!-- Contrato -->
 <?php if ($contrato && isset($contrato['url'])) : 
+    // Inicializar URLs privadas aqui
     $contrato_url = '';
     if (isset($contrato['ID']) && class_exists('SIP_Private_URLs_Extended')) {
+        $private_urls = new SIP_Private_URLs_Extended();
         $contrato_url = $private_urls->generate_aporte_private_url($aporte_principal->ID);
     } elseif (isset($contrato['url'])) {
         $contrato_url = esc_url($contrato['url']);
@@ -588,16 +596,17 @@ endif; ?>
                 <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
                     <?php 
                     // Inicializar sistema de URLs privadas
-                    if (class_exists('SIP_Private_URLs_Extended')) {
-                        $private_urls = new SIP_Private_URLs_Extended();
-                    }
+                    $private_urls = null;
+                        if (class_exists('SIP_Private_URLs_Extended')) {
+                            $private_urls = new SIP_Private_URLs_Extended();
+                        }
                     
                     foreach ($docs as $doc) : 
                         $titulo_doc = esc_html($doc['title'] ?? 'Documento');
                         $url_doc = '';
                         
                         // Usar URLs privadas se disponível
-                        if (isset($doc['url']['ID']) && class_exists('SIP_Private_URLs_Extended')) {
+                        if (isset($doc['url']['ID']) && $private_urls !== null) {
                             $url_doc = $private_urls->generate_private_url($doc['url']['ID'], $inv_id);
                         } elseif (isset($doc['url']['url'])) {
                             $url_doc = esc_url($doc['url']['url']);
