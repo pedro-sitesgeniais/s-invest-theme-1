@@ -399,15 +399,29 @@ $docs = get_field('documentos', $inv_id) ?: [];
     <!-- BOTÕES DE AÇÃO -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 my-6 md:my-12">
         <!-- Contrato -->
-        <?php if ($contrato && isset($contrato['url'])) : ?>
-            <a href="<?php echo esc_url($contrato['url']); ?>" 
-               class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-blue-900 border border-blue-800 hover:bg-blue-600 transition-colors"
-               target="_blank" 
-               rel="noopener noreferrer">
-                <i class="fas fa-file-contract text-lg"></i>
-                Visualizar Contrato
-            </a>
+<?php if ($contrato && isset($contrato['url'])) : 
+    $contrato_url = '';
+    if (isset($contrato['ID']) && class_exists('SIP_Private_URLs_Extended')) {
+        $contrato_url = $private_urls->generate_aporte_private_url($aporte_principal->ID);
+    } elseif (isset($contrato['url'])) {
+        $contrato_url = esc_url($contrato['url']);
+    }
+    
+    if ($contrato_url) :
+?>
+    <a href="<?php echo $contrato_url; ?>" 
+       class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-blue-900 border border-blue-800 hover:bg-blue-600 transition-colors"
+       target="_blank" 
+       rel="noopener noreferrer">
+        <i class="fas fa-file-contract text-lg"></i>
+        <?php if (class_exists('SIP_Private_URLs_Extended')) : ?>
+            <i class="fas fa-lock text-xs"></i>
         <?php endif; ?>
+        Visualizar Contrato
+    </a>
+<?php 
+    endif;
+endif; ?>
         
         <!-- Documento da Venda -->
         <?php if ($venda_documento && isset($venda_documento['url'])) : ?>
@@ -572,11 +586,20 @@ $docs = get_field('documentos', $inv_id) ?: [];
             <h3 class="text-slate-400 text-base md:text-lg mb-2 md:mb-4">Documentos</h3>
             <?php if (!empty($docs) && is_array($docs)) : ?>
                 <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
-                    <?php foreach ($docs as $doc) : 
+                    <?php 
+                    // Inicializar sistema de URLs privadas
+                    if (class_exists('SIP_Private_URLs_Extended')) {
+                        $private_urls = new SIP_Private_URLs_Extended();
+                    }
+                    
+                    foreach ($docs as $doc) : 
                         $titulo_doc = esc_html($doc['title'] ?? 'Documento');
                         $url_doc = '';
                         
-                        if (isset($doc['url']['url'])) {
+                        // Usar URLs privadas se disponível
+                        if (isset($doc['url']['ID']) && class_exists('SIP_Private_URLs_Extended')) {
+                            $url_doc = $private_urls->generate_private_url($doc['url']['ID'], $inv_id);
+                        } elseif (isset($doc['url']['url'])) {
                             $url_doc = esc_url($doc['url']['url']);
                         } elseif (isset($doc['url']) && is_string($doc['url'])) {
                             $url_doc = esc_url($doc['url']);
@@ -585,11 +608,16 @@ $docs = get_field('documentos', $inv_id) ?: [];
                         if ($url_doc) :
                     ?>
                         <a href="<?php echo $url_doc; ?>" 
-                           class="group relative text-center"
-                           target="_blank"
-                           rel="noopener noreferrer">
+                        class="group relative text-center"
+                        target="_blank"
+                        rel="noopener noreferrer">
                             <div class="w-16 h-16 md:w-20 md:h-20 bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-2 transition-colors group-hover:bg-blue-900/50">
                                 <i class="fas fa-file-pdf text-2xl md:text-3xl"></i>
+                                <?php if (class_exists('SIP_Private_URLs_Extended')) : ?>
+                                    <div class="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-lock text-xs text-white"></i>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                             <span class="text-slate-400 text-xs md:text-sm truncate px-2 block" title="<?php echo $titulo_doc; ?>">
                                 <?php echo $titulo_doc; ?>
