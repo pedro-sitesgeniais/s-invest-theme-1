@@ -408,8 +408,8 @@ $docs = get_field('documentos', $inv_id) ?: [];
 <?php if ($contrato && isset($contrato['url'])) : 
     // Inicializar URLs privadas aqui
     $contrato_url = '';
-    if (isset($contrato['ID']) && class_exists('SIP_Private_URLs_Extended')) {
-        $private_urls = new SIP_Private_URLs_Extended();
+    if (isset($contrato['ID']) && class_exists('SIP_Private_URLs')) {
+        $private_urls = new SIP_Private_URLs();
         $contrato_url = $private_urls->generate_aporte_private_url($aporte_principal->ID);
     } elseif (isset($contrato['url'])) {
         $contrato_url = esc_url($contrato['url']);
@@ -422,7 +422,7 @@ $docs = get_field('documentos', $inv_id) ?: [];
        target="_blank" 
        rel="noopener noreferrer">
         <i class="fas fa-file-contract text-lg"></i>
-        <?php if (class_exists('SIP_Private_URLs_Extended')) : ?>
+        <?php if (class_exists('SIP_Private_URLs')) : ?>
             <i class="fas fa-lock text-xs"></i>
         <?php endif; ?>
         Visualizar Contrato
@@ -597,9 +597,9 @@ endif; ?>
                     <?php 
                     // Inicializar sistema de URLs privadas
                     $private_urls = null;
-                        if (class_exists('SIP_Private_URLs_Extended')) {
-                            $private_urls = new SIP_Private_URLs_Extended();
-                        }
+                        if (class_exists('SIP_Private_URLs')) {
+    $private_urls = new SIP_Private_URLs();
+}
                     
                     foreach ($docs as $doc) : 
                         $titulo_doc = esc_html($doc['title'] ?? 'Documento');
@@ -622,7 +622,7 @@ endif; ?>
                         rel="noopener noreferrer">
                             <div class="w-16 h-16 md:w-20 md:h-20 bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-2 transition-colors group-hover:bg-blue-900/50">
                                 <i class="fas fa-file-pdf text-2xl md:text-3xl"></i>
-                                <?php if (class_exists('SIP_Private_URLs_Extended')) : ?>
+                                <?php if (class_exists('SIP_Private_URLs')) : ?>
                                     <div class="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
                                         <i class="fas fa-lock text-xs text-white"></i>
                                     </div>

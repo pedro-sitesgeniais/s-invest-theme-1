@@ -72,8 +72,8 @@ else {
                 <ul class="space-y-2" aria-labelledby="documents-heading">
                     <?php 
 // Inicializar URLs privadas
-if (class_exists('SIP_Private_URLs_Extended')) {
-    $private_urls = new SIP_Private_URLs_Extended();
+if (class_exists('SIP_Private_URLs')) {
+    $private_urls = new SIP_Private_URLs();
 }
 
 foreach ($investment_data['docs'] as $doc) : 
@@ -81,14 +81,14 @@ foreach ($investment_data['docs'] as $doc) :
     $url = '';
     
     // Usar URLs privadas se disponível
-    if (isset($doc['url']['ID']) && class_exists('SIP_Private_URLs_Extended')) {
+    if (isset($doc['url']['ID']) && class_exists('SIP_Private_URLs')) {
         $url = $private_urls->generate_private_url($doc['url']['ID'], $inv_id);
     } elseif (isset($doc['url']['url'])) {
         $url = esc_url($doc['url']['url']);
     }
     
     $file_type = wp_check_filetype($url);
-    $is_protected = class_exists('SIP_Private_URLs_Extended') && isset($doc['url']['ID']);
+    $is_protected = class_exists('SIP_Private_URLs') && isset($doc['url']['ID']);
 ?>
     <li class="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b last:border-b-0">
         <div class="mb-2 sm:mb-0">
