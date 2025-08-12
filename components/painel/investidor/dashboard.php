@@ -1077,115 +1077,181 @@ $investimentos_disponiveis_extrato = get_posts([
             };
 
             const initPerformanceChart = (chartData) => {
-            const canvas = document.getElementById('performanceChart');
-            if (!canvas) return;
+  const canvas = document.getElementById('performanceChart');
+  if (!canvas) return;
 
-            const ctx = canvas.getContext('2d');
-            if (window.performanceChartInstance) window.performanceChartInstance.destroy();
+  const ctx = canvas.getContext('2d');
+  if (window.performanceChartInstance) window.performanceChartInstance.destroy();
 
-            const labels = chartData.chartLabels || [];
-            const investido = (chartData.chartInvestido || []).map(v => Number(v) || 0);
-            const projAcum = (chartData.chartRentabilidade || []).map(v => Number(v) || 0);
-            const consAcum = (chartData.chartRentabilidadeConsolidada || []).map(v => Number(v) || 0);
+  // Dados (mesmos nomes que você já usa)
+  const labels = chartData.chartLabels || [];
+  const investido   = (chartData.chartInvestido || []).map(v => Number(v) || 0);                   // Azul
+  const projetada   = (chartData.chartRentabilidade || []).map(v => Number(v) || 0);               // Verde
+  const consolidada = (chartData.chartRentabilidadeConsolidada || []).map(v => Number(v) || 0);    // Laranja
 
-            // Série principal (verde) – usar consolidada se existir, senão projetada, senão investido
-            const mainSeries =
-                consAcum.length ? consAcum :
-                (projAcum.length ? projAcum : investido);
+  if (!labels.length) { labels.push('Sem dados'); investido.push(0); projetada.push(0); consolidada.push(0); }
 
-            if (labels.length === 0) { labels.push('Sem dados'); mainSeries.push(0); }
+  // Helpers
+  const hexToRgb = (hex) => {
+    let c = hex.replace('#','');
+    if (c.length === 3) c = c.split('').map(s => s+s).join('');
+    const num = parseInt(c, 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+  };
+  const rgba = (hex, a) => {
+    const {r,g,b} = hexToRgb(hex);
+    return `rgba(${r},${g},${b},${a})`;
+  };
+  const makeArea = (hex) => {
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, rgba(hex, .30));
+    grad.addColorStop(1, rgba(hex, 0));
+    return grad;
+  };
 
-            // Gradiente de área (recalcula em cada draw pra manter responsivo)
-            const makeGradient = () => {
-                const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
-                g.addColorStop(0, 'rgba(16,185,129,.35)'); // #10B981 com alpha
-                g.addColorStop(1, 'rgba(16,185,129,0)');
-                return g;
-            };
-            let areaGradient = makeGradient();
+  // Plugin: recalcula o gradiente a cada draw e destaca último ponto
+  const perfLinePlugin = {
+    id: 'perfLinePlugin',
+    beforeDatasetsDraw() {},
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      chart.data.datasets.forEach((ds, i) => {
+        if (!chart.isDatasetVisible(i)) return;
+        const meta = chart.getDatasetMeta(i);
+        if (!meta?.data?.length) return;
+        const last = meta.data[meta.data.length - 1];
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(last.x, last.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = ds.borderColor;
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = rgba(ds.borderColor, .25);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+  };
 
-            // Plugin: atualiza gradiente e destaca o último ponto (círculo maior)
-            const perfLinePlugin = {
-                id: 'perfLinePlugin',
-                beforeDatasetsDraw(chart) { areaGradient = makeGradient(); },
-                afterDatasetsDraw(chart) {
-                const { ctx } = chart;
-                const meta = chart.getDatasetMeta(0);
-                if (!meta?.data?.length) return;
-                const last = meta.data[meta.data.length - 1];
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(last.x, last.y, 6, 0, Math.PI * 2);
-                ctx.fillStyle = '#10B981';
-                ctx.fill();
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = 'rgba(16,185,129,.35)';
-                ctx.stroke();
-                ctx.restore();
-                }
-            };
+  // Cores
+  const BLUE = '#3B82F6';
+  const GREEN = '#10B981';
+  const AMBER = '#F59E0B';
 
-            window.performanceChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                labels,
-                datasets: [{
-                    label: 'Performance Mensal',
-                    data: mainSeries,
-                    borderColor: '#10B981',
-                    backgroundColor: () => areaGradient,
-                    fill: 'start',
-                    borderWidth: 3,
-                    tension: 0.35,              // curva suave
-                    pointRadius: 3,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: '#10B981',
-                    pointBorderColor: '#10B981'
-                }]
-                },
-                options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                    backgroundColor: 'rgba(0,0,0,.8)',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    borderColor: 'rgba(255,255,255,.1)',
-                    borderWidth: 1,
-                    callbacks: {
-                        label: (ctx) => {
-                        const v = ctx.parsed.y || 0;
-                        return `R$ ${v.toLocaleString('pt-BR')}`;
-                        }
-                    }
-                    }
-                },
-                scales: {
-                    x: {
-                    grid: { display: false },
-                    ticks: {
-                        color: '#6B7280',
-                        font: { size: window.innerWidth < 768 ? 10 : 11 }
-                    }
-                    },
-                    y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(255,255,255,.08)' },
-                    ticks: {
-                        color: '#6B7280',
-                        font: { size: window.innerWidth < 768 ? 10 : 11 },
-                        callback: (v) => 'R$ ' + (v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
-                    }
-                    }
-                },
-                elements: { line: { borderJoinStyle: 'round' } }
-                },
-                plugins: [perfLinePlugin]
-            });
-            };
+  // Gráfico (3 datasets + área no verde por padrão)
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Valor Investido',
+          data: investido,
+          borderColor: BLUE,
+          backgroundColor: makeArea(BLUE),
+          borderWidth: 3,
+          tension: .35,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          fill: false // sem área para não poluir
+        },
+        {
+          label: 'Rentabilidade Projetada Acumulada',
+          data: projetada,
+          borderColor: GREEN,
+          backgroundColor: makeArea(GREEN),
+          borderWidth: 3,
+          tension: .35,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          fill: 'start' // área no verde (estilo do print)
+        },
+        {
+          label: 'Rentabilidade Consolidada Acumulada',
+          data: consolidada,
+          borderColor: AMBER,
+          backgroundColor: makeArea(AMBER),
+          borderWidth: 3,
+          tension: .35,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'top', labels: { usePointStyle: true, padding: 12, font: { size: 11 } } },
+        tooltip: {
+          backgroundColor: 'rgba(0,0,0,.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: 'rgba(255,255,255,.1)',
+          borderWidth: 1,
+          callbacks: {
+            label: (ctx) => ` ${ctx.dataset.label}: R$ ${(ctx.parsed.y || 0).toLocaleString('pt-BR')}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#6B7280', font: { size: window.innerWidth < 768 ? 10 : 11 } }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,.05)' },
+          ticks: {
+            color: '#6B7280',
+            font: { size: window.innerWidth < 768 ? 10 : 11 },
+            callback: v => 'R$ ' + (v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+          }
+        }
+      }
+    },
+    plugins: [perfLinePlugin]
+  });
+
+  window.performanceChartInstance = chart;
+
+  // ====== Filtros (chips) com as mesmas cores ======
+  const container = document.getElementById('performanceFilters');
+  if (container) {
+    container.innerHTML = ''; // evita duplicar
+    const chips = [
+      { idx: 0, label: 'Valor Investido', color: BLUE },
+      { idx: 1, label: 'Rent. Projetada', color: GREEN },
+      { idx: 2, label: 'Rent. Consolidada', color: AMBER }
+    ];
+
+    const setActiveStyle = (btn, color, active) => {
+      btn.style.color = color;
+      btn.style.borderColor = rgba(color, .5);
+      btn.style.backgroundColor = active ? rgba(color, .12) : 'transparent';
+      btn.style.opacity = active ? '1' : '.6';
+    };
+
+    chips.forEach(({ idx, label, color }) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = label;
+      btn.className = 'px-3 py-1.5 rounded-full border text-xs font-medium transition';
+      setActiveStyle(btn, color, chart.isDatasetVisible(idx));
+
+      btn.addEventListener('click', () => {
+        const visible = chart.isDatasetVisible(idx);
+        chart.setDatasetVisibility(idx, !visible);
+        setActiveStyle(btn, color, !visible);
+        chart.update();
+      });
+
+      container.appendChild(btn);
+    });
+  }
+};
 
 
             window.addEventListener('resize', () => {
