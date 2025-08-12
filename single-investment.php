@@ -95,7 +95,7 @@ $risco_badge_map  = [
 ];
 $risco_badge_class = $risco_badge_map[ $risco ] ?? 'bg-gray-600';
 
-$lamina_url    = get_field('url_lamina_tecnica');
+$lamina_url    = get_field('6812bf7eb98e1');
 $whatsapp_no   = get_field('whatsapp_contato') 
                  ?: '5599999999999';
 $investment_title = urlencode( get_the_title() );
