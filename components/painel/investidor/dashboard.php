@@ -1077,147 +1077,116 @@ $investimentos_disponiveis_extrato = get_posts([
             };
 
             const initPerformanceChart = (chartData) => {
-                const canvas = document.getElementById('performanceChart');
-                if (!canvas) return;
+            const canvas = document.getElementById('performanceChart');
+            if (!canvas) return;
 
-                const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d');
+            if (window.performanceChartInstance) window.performanceChartInstance.destroy();
 
-                if (window.performanceChartInstance) {
-                    window.performanceChartInstance.destroy();
-                }
+            const labels = chartData.chartLabels || [];
+            const investido = (chartData.chartInvestido || []).map(v => Number(v) || 0);
+            const projAcum = (chartData.chartRentabilidade || []).map(v => Number(v) || 0);
+            const consAcum = (chartData.chartRentabilidadeConsolidada || []).map(v => Number(v) || 0);
 
-                // DADOS CORRIGIDOS: Usar os arrays preparados no PHP COM 3 DATASETS
-                const labels = chartData.chartLabels || [];
-                const investidoData = chartData.chartInvestido || [];
-                const rentabilidadeData = chartData.chartRentabilidade || [];
-                const rentabilidadeConsolidadaData = chartData.chartRentabilidadeConsolidada || []; // ← NOVO DATASET
+            // Série principal (verde) – usar consolidada se existir, senão projetada, senão investido
+            const mainSeries =
+                consAcum.length ? consAcum :
+                (projAcum.length ? projAcum : investido);
 
-                // Se não há dados, mostrar exemplo vazio
-                if (labels.length === 0) {
-                    labels.push('Sem dados');
-                    investidoData.push(0);
-                    rentabilidadeData.push(0);
-                    rentabilidadeConsolidadaData.push(0); // ← NOVO
-                }
+            if (labels.length === 0) { labels.push('Sem dados'); mainSeries.push(0); }
 
-                try {
-                    window.performanceChartInstance = new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                    label: 'Valor Investido',
-                                    data: investidoData,
-                                    backgroundColor: '#3B82F6', // Azul
-                                    borderRadius: 6,
-                                    barThickness: window.innerWidth < 768 ? 12 : 16,
-                                    borderSkipped: false
-                                },
-                                {
-                                    label: 'Rentabilidade Projetada Acumulada',
-                                    data: rentabilidadeData,
-                                    backgroundColor: '#10B981', // Verde
-                                    borderRadius: 6,
-                                    barThickness: window.innerWidth < 768 ? 12 : 16,
-                                    borderSkipped: false
-                                },
-                                {
-                                    label: 'Rentabilidade Consolidada Acumulada', // ← NOVO DATASET
-                                    data: rentabilidadeConsolidadaData,
-                                    backgroundColor: '#F59E0B', // Laranja/Amarelo
-                                    borderRadius: 6,
-                                    barThickness: window.innerWidth < 768 ? 12 : 16,
-                                    borderSkipped: false
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            interaction: {
-                                intersect: false,
-                                mode: 'index'
-                            },
-                            plugins: {
-                                legend: {
-                                    display: true,
-                                    position: 'top',
-                                    labels: {
-                                        usePointStyle: true,
-                                        padding: 15,
-                                        font: {
-                                            size: 11
-                                        }
-                                    }
-                                },
-                                tooltip: {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                    titleColor: '#ffffff',
-                                    bodyColor: '#ffffff',
-                                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                                    borderWidth: 1,
-                                    callbacks: {
-                                        label: function(context) {
-                                            const value = context.parsed ? context.parsed.y : 0;
-                                            return `${context.dataset.label}: R$ ${value.toLocaleString('pt-BR')}`;
-                                        },
-                                        footer: function(tooltipItems) {
-                                            if (tooltipItems.length >= 2) {
-                                                let total = 0;
-                                                tooltipItems.forEach(item => {
-                                                    total += item.parsed.y || 0;
-                                                });
-                                                return `Total do período: R$ ${total.toLocaleString('pt-BR')}`;
-                                            }
-                                            return '';
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    grid: {
-                                        display: false
-                                    },
-                                    ticks: {
-                                        color: '#6B7280',
-                                        font: {
-                                            size: window.innerWidth < 768 ? 10 : 11
-                                        }
-                                    }
-                                },
-                                y: {
-                                    beginAtZero: true,
-                                    grid: {
-                                        color: 'rgba(0, 0, 0, 0.05)'
-                                    },
-                                    ticks: {
-                                        color: '#6B7280',
-                                        font: {
-                                            size: window.innerWidth < 768 ? 10 : 11
-                                        },
-                                        callback: function(value) {
-                                            return 'R$ ' + (value || 0).toLocaleString('pt-BR', {
-                                                minimumFractionDigits: 0,
-                                                maximumFractionDigits: 0
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
+            // Gradiente de área (recalcula em cada draw pra manter responsivo)
+            const makeGradient = () => {
+                const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                g.addColorStop(0, 'rgba(16,185,129,.35)'); // #10B981 com alpha
+                g.addColorStop(1, 'rgba(16,185,129,0)');
+                return g;
+            };
+            let areaGradient = makeGradient();
 
-                    console.log('✅ Gráfico de performance criado com 3 datasets:', {
-                        investido: investidoData.length,
-                        projetada: rentabilidadeData.length,
-                        consolidada: rentabilidadeConsolidadaData.length
-                    });
-
-                } catch (error) {
-                    console.error('Erro ao criar gráfico de performance:', error);
+            // Plugin: atualiza gradiente e destaca o último ponto (círculo maior)
+            const perfLinePlugin = {
+                id: 'perfLinePlugin',
+                beforeDatasetsDraw(chart) { areaGradient = makeGradient(); },
+                afterDatasetsDraw(chart) {
+                const { ctx } = chart;
+                const meta = chart.getDatasetMeta(0);
+                if (!meta?.data?.length) return;
+                const last = meta.data[meta.data.length - 1];
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(last.x, last.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#10B981';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = 'rgba(16,185,129,.35)';
+                ctx.stroke();
+                ctx.restore();
                 }
             };
+
+            window.performanceChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                labels,
+                datasets: [{
+                    label: 'Performance Mensal',
+                    data: mainSeries,
+                    borderColor: '#10B981',
+                    backgroundColor: () => areaGradient,
+                    fill: 'start',
+                    borderWidth: 3,
+                    tension: 0.35,              // curva suave
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#10B981',
+                    pointBorderColor: '#10B981'
+                }]
+                },
+                options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                    backgroundColor: 'rgba(0,0,0,.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: 'rgba(255,255,255,.1)',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: (ctx) => {
+                        const v = ctx.parsed.y || 0;
+                        return `R$ ${v.toLocaleString('pt-BR')}`;
+                        }
+                    }
+                    }
+                },
+                scales: {
+                    x: {
+                    grid: { display: false },
+                    ticks: {
+                        color: '#6B7280',
+                        font: { size: window.innerWidth < 768 ? 10 : 11 }
+                    }
+                    },
+                    y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255,255,255,.08)' },
+                    ticks: {
+                        color: '#6B7280',
+                        font: { size: window.innerWidth < 768 ? 10 : 11 },
+                        callback: (v) => 'R$ ' + (v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+                    }
+                    }
+                },
+                elements: { line: { borderJoinStyle: 'round' } }
+                },
+                plugins: [perfLinePlugin]
+            });
+            };
+
 
             window.addEventListener('resize', () => {
                 if (window.distributionChartInstance) {
