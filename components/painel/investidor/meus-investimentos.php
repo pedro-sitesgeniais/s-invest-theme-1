@@ -59,7 +59,7 @@ $investimento_ids = array_unique($investimento_ids);
   d="M4 12 a 8 8 0 0 1 8 -8 V0 C5.373 0 0 5.373 0 12 h4 z
      m 2 5.291
      A 7.962 7.962 0 0 1 4,12
-     H0 c 0 3.042 1.135 5.824 3 7.938 l 3 -2.647 z" /></path>
+     H0 c 0 3.042 1.135 5.824 3 7.938 l 3 -2.647 z" />
 </svg>
 
                 <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhum investimento encontrado</h3>
@@ -82,7 +82,7 @@ $investimento_ids = array_unique($investimento_ids);
   d="M4 12 a 8 8 0 0 1 8 -8 V0 C5.373 0 0 5.373 0 12 h4 z
      m 2 5.291
      A 7.962 7.962 0 0 1 4,12
-     H0 c 0 3.042 1.135 5.824 3 7.938 l 3 -2.647 z" /></path>
+     H0 c 0 3.042 1.135 5.824 3 7.938 l 3 -2.647 z" />
 </svg>
 
                     <p class="text-gray-500">Carregando seus investimentos...</p>
@@ -104,7 +104,7 @@ $investimento_ids = array_unique($investimento_ids);
   d="M4 12 a 8 8 0 0 1 8 -8 V0 C5.373 0 0 5.373 0 12 h4 z
      m 2 5.291
      A 7.962 7.962 0 0 1 4,12
-     H0 c 0 3.042 1.135 5.824 3 7.938 l 3 -2.647 z" /></path>
+     H0 c 0 3.042 1.135 5.824 3 7.938 l 3 -2.647 z" />
 </svg>
 
                         <p class="text-sm text-gray-600">Atualizando filtros...</p>
