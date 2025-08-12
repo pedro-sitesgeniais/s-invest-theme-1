@@ -320,11 +320,6 @@ if ($quantidade_cotas && !$cotas_vendidas) {
           $tabs_disponiveis['originadora'] = '<i class="fas fa-info-circle"></i> Sobre';
       }
       
-      $documentos = get_field('documentos');
-      if (!empty($documentos) && is_array($documentos)) {
-          $tabs_disponiveis['documentos'] = '<i class="fas fa-file-alt"></i> Documentos';
-      }
-      
       $motivos = get_field('motivos');
       if (!empty($motivos) && is_array($motivos)) {
           $tabs_disponiveis['motivos'] = '<i class="fas fa-seedling"></i> Motivos';
@@ -365,9 +360,6 @@ if ($quantidade_cotas && !$cotas_vendidas) {
                       break;
                   case 'originadora':
                       get_template_part('components/bloco-originadora');
-                      break;
-                  case 'documentos':
-                      get_template_part('components/bloco-documentos');
                       break;
                   case 'motivos':
                       get_template_part('components/bloco-motivos');
