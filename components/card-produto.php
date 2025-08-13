@@ -318,7 +318,7 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
             <?php else : ?>
                 <!-- Status Misto -->
                 <div class="bg-gradient-to-r from-blue-600 to-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
-                    <div class="text-xs opacity-90 mt-1">
+                    <div class="text-xs opacity-90">
                         <?php echo $dados_pessoais['aportes_ativos']; ?> ativo<?php echo $dados_pessoais['aportes_ativos'] > 1 ? 's' : ''; ?> • 
                         <?php echo $dados_pessoais['aportes_vendidos']; ?> vendido<?php echo $dados_pessoais['aportes_vendidos'] > 1 ? 's' : ''; ?>
                     </div>
