@@ -184,8 +184,18 @@ if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
 
 // ✅ Calcular porcentagem para aportes ativos puros
 $rentabilidade_pct_ativos_puros = 0;
-if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
-    $rentabilidade_pct_ativos_puros = (($maior_valor_ativo / $valor_investido_ativos) - 1) * 100;
+$valor_atual_ativos_total = 0; // ✅ Adicionar variável que faltava
+
+// Recalcular valor atual total dos ativos
+foreach ($aporte_posts as $aporte_post) {
+    $aporte_id = $aporte_post->ID;
+    if (!get_field('venda_status', $aporte_id)) {
+        $valor_atual_ativos_total += floatval(get_field('valor_atual', $aporte_id) ?: 0);
+    }
+}
+
+if ($valor_investido_ativos > 0 && $valor_atual_ativos_total > 0) {
+    $rentabilidade_pct_ativos_puros = (($valor_atual_ativos_total / $valor_investido_ativos) - 1) * 100;
 }
 
 // Valores finais para exibição
