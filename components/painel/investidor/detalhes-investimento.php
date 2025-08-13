@@ -174,8 +174,8 @@ if ($valor_investido_vendidos > 0 && $valor_recebido_total > 0) {
 }
 
 // ✅ Corrigir cálculo da rentabilidade ativa
-if ($valor_investido_ativos > 0 && $rentabilidade_ativa_total > 0) {
-    $rentabilidade_pct_ativos = ($rentabilidade_ativa_total / $valor_investido_ativos) * 100;
+if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
+    $rentabilidade_pct_ativos = (($maior_valor_ativo / $valor_investido_ativos) - 1) * 100;
 }
 
 if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
