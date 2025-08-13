@@ -540,6 +540,25 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                                     (<?php echo ($dados_pessoais['rentabilidade_pct'] >= 0 ? '+' : ''); ?><?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
                                 </div>
                             </div>
+                        <?php elseif ($dados_pessoais['status'] === 'misto') : ?>
+                            <!-- ✅ MISTO: Informações de venda + data -->
+                            <div class="space-y-2">
+                                <?php if ($dados_pessoais['data_venda']) : ?>
+                                    <div class="text-center text-xs text-gray-500 border-b border-gray-200 pb-2">
+                                        Venda realizada em <?php echo esc_html($dados_pessoais['data_venda']); ?>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <div class="text-center">
+                                    <div class="text-gray-600 text-sm mb-1">Rentabilidade Consolidada</div>
+                                    <div class="font-bold text-lg text-green-600">
+                                        R$ <?php echo number_format($dados_pessoais['valor_recebido'], 0, ',', '.'); ?>
+                                    </div>
+                                    <div class="text-xs <?php echo $dados_pessoais['rentabilidade_pct'] >= 0 ? 'text-green-500' : 'text-red-500'; ?>">
+                                        (<?php echo ($dados_pessoais['rentabilidade_pct'] >= 0 ? '+' : ''); ?><?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
+                                    </div>
+                                </div>
+                            </div>
                         <?php else : ?>
                             <!-- ✅ ATIVO: Rentabilidade projetada normal -->
                             <div class="flex justify-between items-center">
@@ -553,19 +572,13 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                                     </div>
                                 </div>
                             </div>
-                        <?php endif; ?>
-                        
-                        <!-- ✅ RESUMO INTELIGENTE -->
-                        <?php if ($dados_pessoais['status'] === 'misto') : ?>
-                            <div class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200 text-center">
-                                Total: R$ <?php echo number_format(($dados_pessoais['valor_atual_ativos_total'] + $dados_pessoais['valor_na_venda_total']), 0, ',', '.'); ?>
-                                <br>
-                                (R$ <?php echo number_format($dados_pessoais['valor_atual_ativos_total'], 0, ',', '.'); ?> ativo + R$ <?php echo number_format($dados_pessoais['valor_na_venda_total'], 0, ',', '.'); ?> vendido)
-                            </div>
-                        <?php elseif ($dados_pessoais['total_aportes'] > 1 && $dados_pessoais['status'] !== 'vendido') : ?>
-                            <div class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200 text-center">
-                                <?php echo $dados_pessoais['total_aportes']; ?> aportes
-                            </div>
+                            
+                            <!-- Contador de aportes apenas para ativos -->
+                            <?php if ($dados_pessoais['total_aportes'] > 1) : ?>
+                                <div class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200 text-center">
+                                    <?php echo $dados_pessoais['total_aportes']; ?> aportes
+                                </div>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </div>
                 </div>
