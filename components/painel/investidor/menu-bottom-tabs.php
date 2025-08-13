@@ -39,14 +39,14 @@ $tab_items = [
         'url' => add_query_arg(['painel' => $painel, 'secao' => 'produtos-gerais'], $base_url),
         'badge' => null
     ],
-    [
-        'key' => 'documentos',
-        'label' => 'Docs',
-        'icon' => 'folder-open',
-        'active' => $secao === 'documentos',
-        'url' => add_query_arg(['painel' => $painel, 'secao' => 'documentos'], $base_url),
-        'badge' => null
-    ],
+    // [
+    //     'key' => 'documentos',
+    //     'label' => 'Docs',
+    //     'icon' => 'folder-open',
+    //     'active' => $secao === 'documentos',
+    //     'url' => add_query_arg(['painel' => $painel, 'secao' => 'documentos'], $base_url),
+    //     'badge' => null
+    // ],
     [
         'key' => 'more',
         'label' => 'Mais',

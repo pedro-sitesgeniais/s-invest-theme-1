@@ -3,6 +3,7 @@
  * Seção Documentos - Versão Final Corrigida
  * components/painel/investidor/secao-documentos.php
  */
+return; // Impede acesso direto ao arquivo
 defined('ABSPATH') || exit;
 
 // Verifica se o usuário está logado
@@ -70,37 +71,60 @@ else {
             <!-- DOCUMENTOS ESPECÍFICOS -->
             <?php if (!empty($investment_data['docs'])) : ?>
                 <ul class="space-y-2" aria-labelledby="documents-heading">
-                    <?php foreach ($investment_data['docs'] as $doc) : 
-                        $title = esc_html($doc['title'] ?? '');
-                        $url = esc_url($doc['url']['url'] ?? '');
-                        $file_type = wp_check_filetype($url);
-                    ?>
-                        <li class="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b last:border-b-0">
-                            <div class="mb-2 sm:mb-0">
-                                <span class="text-gray-700 block"><?php echo $title; ?></span>
-                                <?php if ($file_type['ext']) : ?>
-                                    <span class="text-xs text-gray-500">
-                                        <?php echo esc_html(strtoupper($file_type['ext'])); ?>
-                                    </span>
-                                <?php endif; ?>
-                            </div>
-                            
-                            <?php if ($url) : ?>
-                                <a href="<?php echo $url; ?>"
-                                   target="_blank" rel="noopener noreferrer"
-                                   class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center justify-center min-w-[120px]"
-                                   <?php if ($file_type['ext']) echo 'download="' . esc_attr(sanitize_title($title) . '.' . $file_type['ext']) . '"'; ?>>
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                    </svg>
-                                    <?php esc_html_e('Baixar', 's-invest-theme'); ?>
-                                </a>
-                            <?php else : ?>
-                                <span class="text-gray-500" aria-hidden="true">—</span>
-                                <span class="sr-only"><?php esc_html_e('Documento indisponível', 's-invest-theme'); ?></span>
-                            <?php endif; ?>
-                        </li>
-                    <?php endforeach; ?>
+                    <?php 
+// Inicializar URLs privadas
+if (class_exists('SIP_Private_URLs')) {
+    $private_urls = new SIP_Private_URLs();
+}
+
+foreach ($investment_data['docs'] as $doc) : 
+    $title = esc_html($doc['title'] ?? '');
+    $url = '';
+    
+    // Usar URLs privadas se disponível
+    if (isset($doc['url']['ID']) && class_exists('SIP_Private_URLs')) {
+        $url = $private_urls->generate_private_url($doc['url']['ID'], $inv_id);
+    } elseif (isset($doc['url']['url'])) {
+        $url = esc_url($doc['url']['url']);
+    }
+    
+    $file_type = wp_check_filetype($url);
+    $is_protected = class_exists('SIP_Private_URLs') && isset($doc['url']['ID']);
+?>
+    <li class="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b last:border-b-0">
+        <div class="mb-2 sm:mb-0">
+            <div class="flex items-center gap-2">
+                <span class="text-gray-700 block"><?php echo $title; ?></span>
+                <?php if ($is_protected) : ?>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                        <i class="fas fa-lock mr-1"></i>
+                        Protegido
+                    </span>
+                <?php endif; ?>
+            </div>
+            <?php if ($file_type['ext']) : ?>
+                <span class="text-xs text-gray-500">
+                    <?php echo esc_html(strtoupper($file_type['ext'])); ?>
+                </span>
+            <?php endif; ?>
+        </div>
+        
+        <?php if ($url) : ?>
+            <a href="<?php echo $url; ?>"
+               target="_blank" rel="noopener noreferrer"
+               class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center justify-center min-w-[120px]"
+               <?php if ($file_type['ext'] && !$is_protected) echo 'download="' . esc_attr(sanitize_title($title) . '.' . $file_type['ext']) . '"'; ?>>
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <?php echo $is_protected ? esc_html__('Acessar', 's-invest-theme') : esc_html__('Baixar', 's-invest-theme'); ?>
+            </a>
+        <?php else : ?>
+            <span class="text-gray-500" aria-hidden="true">—</span>
+            <span class="sr-only"><?php esc_html_e('Documento indisponível', 's-invest-theme'); ?></span>
+        <?php endif; ?>
+    </li>
+<?php endforeach; ?>
                 </ul>
             <?php else : ?>
                 <p class="text-gray-600" role="status">

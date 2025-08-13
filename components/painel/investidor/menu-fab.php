@@ -39,14 +39,14 @@ $fab_actions = [
         'active' => $secao === 'produtos-gerais',
         'url' => add_query_arg(['painel' => $painel, 'secao' => 'produtos-gerais'], $base_url)
     ],
-    [
-        'key' => 'documentos',
-        'label' => 'Documentos',
-        'icon' => 'folder-open',
-        'color' => 'bg-orange-500 hover:bg-orange-600',
-        'active' => $secao === 'documentos',
-        'url' => add_query_arg(['painel' => $painel, 'secao' => 'documentos'], $base_url)
-    ],
+    // [
+    //     'key' => 'documentos',
+    //     'label' => 'Documentos',
+    //     'icon' => 'folder-open',
+    //     'color' => 'bg-orange-500 hover:bg-orange-600',
+    //     'active' => $secao === 'documentos',
+    //     'url' => add_query_arg(['painel' => $painel, 'secao' => 'documentos'], $base_url)
+    // ],
     [
         'key' => 'comunicados',
         'label' => 'Comunicados',

@@ -3,6 +3,7 @@
  * Lista Geral de Documentos
  * components/painel/investidor/lista-documentos.php
  */
+return; // Impede acesso direto ao arquivo
 defined('ABSPATH') || exit;
 
 // Sua lógica para listar todos os investimentos com documentos

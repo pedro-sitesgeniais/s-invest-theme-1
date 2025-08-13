@@ -1,6 +1,6 @@
 <?php
 /**
- * Seção Detalhes de Investimento - VERSÃO CORRIGIDA COM SISTEMA PRIVATE/SCP
+ * Seção Detalhes de Investimento - VERSÃO COM MÚLTIPLOS APORTES
  */
 defined('ABSPATH') || exit;
 
@@ -24,7 +24,7 @@ if (!$user_id) {
 // Buscar TODOS os aportes do usuário para este investimento
 $args_aporte = [
     'post_type'      => 'aporte',
-    'posts_per_page' => -1, // ✅ CORRIGIDO: Buscar TODOS os aportes
+    'posts_per_page' => -1,
     'post_status'    => 'publish',
     'meta_query'     => [
         ['key' => 'investment_id', 'value' => $inv_id],
@@ -43,7 +43,7 @@ if (empty($aporte_posts)) {
     return;
 }
 
-// ========== VERIFICAÇÃO DE TIPO DEVE VIR PRIMEIRO ==========
+// Verificação de tipo
 $is_private = false;
 $product_type_label = 'TRADE';
 $product_type_class = 'bg-blue-500/20 text-blue-400 border-blue-500/30';
@@ -60,12 +60,10 @@ if (function_exists('s_invest_get_product_type_class')) {
     $product_type_class = s_invest_get_product_type_class($inv_id);
 }
 
-// ===== PROCESSAR TODOS OS APORTES DO USUÁRIO =====
+// ===== PROCESSAR MÚLTIPLOS APORTES =====
 $valor_investido_total = 0;
-$valor_atual_total = 0;
-$valor_compra_total = 0;
-$rentabilidade_projetada_total = 0;
-$venda_status_geral = false;
+$aportes_ativos = 0;
+$aportes_vendidos = 0;
 $historico_aportes_consolidado = [];
 $historico_rentabilidade_consolidado = [];
 $historico_dividendos_consolidado = [];
@@ -78,22 +76,59 @@ $nome_assessor = get_field('nome_assessor', $aporte_principal->ID) ?: 'Assessor'
 $foto_assessor = get_field('foto_assessor', $aporte_principal->ID);
 $contrato = get_field('contrato_pdf', $aporte_principal->ID);
 
-$valor_compra = floatval(get_field('valor_compra', $aporte_principal->ID) ?: 0);
-$valor_atual = floatval(get_field('valor_atual', $aporte_principal->ID) ?: 0);
+// Valores separados por status
+$valor_recebido_total = 0;
+$rentabilidade_reais_vendidos = 0;
+$valor_na_venda_total = 0;
+$maior_valor_ativo = 0; // ✅ Maior valor individual ativo
+$rentabilidade_ativa_total = 0;
+$valor_investido_vendidos = 0;
+$valor_investido_ativos = 0;
+$data_venda = '';
 
 foreach ($aporte_posts as $aporte_post) {
     $aporte_id = $aporte_post->ID;
     $venda_status_item = get_field('venda_status', $aporte_id);
     
-    if ($venda_status_item) {
-        $venda_status_geral = true;
-    }
-    
-    // Somar histórico de aportes (para valor investido)
+    // Calcular valor investido deste aporte
     $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
+    $valor_investido_item = 0;
     foreach ($historico_aportes as $item) {
-        $valor_investido_total += floatval($item['valor_aporte'] ?? 0);
+        $valor_investido_item += floatval($item['valor_aporte'] ?? 0);
         $historico_aportes_consolidado[] = $item;
+    }
+    $valor_investido_total += $valor_investido_item;
+    
+    if ($venda_status_item) {
+        // Aporte vendido
+        $aportes_vendidos++;
+        $valor_investido_vendidos += $valor_investido_item;
+        $valor_recebido_total += floatval(get_field('venda_valor', $aporte_id) ?: 0);
+        $valor_na_venda_total += floatval(get_field('valor_atual', $aporte_id) ?: 0);
+        $rentabilidade_reais_vendidos += floatval(get_field('venda_rentabilidade_reais', $aporte_id) ?: 0);
+        
+        if (!$data_venda) {
+            $data_venda = get_field('venda_data', $aporte_id) ?: '';
+        }
+    } else {
+        // Aporte ativo
+        $aportes_ativos++;
+        $valor_investido_ativos += $valor_investido_item;
+        $valor_atual_aporte = floatval(get_field('valor_atual', $aporte_id) ?: 0);
+        
+        // ✅ Pegar apenas o maior valor individual (igual ao card)
+        if ($valor_atual_aporte > $maior_valor_ativo) {
+            $maior_valor_ativo = $valor_atual_aporte;
+        }
+        
+        // Calcular rentabilidade do aporte ativo
+        $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id) ?: [];
+        if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
+            $ultimo_valor = end($rentabilidade_hist);
+            if (isset($ultimo_valor['valor'])) {
+                $rentabilidade_ativa_total += floatval($ultimo_valor['valor']);
+            }
+        }
     }
     
     // Consolidar histórico de rentabilidade para o gráfico
@@ -121,6 +156,48 @@ foreach ($aporte_posts as $aporte_post) {
     }
 }
 
+// Determinar status geral
+$status_geral = 'ativo';
+if ($aportes_vendidos > 0 && $aportes_ativos === 0) {
+    $status_geral = 'vendido';
+} elseif ($aportes_vendidos > 0 && $aportes_ativos > 0) {
+    $status_geral = 'misto';
+}
+
+// Calcular rentabilidades percentuais
+$rentabilidade_pct_vendidos = 0;
+$rentabilidade_pct_ativos = 0;
+$rentabilidade_pct_geral = 0;
+
+if ($valor_investido_vendidos > 0 && $valor_recebido_total > 0) {
+    $rentabilidade_pct_vendidos = (($valor_recebido_total / $valor_investido_vendidos) - 1) * 100;
+}
+
+// ✅ Corrigir cálculo da rentabilidade ativa
+if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
+    $rentabilidade_pct_ativos = (($maior_valor_ativo / $valor_investido_ativos) - 1) * 100;
+}
+
+if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
+    $rentabilidade_pct_geral = (($valor_recebido_total / $valor_investido_total) - 1) * 100;
+}
+
+// ✅ Calcular porcentagem para aportes ativos puros
+$rentabilidade_pct_ativos_puros = 0;
+if ($valor_investido_ativos > 0 && $rentabilidade_ativa_total > 0) {
+    $rentabilidade_pct_ativos_puros = ($rentabilidade_ativa_total / $valor_investido_ativos) * 100;
+}
+
+// Valores finais para exibição
+$valor_compra = floatval(get_field('valor_compra', $aporte_principal->ID) ?: 0);
+$valor_atual = ($status_geral === 'vendido') ? $valor_na_venda_total : $maior_valor_ativo; // ✅ Usar maior valor ativo
+$venda_status = ($status_geral === 'vendido');
+$venda_valor = $valor_recebido_total;
+$venda_rentabilidade = $rentabilidade_pct_vendidos;
+$rentabilidade_projetada = $rentabilidade_ativa_total;
+$rentabilidade_pct = ($status_geral === 'misto') ? $rentabilidade_pct_ativos : 
+                    ($status_geral === 'ativo' ? $rentabilidade_pct_ativos_puros : $rentabilidade_pct_geral);
+
 // Converter array associativo em indexado para o gráfico
 $rentabilidade_hist = array_values($historico_rentabilidade_consolidado);
 
@@ -132,56 +209,12 @@ usort($rentabilidade_hist, function($a, $b) {
     return $dateA->getTimestamp() - $dateB->getTimestamp();
 });
 
-// Calcular rentabilidade projetada (último valor do histórico consolidado)
-if (!empty($rentabilidade_hist)) {
-    $ultimo_valor = end($rentabilidade_hist);
-    $rentabilidade_projetada_total = floatval($ultimo_valor['valor'] ?? 0);
-}
-
-// Dados de venda consolidados
-$venda_data = '';
-$venda_valor_total = 0;
-$venda_rentabilidade_total = 0;
-$venda_observacoes = '';
-$venda_documento = null;
-
-if ($venda_status_geral) {
-    foreach ($aporte_posts as $aporte_post) {
-        $aporte_id = $aporte_post->ID;
-        if (get_field('venda_status', $aporte_id)) {
-            $venda_valor_total += floatval(get_field('venda_valor', $aporte_id) ?: 0);
-            if (!$venda_data) {
-                $venda_data = get_field('venda_data', $aporte_id) ?: '';
-                $venda_observacoes = get_field('venda_observacoes', $aporte_id) ?: '';
-                $venda_documento = get_field('venda_documento', $aporte_id);
-            }
-        }
-    }
-    
-    if ($valor_investido_total > 0) {
-        $venda_rentabilidade_total = (($venda_valor_total / $valor_investido_total) - 1) * 100;
-    }
-}
-
-// Atualizar variáveis para compatibilidade com o resto do código
-// $valor_compra = $valor_investido_total;
-// $valor_atual = $valor_atual_total;
-$venda_status = $venda_status_geral;
-$venda_valor = $venda_valor_total;
-$venda_rentabilidade = $venda_rentabilidade_total;
-$rentabilidade_projetada = $rentabilidade_projetada_total;
-$historico_aportes = $historico_aportes_consolidado;
-$historico_dividendos = $historico_dividendos_consolidado;
-
-// Calcular rentabilidade percentual
-$rentabilidade_pct = $valor_investido_total > 0 ? ($rentabilidade_projetada / $valor_investido_total) * 100 : 0;
-
 // Dados específicos para dividendos
 $ultimo_dividendo = null;
 $proximo_dividendo = null;
 
-if ($is_private && !empty($historico_dividendos)) {
-    foreach ($historico_dividendos as $dividendo) {
+if ($is_private && !empty($historico_dividendos_consolidado)) {
+    foreach ($historico_dividendos_consolidado as $dividendo) {
         $data_dividendo = $dividendo['data_dividendo'] ?? $dividendo['data'] ?? '';
         if ($data_dividendo && (!$ultimo_dividendo || 
             strtotime($data_dividendo) > strtotime($ultimo_dividendo['data']))) {
@@ -192,7 +225,6 @@ if ($is_private && !empty($historico_dividendos)) {
         }
     }
     
-    // Próximo dividendo do primeiro aporte
     $proximo_dividendo_data = get_field('proximo_dividendo_data', $aporte_principal->ID) ?: '';
     $proximo_dividendo_valor = floatval(get_field('proximo_dividendo_valor', $aporte_principal->ID) ?: 0);
     
@@ -204,18 +236,18 @@ if ($is_private && !empty($historico_dividendos)) {
     }
 }
 
-// ========== DADOS BÁSICOS DO INVESTIMENTO ==========
+// Dados básicos do investimento
 $titulo = esc_html(get_the_title($inv_id));
 $localizacao = get_field('localizacao', $inv_id) ?: '';
 $lamina_tecnica = get_field('url_lamina_tecnica', $inv_id) ?: '';
 $link_produto = get_permalink($inv_id);
 
-// ========== LÓGICA DE VENDA PARA PRODUTOS TRADE ==========
+// Lógica de venda para produtos TRADE
 $pode_vender = false;
 $data_liberacao = 'Data indisponível';
 
-if (!$is_private && !$venda_status && !empty($historico_aportes)) {
-    $primeiro_aporte = reset($historico_aportes);
+if (!$is_private && !$venda_status && !empty($historico_aportes_consolidado)) {
+    $primeiro_aporte = reset($historico_aportes_consolidado);
     $data_inicio_raw = $primeiro_aporte['data_aporte'] ?? '';
     
     if ($data_inicio_raw) {
@@ -239,7 +271,7 @@ if (!$is_private && !$venda_status && !empty($historico_aportes)) {
     }
 }
 
-// ========== STATUS DO INVESTIMENTO ==========
+// Status do investimento
 $status = 'Status indisponível';
 if (function_exists('s_invest_get_status_captacao_info')) {
     $status_info = s_invest_get_status_captacao_info($inv_id);
@@ -248,7 +280,7 @@ if (function_exists('s_invest_get_status_captacao_info')) {
     $status = icf_get_investment_status($inv_id);
 }
 
-// ========== DOCUMENTOS ==========
+// Documentos
 $docs = get_field('documentos', $inv_id) ?: [];
 ?>
 
@@ -263,18 +295,20 @@ $docs = get_field('documentos', $inv_id) ?: [];
                 <?php endif; ?>
             </div>
             
-            <!-- BADGES -->
+            <!-- BADGES LADO A LADO -->
             <div class="ml-4 text-center">
-                <div class="flex flex-col gap-2">
-                    <!-- Badge de Status (Vendido/Ativo) -->
-                    <?php if ($venda_status) : ?>
+                <div class="flex flex-row gap-2 mb-2">
+                    <!-- Badge de Status (Vendido/Misto/Ativo) -->
+                    <?php if ($status_geral === 'vendido') : ?>
                         <div class="inline-block px-4 py-2 rounded-full text-sm font-bold bg-red-500/20 text-red-400 border border-red-500/30">
                             <i class="fas fa-hand-holding-usd mr-2"></i>
                             VENDIDO
                         </div>
-                        <?php if ($venda_data) : ?>
-                            <div class="text-slate-400 text-xs">em <?php echo esc_html($venda_data); ?></div>
-                        <?php endif; ?>
+                    <?php elseif ($status_geral === 'misto') : ?>
+                        <div class="inline-block px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-blue-500/20 to-orange-500/20 text-blue-400 border border-blue-500/30">
+                            <i class="fas fa-exchange-alt mr-2"></i>
+                            MISTO
+                        </div>
                     <?php else : ?>
                         <div class="inline-block px-4 py-2 rounded-full text-sm font-medium bg-green-500/20 text-green-400 border border-green-500/30">
                             <i class="fas fa-chart-line mr-2"></i>
@@ -288,12 +322,22 @@ $docs = get_field('documentos', $inv_id) ?: [];
                         <?php echo esc_html($product_type_label); ?>
                     </div>
                 </div>
+                
+                <!-- Informações adicionais -->
+                <?php if ($status_geral === 'vendido' && $data_venda) : ?>
+                    <div class="text-slate-400 text-xs">em <?php echo esc_html($data_venda); ?></div>
+                <?php elseif ($status_geral === 'misto') : ?>
+                    <div class="text-slate-400 text-xs">
+                        <?php echo $aportes_ativos; ?> ativo<?php echo $aportes_ativos > 1 ? 's' : ''; ?> • 
+                        <?php echo $aportes_vendidos; ?> vendido<?php echo $aportes_vendidos > 1 ? 's' : ''; ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
         
         <!-- CARDS DE VALORES -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-10 px-2 md:px-0">
-            <!-- Card 1: Valor Investido (sempre presente) -->
+            <!-- Card 1: Valor Investido -->
             <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                 <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Valor Investido</div>
                 <div class="text-lg md:text-xl lg:text-2xl font-semibold text-blue-400">R$ <?php echo number_format($valor_investido_total, 2, ',', '.'); ?></div>
@@ -342,7 +386,7 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     <div class="text-lg md:text-xl lg:text-2xl font-semibold">R$ <?php echo number_format($valor_compra, 2, ',', '.'); ?></div>
                 </div>
                 
-                <?php if ($venda_status) : ?>
+                <?php if ($status_geral === 'vendido') : ?>
                     <!-- Produto TRADE vendido -->
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Valor na Venda</div>
@@ -355,6 +399,22 @@ $docs = get_field('documentos', $inv_id) ?: [];
                         <div class="text-xs <?php echo $venda_rentabilidade >= 0 ? 'text-green-300' : 'text-red-300'; ?> mt-1">
                             (<?php echo ($venda_rentabilidade >= 0 ? '+' : ''); ?><?php echo number_format($venda_rentabilidade, 1, ',', '.'); ?>%)
                         </div>
+                    </div>
+                <?php elseif ($status_geral === 'misto') : ?>
+                    <!-- Produto TRADE misto -->
+                    <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
+                        <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Valor Atual (Ativos)</div>
+                        <div class="text-lg md:text-xl lg:text-2xl font-semibold">R$ <?php echo number_format($valor_atual_ativos_total, 2, ',', '.'); ?></div>
+                        <div class="text-xs text-slate-500 mt-1">Vendidos: R$ <?php echo number_format($valor_na_venda_total, 2, ',', '.'); ?></div>
+                    </div>
+                    
+                    <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
+                        <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Rentabilidade Ativa</div>
+                        <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400">+R$ <?php echo number_format($rentabilidade_ativa_total, 2, ',', '.'); ?></div>
+                        <div class="text-xs <?php echo $rentabilidade_pct_ativos >= 0 ? 'text-green-300' : 'text-red-300'; ?> mt-1">
+                            (<?php echo ($rentabilidade_pct_ativos >= 0 ? '+' : ''); ?><?php echo number_format($rentabilidade_pct_ativos, 1, ',', '.'); ?>%)
+                        </div>
+                        <div class="text-xs text-slate-500 mt-1">Vendidos: R$ <?php echo number_format($valor_recebido_total, 2, ',', '.'); ?> (<?php echo number_format($rentabilidade_pct_vendidos, 1, ',', '.'); ?>%)</div>
                     </div>
                 <?php else : ?>
                     <!-- Produto TRADE ativo -->
@@ -389,10 +449,10 @@ $docs = get_field('documentos', $inv_id) ?: [];
     <?php endif; ?>
 
     <!-- INFORMAÇÕES DA VENDA -->
-    <?php if ($venda_status && $venda_observacoes) : ?>
+    <?php if ($venda_status && !empty($data_venda)) : ?>
         <div class="my-6 md:my-8 p-4 md:p-6 bg-white/5 rounded-xl border border-white/10">
             <h3 class="text-lg font-semibold mb-3 text-slate-300">Informações da Venda</h3>
-            <p class="text-slate-400 text-sm md:text-base"><?php echo esc_html($venda_observacoes); ?></p>
+            <p class="text-slate-400 text-sm md:text-base">Venda realizada em <?php echo esc_html($data_venda); ?></p>
         </div>
     <?php endif; ?>
 
@@ -406,17 +466,6 @@ $docs = get_field('documentos', $inv_id) ?: [];
                rel="noopener noreferrer">
                 <i class="fas fa-file-contract text-lg"></i>
                 Visualizar Contrato
-            </a>
-        <?php endif; ?>
-        
-        <!-- Documento da Venda -->
-        <?php if ($venda_documento && isset($venda_documento['url'])) : ?>
-            <a href="<?php echo esc_url($venda_documento['url']); ?>" 
-               class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-purple-900 border border-purple-800 hover:bg-purple-600 transition-colors"
-               target="_blank" 
-               rel="noopener noreferrer">
-                <i class="fas fa-file-invoice text-lg"></i>
-                Documento da Venda
             </a>
         <?php endif; ?>
         
@@ -441,15 +490,15 @@ $docs = get_field('documentos', $inv_id) ?: [];
         </a>
 
         <!-- BOTÃO DE VENDA OU STATUS -->
-        <?php if (!$venda_status) : ?>
+        <?php if (!$venda_status && $aportes_ativos > 0) : ?>
             <?php if ($is_private) : ?>
-                <!-- PRODUTOS PRIVATE: Mostrar status em vez de botão de venda -->
+                <!-- PRODUTOS PRIVATE -->
                 <div class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-purple-600 border border-purple-500 opacity-75">
                     <i class="fas fa-coins text-yellow-400"></i>
                     Gerando Dividendos
                 </div>
             <?php else : ?>
-                <!-- PRODUTOS TRADE: Lógica de venda -->
+                <!-- PRODUTOS TRADE -->
                 <?php if ($whatsapp_assessor) : ?>
                     <?php
                     $whatsapp_url = "https://wa.me/".preg_replace('/\D/', '', $whatsapp_assessor)."?text=".rawurlencode("Olá ".$nome_assessor.", gostaria de sacar meu investimento: ".$titulo);
@@ -512,9 +561,8 @@ $docs = get_field('documentos', $inv_id) ?: [];
         </div>
     </div>
 
-    <!-- HISTÓRICO E DOCUMENTOS -->
+    <!-- HISTÓRICO -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
-        <!-- HISTÓRICO -->
         <div class="px-2 md:px-0">
             <h3 class="text-slate-400 text-base md:text-lg mb-2 md:mb-4">
                 <?php echo $is_private ? 'Histórico de Dividendos' : 'Histórico de Aportes'; ?>
@@ -522,9 +570,9 @@ $docs = get_field('documentos', $inv_id) ?: [];
 
             <?php if ($is_private) : ?>
                 <!-- PRODUTOS PRIVATE: Mostrar dividendos -->
-                <?php if (!empty($historico_dividendos) && is_array($historico_dividendos)) : ?>
+                <?php if (!empty($historico_dividendos_consolidado) && is_array($historico_dividendos_consolidado)) : ?>
                     <div class="space-y-2 md:space-y-4">
-                        <?php foreach ($historico_dividendos as $dividendo) : ?>
+                        <?php foreach ($historico_dividendos_consolidado as $dividendo) : ?>
                             <div class="flex justify-between items-center py-1 md:py-2 border-b border-white/10">
                                 <div>
                                     <span class="text-xs md:text-sm"><?php echo esc_html($dividendo['data_dividendo'] ?? $dividendo['data'] ?? ''); ?></span>
@@ -550,9 +598,9 @@ $docs = get_field('documentos', $inv_id) ?: [];
                 
             <?php else : ?>
                 <!-- PRODUTOS TRADE: Mostrar aportes -->
-                <?php if (!empty($historico_aportes) && is_array($historico_aportes)) : ?>
+                <?php if (!empty($historico_aportes_consolidado) && is_array($historico_aportes_consolidado)) : ?>
                     <div class="space-y-2 md:space-y-4">
-                        <?php foreach ($historico_aportes as $ap) : ?>
+                        <?php foreach ($historico_aportes_consolidado as $ap) : ?>
                             <div class="flex justify-between items-center py-1 md:py-2 border-b border-white/10">
                                 <span class="text-xs md:text-sm"><?php echo esc_html($ap['data_aporte'] ?? ''); ?></span>
                                 <span class="text-slate-400 text-xs md:text-sm">
@@ -566,43 +614,6 @@ $docs = get_field('documentos', $inv_id) ?: [];
                 <?php endif; ?>
             <?php endif; ?>
         </div>
-
-        <!-- DOCUMENTOS -->
-        <div class="px-2 md:px-0">
-            <h3 class="text-slate-400 text-base md:text-lg mb-2 md:mb-4">Documentos</h3>
-            <?php if (!empty($docs) && is_array($docs)) : ?>
-                <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
-                    <?php foreach ($docs as $doc) : 
-                        $titulo_doc = esc_html($doc['title'] ?? 'Documento');
-                        $url_doc = '';
-                        
-                        if (isset($doc['url']['url'])) {
-                            $url_doc = esc_url($doc['url']['url']);
-                        } elseif (isset($doc['url']) && is_string($doc['url'])) {
-                            $url_doc = esc_url($doc['url']);
-                        }
-                        
-                        if ($url_doc) :
-                    ?>
-                        <a href="<?php echo $url_doc; ?>" 
-                           class="group relative text-center"
-                           target="_blank"
-                           rel="noopener noreferrer">
-                            <div class="w-16 h-16 md:w-20 md:h-20 bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-2 transition-colors group-hover:bg-blue-900/50">
-                                <i class="fas fa-file-pdf text-2xl md:text-3xl"></i>
-                            </div>
-                            <span class="text-slate-400 text-xs md:text-sm truncate px-2 block" title="<?php echo $titulo_doc; ?>">
-                                <?php echo $titulo_doc; ?>
-                            </span>
-                        </a>
-                    <?php 
-                        endif;
-                    endforeach; ?>
-                </div>
-            <?php else : ?>
-                <p class="text-slate-400">Nenhum documento disponível</p>
-            <?php endif; ?>
-        </div>
     </div>
 </div>
 
@@ -610,7 +621,6 @@ $docs = get_field('documentos', $inv_id) ?: [];
 <?php if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist) && count($rentabilidade_hist) > 0) : ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Aguardar Chart.js estar disponível
     function initChart() {
         if (typeof Chart === 'undefined') {
             setTimeout(initChart, 200);
@@ -624,7 +634,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const historico = <?php echo json_encode($rentabilidade_hist); ?>;
 
         if (historico && historico.length > 0) {
-            console.log('Dados do gráfico:', historico); // Debug
             try {
                 new Chart(ctx, {
                     type: 'bar',
@@ -689,7 +698,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Inicializar após um pequeno delay
     setTimeout(initChart, 300);
 });
 </script>

@@ -130,18 +130,16 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 
       <div class="mt-6 flex flex-col space-y-4">
         <div class="flex flex-wrap gap-4">
-          <?php if ( $lamina_url ) : ?>
-            
-              href="<?= esc_url( $lamina_url ); ?>"
-              target="_blank" rel="noopener noreferrer"
-              class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2
-                     border-2 border-secondary text-secondary px-6 py-3 text-base font-semibold
-                     rounded hover:bg-secondary hover:text-primary hover:border-primary transition"
-            >
-              <i class="fas fa-file-alt"></i>
-              Lâmina Técnica
-            </a>
-          <?php endif; ?>
+<?php if ( ! empty($lamina_url) ) : ?>
+  <a href="<?= esc_url($lamina_url); ?>"
+     target="_blank" rel="noopener noreferrer"
+     class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2
+            border-2 border-secondary text-secondary px-6 py-3 text-base font-semibold
+            rounded hover:bg-secondary hover:text-primary hover:border-primary transition">
+    <i class="fas fa-file-alt"></i>
+    Lâmina Técnica
+  </a>
+<?php endif; ?>
         </div>
       </div>
     </div>
@@ -322,11 +320,6 @@ if ($quantidade_cotas && !$cotas_vendidas) {
           $tabs_disponiveis['originadora'] = '<i class="fas fa-info-circle"></i> Sobre';
       }
       
-      $documentos = get_field('documentos');
-      if (!empty($documentos) && is_array($documentos)) {
-          $tabs_disponiveis['documentos'] = '<i class="fas fa-file-alt"></i> Documentos';
-      }
-      
       $motivos = get_field('motivos');
       if (!empty($motivos) && is_array($motivos)) {
           $tabs_disponiveis['motivos'] = '<i class="fas fa-seedling"></i> Motivos';
@@ -367,9 +360,6 @@ if ($quantidade_cotas && !$cotas_vendidas) {
                       break;
                   case 'originadora':
                       get_template_part('components/bloco-originadora');
-                      break;
-                  case 'documentos':
-                      get_template_part('components/bloco-documentos');
                       break;
                   case 'motivos':
                       get_template_part('components/bloco-motivos');

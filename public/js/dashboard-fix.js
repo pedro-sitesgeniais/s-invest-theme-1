@@ -1,155 +1,251 @@
-// FUNÇÃO ALPINE.JS PARA EXTRATO DE MOVIMENTAÇÕES
-// Adicionar no final dos scripts do dashboard ou em arquivo separado
+// FUNÇÃO ALPINE.JS PARA EXTRATO DE MOVIMENTAÇÕES - CORRIGIDA
+// dashboard-fix.js
 
 // Função principal extratoData
 window.extratoData = function() {
     return {
-        // Estado dos filtros
-        filtros: {
-            tipo: '',        // 'aporte' ou 'dividendo'
-            status: '',      // 'ativo' ou 'vendido'
-            periodo: ''      // '30', '90', '180', '365'
-        },
-        
-        // Estado da interface
+        movimentos: [],
+        movimentosFiltrados: [],
         carregando: false,
         limite: 10,
+        showOffcanvas: false,
         
-        // Dados originais
-        movimentosOriginais: [],
-        movimentosFiltrados: [],
-        
-        // Inicialização
-        init() {
-            this.carregarMovimentos();
-            this.aplicarFiltros();
+        // FILTROS CORRIGIDOS: Classe → Situação (condicionada) → Período
+        filtros: {
+            classe_ativo: '',    // slug da taxonomia tipo_produto
+            situacao: '',        // ativo, vendido, encerrado (baseado na classe)
+            periodo: '',         // 7, 30, 90, 365 para períodos rápidos
+            data_inicio: '',     // data personalizada início
+            data_fim: ''         // data personalizada fim
         },
         
-        // Carregar movimentos dos dados PHP
+        init() {
+            this.carregarMovimentos();
+        },
+        
         carregarMovimentos() {
             this.carregando = true;
             
-            try {
-                // Usar dados reais do PHP
-                const movimentosPHP = window.dashboardMovimentos || [];
-                
-                this.movimentosOriginais = movimentosPHP.map(item => ({
-                    id: item.id,
-                    data: item.data,
-                    tipo: item.tipo,
-                    investimento: item.investimento,
-                    valor: parseFloat(item.valor) || 0,
-                    valor_formatado: this.formatarValor(item.valor),
-                    vendido: item.vendido || false,
-                    timestamp: this.parseData(item.data),
-                    aporte_id: item.aporte_id,
-                    investment_id: item.investment_id
-                }));
-                
-                // Ordenar por data (mais recente primeiro)
-                this.movimentosOriginais.sort((a, b) => b.timestamp - a.timestamp);
-                
-            } catch (error) {
-                console.error('Erro ao carregar movimentos:', error);
-                this.movimentosOriginais = [];
-            }
-            
-            this.carregando = false;
+            setTimeout(() => {
+                this.movimentos = this.processarMovimentos(window.dashboardMovimentos || []);
+                this.aplicarFiltros();
+                this.carregando = false;
+            }, 200);
         },
         
-        // Aplicar filtros
+        processarMovimentos(dados) {
+            return dados.map(movimento => ({
+                ...movimento,
+                valor_formatado: this.formatarValor(movimento.valor)
+            }));
+        },
+        
         aplicarFiltros() {
             this.carregando = true;
             
             setTimeout(() => {
-                let movimentos = [...this.movimentosOriginais];
+                let filtrados = [...this.movimentos];
                 
-                // Filtro por tipo
-                if (this.filtros.tipo) {
-                    movimentos = movimentos.filter(mov => mov.tipo === this.filtros.tipo);
+                // Filtro por classe de ativo
+                if (this.filtros.classe_ativo) {
+                    filtrados = filtrados.filter(mov => mov.classe_ativo === this.filtros.classe_ativo);
                 }
                 
-                // Filtro por status
-                if (this.filtros.status) {
-                    const isVendido = this.filtros.status === 'vendido';
-                    movimentos = movimentos.filter(mov => mov.vendido === isVendido);
+                // Filtro por situação (condicionada à classe)
+                if (this.filtros.situacao) {
+                    filtrados = filtrados.filter(mov => mov.situacao === this.filtros.situacao);
                 }
                 
-                // Filtro por período
+                // Filtro por período (rápido ou personalizado)
                 if (this.filtros.periodo) {
                     const diasAtras = parseInt(this.filtros.periodo);
                     const dataLimite = new Date();
                     dataLimite.setDate(dataLimite.getDate() - diasAtras);
                     
-                    movimentos = movimentos.filter(mov => mov.timestamp >= dataLimite.getTime());
+                    filtrados = filtrados.filter(mov => {
+                        const dataMovimento = this.parseData(mov.data);
+                        return dataMovimento >= dataLimite;
+                    });
+                } else if (this.filtros.data_inicio && this.filtros.data_fim) {
+                    // Período personalizado - normalizar datas para comparação
+                    const dataInicio = new Date(this.filtros.data_inicio + 'T00:00:00');
+                    const dataFim = new Date(this.filtros.data_fim + 'T23:59:59');
+                    
+                    filtrados = filtrados.filter(mov => {
+                        const dataMovimento = this.parseData(mov.data);
+                        return dataMovimento >= dataInicio && dataMovimento <= dataFim;
+                    });
                 }
                 
-                this.movimentosFiltrados = movimentos;
+                this.movimentosFiltrados = filtrados;
+                this.limite = 10;
                 this.carregando = false;
-            }, 300); // Simular loading
+            }, 150);
         },
         
-        // Limpar filtros
-        limparFiltros() {
-            this.filtros = {
-                tipo: '',
-                status: '',
-                periodo: ''
-            };
+        // ========== LÓGICA PARA SITUAÇÃO CONDICIONADA (CORRIGIDA) ==========
+        classeEhTrade() {
+            const classeAtual = this.filtros.classe_ativo.toLowerCase();
+            return classeAtual.includes('trade') || 
+                   classeAtual.includes('trading') || 
+                   classeAtual === 'equity' ||
+                   classeAtual === 'renda-variavel';
+        },
+        
+        classeEhSCP() {
+            const classeAtual = this.filtros.classe_ativo.toLowerCase();
+            return classeAtual.includes('scp') || 
+                   classeAtual.includes('private') ||
+                   classeAtual.includes('private-scp');
+        },
+        
+        // ========== FUNÇÕES DO CALENDÁRIO CORRIGIDAS ==========
+        selecionarPeriodoRapido(dias) {
+            this.filtros.periodo = dias;
+            this.filtros.data_inicio = '';
+            this.filtros.data_fim = '';
+            this.showCalendar = false; // Fechar dropdown
             this.aplicarFiltros();
         },
         
-        // Verificar se há filtros ativos
-        temFiltrosAtivos() {
-            return this.filtros.tipo || this.filtros.status || this.filtros.periodo;
+        aplicarPeriodoPersonalizado() {
+            if (this.filtros.data_inicio && this.filtros.data_fim) {
+                // Validar que data início não é maior que data fim
+                const dataInicio = new Date(this.filtros.data_inicio);
+                const dataFim = new Date(this.filtros.data_fim);
+                
+                if (dataInicio > dataFim) {
+                    alert('Data inicial não pode ser maior que a data final.');
+                    return;
+                }
+                
+                this.filtros.periodo = ''; // Limpar período rápido
+                this.showCalendar = false; // Fechar dropdown
+                this.aplicarFiltros();
+            } else {
+                alert('Selecione as duas datas para aplicar o período personalizado.');
+            }
         },
         
-        // Contar movimentos filtrados
+        limparPeriodo() {
+            this.filtros.periodo = '';
+            this.filtros.data_inicio = '';
+            this.filtros.data_fim = '';
+            this.showCalendar = false; // Fechar dropdown
+            this.aplicarFiltros();
+        },
+        
+        limparFiltros() {
+            this.filtros = {
+                classe_ativo: '',
+                situacao: '',
+                periodo: '',
+                data_inicio: '',
+                data_fim: ''
+            };
+            this.showCalendar = false;
+            this.aplicarFiltros();
+        },
+        
+        temFiltrosAtivos() {
+            return this.filtros.classe_ativo !== '' || 
+                   this.filtros.situacao !== '' || 
+                   this.filtros.periodo !== '' ||
+                   (this.filtros.data_inicio !== '' && this.filtros.data_fim !== '');
+        },
+        
         contarMovimentosFiltrados() {
             return this.movimentosFiltrados.length;
         },
         
-        // Obter label do período
-        obterLabelPeriodo() {
+        // ========== FUNÇÕES PARA OBTER LABELS DOS FILTROS ==========
+        obterLabelSituacao() {
             const labels = {
-                '30': 'Últimos 30 dias',
-                '90': 'Últimos 3 meses', 
-                '180': 'Últimos 6 meses',
-                '365': 'Último ano'
+                'ativo': 'Ativos',
+                'vendido': 'Vendidos', 
+                'encerrado': 'Encerrados'
             };
-            return labels[this.filtros.periodo] || '';
+            return labels[this.filtros.situacao] || '';
         },
         
-        // Funções auxiliares
+        obterLabelClasse() {
+            if (!this.filtros.classe_ativo) return '';
+            
+            const dados = window.dashboardFiltrosDados?.tiposAtivo || [];
+            const tipo = dados.find(t => t.slug === this.filtros.classe_ativo);
+            return tipo ? tipo.name : this.filtros.classe_ativo;
+        },
+        
+        obterLabelPeriodo() {
+            if (this.filtros.periodo) {
+                const labels = {
+                    '7': 'Últimos 7 dias',
+                    '30': 'Últimos 30 dias',
+                    '90': 'Últimos 3 meses',
+                    '365': 'Último ano'
+                };
+                return labels[this.filtros.periodo] || `Últimos ${this.filtros.periodo} dias`;
+            } else if (this.filtros.data_inicio && this.filtros.data_fim) {
+                const inicio = this.formatarDataBrasileira(this.filtros.data_inicio);
+                const fim = this.formatarDataBrasileira(this.filtros.data_fim);
+                return `${inicio} até ${fim}`;
+            }
+            return 'Selecionar período';
+        },
+        
+        // ========== WATCH PARA LIMPAR SITUAÇÃO QUANDO CLASSE MUDA ==========
+        onClasseChange() {
+            // Quando classe muda, verificar se situação atual é válida
+            if (this.filtros.classe_ativo && this.filtros.situacao) {
+                const ehTrade = this.classeEhTrade();
+                const ehSCP = this.classeEhSCP();
+                
+                // Se mudou para Trade e situação é "encerrado", limpar
+                if (ehTrade && this.filtros.situacao === 'encerrado') {
+                    this.filtros.situacao = '';
+                }
+                
+                // Se mudou para SCP e situação é "vendido", limpar
+                if (ehSCP && this.filtros.situacao === 'vendido') {
+                    this.filtros.situacao = '';
+                }
+            }
+        },
+        
+        // ========== FUNÇÕES UTILITÁRIAS ==========
         formatarValor(valor) {
-            const num = parseFloat(valor) || 0;
-            return num.toLocaleString('pt-BR', {
+            return parseFloat(valor || 0).toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
         },
         
-        parseData(dataStr) {
-            try {
-                const partes = dataStr.split('/');
-                if (partes.length === 3) {
-                    const data = new Date(partes[2], partes[1] - 1, partes[0]);
-                    return data.getTime();
-                }
-            } catch (error) {
-                console.error('Erro ao parsear data:', dataStr, error);
+        parseData(dataString) {
+            // Converte data do formato dd/mm/yyyy para objeto Date (meio-dia para evitar problemas de timezone)
+            const partes = dataString.split('/');
+            if (partes.length === 3) {
+                return new Date(partes[2], partes[1] - 1, partes[0], 12, 0, 0);
             }
-            return Date.now();
+            return new Date();
+        },
+        
+        formatarDataBrasileira(dataISO) {
+            if (!dataISO) return '';
+            const data = new Date(dataISO + 'T00:00:00'); // Evitar timezone issues
+            return data.toLocaleDateString('pt-BR');
+        },
+        
+        // ========== FUNÇÃO PARA DATA MÁXIMA (hoje) ==========
+        getDataMaxima() {
+            const hoje = new Date();
+            return hoje.toISOString().split('T')[0];
         }
     };
 };
 
-// Garantir que a função esteja disponível quando o Alpine carregar
-document.addEventListener('alpine:init', () => {
-    // Registrar globalmente se necessário
-    if (typeof window.extratoData !== 'function') {
-        console.error('Função extratoData não foi definida corretamente');
-    }
+// ========== GARANTIR DISPONIBILIDADE GLOBAL ==========
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ dashboard-fix.js carregado com correções para Alpine.js');
 });
 
 // Dados dos movimentos para JavaScript (será populado pelo PHP)

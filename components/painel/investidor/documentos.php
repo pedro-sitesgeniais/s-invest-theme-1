@@ -5,6 +5,7 @@
  * 
  * Otimizado para: performance, segurança e experiência do usuário
  */
+return; // Impede acesso direto ao arquivo
 defined('ABSPATH') || exit;
 
 // 1) Contexto de painel com sanitização reforçada
