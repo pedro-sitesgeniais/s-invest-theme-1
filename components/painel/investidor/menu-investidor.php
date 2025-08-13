@@ -108,13 +108,13 @@ $menu_items = [
         'active' => $secao === 'produtos-gerais',
         'url' => add_query_arg(['painel' => $painel, 'secao' => 'produtos-gerais'], $base_url)
     ],
-    [
-        'key' => 'documentos',
-        'label' => 'Documentos',
-        'icon' => 'folder-open',
-        'active' => $secao === 'documentos',
-        'url' => add_query_arg(['painel' => $painel, 'secao' => 'documentos'], $base_url)
-    ],
+    // [
+    //     'key' => 'documentos',
+    //     'label' => 'Documentos',
+    //     'icon' => 'folder-open',
+    //     'active' => $secao === 'documentos',
+    //     'url' => add_query_arg(['painel' => $painel, 'secao' => 'documentos'], $base_url)
+    // ],
     [
         'key' => 'comunicados',
         'label' => 'Comunicados',

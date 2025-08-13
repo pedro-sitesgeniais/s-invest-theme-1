@@ -3,6 +3,7 @@
  * Seção Documentos - Versão Final Corrigida
  * components/painel/investidor/secao-documentos.php
  */
+return; // Impede acesso direto ao arquivo
 defined('ABSPATH') || exit;
 
 // Verifica se o usuário está logado
