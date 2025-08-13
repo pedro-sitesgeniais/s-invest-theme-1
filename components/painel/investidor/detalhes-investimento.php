@@ -80,7 +80,7 @@ $contrato = get_field('contrato_pdf', $aporte_principal->ID);
 $valor_recebido_total = 0;
 $rentabilidade_reais_vendidos = 0;
 $valor_na_venda_total = 0;
-$valor_atual_ativos_total = 0;
+$maior_valor_ativo = 0; // ✅ Maior valor individual ativo
 $rentabilidade_ativa_total = 0;
 $valor_investido_vendidos = 0;
 $valor_investido_ativos = 0;
@@ -114,7 +114,12 @@ foreach ($aporte_posts as $aporte_post) {
         // Aporte ativo
         $aportes_ativos++;
         $valor_investido_ativos += $valor_investido_item;
-        $valor_atual_ativos_total += floatval(get_field('valor_atual', $aporte_id) ?: 0);
+        $valor_atual_aporte = floatval(get_field('valor_atual', $aporte_id) ?: 0);
+        
+        // ✅ Pegar apenas o maior valor individual (igual ao card)
+        if ($valor_atual_aporte > $maior_valor_ativo) {
+            $maior_valor_ativo = $valor_atual_aporte;
+        }
         
         // Calcular rentabilidade do aporte ativo
         $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id) ?: [];
@@ -168,6 +173,7 @@ if ($valor_investido_vendidos > 0 && $valor_recebido_total > 0) {
     $rentabilidade_pct_vendidos = (($valor_recebido_total / $valor_investido_vendidos) - 1) * 100;
 }
 
+// ✅ Corrigir cálculo da rentabilidade ativa
 if ($valor_investido_ativos > 0 && $rentabilidade_ativa_total > 0) {
     $rentabilidade_pct_ativos = ($rentabilidade_ativa_total / $valor_investido_ativos) * 100;
 }
@@ -178,7 +184,7 @@ if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
 
 // Valores finais para exibição
 $valor_compra = floatval(get_field('valor_compra', $aporte_principal->ID) ?: 0);
-$valor_atual = ($status_geral === 'vendido') ? $valor_na_venda_total : $valor_atual_ativos_total;
+$valor_atual = ($status_geral === 'vendido') ? $valor_na_venda_total : $maior_valor_ativo; // ✅ Usar maior valor ativo
 $venda_status = ($status_geral === 'vendido');
 $venda_valor = $valor_recebido_total;
 $venda_rentabilidade = $rentabilidade_pct_vendidos;
