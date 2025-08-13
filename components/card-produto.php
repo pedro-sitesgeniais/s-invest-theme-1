@@ -220,8 +220,8 @@ if (false === $cached_data) {
                 }
                 
                 // ✅ Corrigir cálculo da rentabilidade projetada
-                if ($valor_investido_ativos > 0 && $valor_atual_ativos_total > 0) {
-                    $rentabilidade_pct_ativos = (($valor_atual_ativos_total / $valor_investido_ativos) - 1) * 100;
+                if ($valor_investido_ativos > 0 && $rentabilidade_ativa_total > 0) {
+                    $rentabilidade_pct_ativos = ($rentabilidade_ativa_total / $valor_investido_ativos) * 100;
                 }
                 
                 // ✅ Cálculo total para vendidos completos
