@@ -1,6 +1,6 @@
 <?php
 /**
- * Card de Investimento UNIFICADO - VERSÃO CORRIGIDA COM STATUS MELHORADO
+ * Card de Investimento UNIFICADO - VERSÃO CORRIGIDA COM INFORMAÇÕES GERAIS
  * components/card-produto.php
  * 
  * Uso:
@@ -229,8 +229,8 @@ switch ($context) {
         
     default:
         $link = get_permalink($id);
-        $button_text = 'Ver Oportunidade';
-        $button_icon = 'fa-eye';
+        $button_text = 'Saiba Mais';
+        $button_icon = 'fa-info-circle';
         break;
 }
 
@@ -494,6 +494,10 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                     </div>
                 </div>
             <?php } ?>
+        <?php endif; ?>
+
+        <!-- ✅ SEÇÃO DE INFORMAÇÕES GERAIS - SEMPRE EXIBIDA (EXCETO EM MY-INVESTMENTS) -->
+        <?php if ($context !== 'my-investments') : ?>
             <div class="space-y-3">
                 <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>
