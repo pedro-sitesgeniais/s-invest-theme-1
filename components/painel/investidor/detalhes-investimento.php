@@ -3,13 +3,6 @@
  * Seção Detalhes de Investimento - VERSÃO CORRIGIDA COM SISTEMA PRIVATE/SCP
  */
 defined('ABSPATH') || exit;
-// DEBUG - remover após teste
-if (isset($_GET['debug'])) {
-    echo "Class exists: " . (class_exists('SIP_Private_URLs_Extended') ? 'YES' : 'NO') . "<br>";
-    $senha = get_field('documento_senha', $inv_id);
-    echo "Senha configurada: " . ($senha ? 'YES' : 'NO') . "<br>";
-    if ($senha) echo "Senha: " . substr($senha, 0, 3) . "***<br>";
-}
 // Verificações básicas
 $inv_id = isset($_GET['id']) ? absint($_GET['id']) : 0;
 if (!$inv_id || !get_post($inv_id)) {
@@ -405,31 +398,15 @@ $docs = get_field('documentos', $inv_id) ?: [];
     <!-- BOTÕES DE AÇÃO -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 my-6 md:my-12">
         <!-- Contrato -->
-<?php if ($contrato && isset($contrato['url'])) : 
-    // Inicializar URLs privadas aqui
-    $contrato_url = '';
-    if (isset($contrato['ID']) && class_exists('SIP_Private_URLs')) {
-        $private_urls = new SIP_Private_URLs();
-        $contrato_url = $private_urls->generate_aporte_private_url($aporte_principal->ID);
-    } elseif (isset($contrato['url'])) {
-        $contrato_url = esc_url($contrato['url']);
-    }
-    
-    if ($contrato_url) :
-?>
-    <a href="<?php echo $contrato_url; ?>" 
-       class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-blue-900 border border-blue-800 hover:bg-blue-600 transition-colors"
-       target="_blank" 
-       rel="noopener noreferrer">
-        <i class="fas fa-file-contract text-lg"></i>
-        <?php if (class_exists('SIP_Private_URLs')) : ?>
-            <i class="fas fa-lock text-xs"></i>
+        <?php if ($contrato && isset($contrato['url'])) : ?>
+            <a href="<?php echo esc_url($contrato['url']); ?>" 
+               class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-blue-900 border border-blue-800 hover:bg-blue-600 transition-colors"
+               target="_blank" 
+               rel="noopener noreferrer">
+                <i class="fas fa-file-contract text-lg"></i>
+                Visualizar Contrato
+            </a>
         <?php endif; ?>
-        Visualizar Contrato
-    </a>
-<?php 
-    endif;
-endif; ?>
         
         <!-- Documento da Venda -->
         <?php if ($venda_documento && isset($venda_documento['url'])) : ?>
