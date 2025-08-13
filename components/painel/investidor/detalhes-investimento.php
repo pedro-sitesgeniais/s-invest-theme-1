@@ -590,7 +590,7 @@ endif; ?>
         </div>
 
         <!-- DOCUMENTOS -->
-        <div class="px-2 md:px-0">
+        <!-- <div class="px-2 md:px-0">
             <h3 class="text-slate-400 text-base md:text-lg mb-2 md:mb-4">Documentos</h3>
             <?php if (!empty($docs) && is_array($docs)) : ?>
                 <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
@@ -598,8 +598,8 @@ endif; ?>
                     // Inicializar sistema de URLs privadas
                     $private_urls = null;
                         if (class_exists('SIP_Private_URLs')) {
-    $private_urls = new SIP_Private_URLs();
-}
+                            $private_urls = new SIP_Private_URLs();
+                        }
                     
                     foreach ($docs as $doc) : 
                         $titulo_doc = esc_html($doc['title'] ?? 'Documento');
@@ -639,7 +639,7 @@ endif; ?>
             <?php else : ?>
                 <p class="text-slate-400">Nenhum documento disponível</p>
             <?php endif; ?>
-        </div>
+        </div> -->
     </div>
 </div>
 
