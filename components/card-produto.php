@@ -154,7 +154,7 @@ if (false === $cached_data) {
                 $valor_recebido_total = 0;
                 $rentabilidade_reais_total = 0;
                 $data_venda = '';
-                $valor_na_venda_total = 0; // ✅ Valor na época da venda (vendidos)
+                $maior_valor_vendido = 0; // ✅ Maior valor individual vendido
                 $valor_atual_ativos_total = 0; // ✅ Valor atual (ativos)
                 
                 foreach ($aportes_usuario as $aporte_item) {
@@ -162,7 +162,13 @@ if (false === $cached_data) {
                     if (get_field('venda_status', $aporte_id)) {
                         // Aporte vendido
                         $valor_recebido_total += (float) get_field('venda_valor', $aporte_id);
-                        $valor_na_venda_total += (float) get_field('valor_atual', $aporte_id);
+                        $valor_atual_aporte = (float) get_field('valor_atual', $aporte_id);
+                        
+                        // ✅ Pegar apenas o maior valor individual
+                        if ($valor_atual_aporte > $maior_valor_vendido) {
+                            $maior_valor_vendido = $valor_atual_aporte;
+                        }
+                        
                         $rentabilidade_reais_total += (float) get_field('venda_rentabilidade_reais', $aporte_id);
                         
                         if (!$data_venda) {
@@ -176,7 +182,7 @@ if (false === $cached_data) {
                 
                 // ✅ Valor principal baseado no status
                 if ($status_investimento === 'vendido') {
-                    $valor_principal = $valor_na_venda_total; // Só vendidos
+                    $valor_principal = $maior_valor_vendido; // Maior valor vendido
                 } else {
                     $valor_principal = $valor_atual_ativos_total; // Mistos: só ativos
                 }
@@ -198,7 +204,7 @@ if (false === $cached_data) {
                     'aportes_ativos' => $aportes_ativos,
                     'aportes_vendidos' => $aportes_vendidos,
                     'total_aportes' => count($aportes_usuario),
-                    'valor_na_venda_total' => $valor_na_venda_total, // Para resumo
+                    'valor_na_venda_total' => $maior_valor_vendido, // Para resumo
                     'valor_atual_ativos_total' => $valor_atual_ativos_total, // Para resumo
                     'aportes_detalhes' => $aportes_detalhes
                 ];
@@ -514,15 +520,7 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                         </div>
                         <div>
                             <span class="text-gray-600 block">
-                                <?php 
-                                if ($dados_pessoais['status'] === 'vendido') {
-                                    echo 'Valor na Venda';
-                                } elseif ($dados_pessoais['status'] === 'misto') {
-                                    echo 'Valor Ativos';
-                                } else {
-                                    echo 'Valor Atual';
-                                }
-                                ?>
+                                <?php echo $dados_pessoais['status'] === 'vendido' ? 'Valor na Venda' : 'Valor Atual'; ?>
                             </span>
                             <span class="font-bold text-lg text-primary">
                                 R$ <?php echo number_format($dados_pessoais['valor_atual'], 0, ',', '.'); ?>
@@ -531,25 +529,31 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                     </div>
                     
                     <div class="bg-gray-50 p-3 rounded-lg">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 text-sm">
-                                <?php echo $dados_pessoais['status'] === 'vendido' ? 'Rentabilidade Consolidada' : 'Rentabilidade Projetada'; ?>
-                            </span>
-                            <div class="text-right">
-                                <span class="font-bold text-lg text-green-600">
-                                    <?php 
-                                    if ($dados_pessoais['status'] === 'vendido') {
-                                        echo 'R$ ' . number_format($dados_pessoais['valor_recebido'], 0, ',', '.');
-                                    } else {
-                                        echo ($dados_pessoais['rentabilidade_reais'] >= 0 ? '+' : '') . 'R$ ' . number_format(abs($dados_pessoais['rentabilidade_reais']), 0, ',', '.');
-                                    }
-                                    ?>
-                                </span>
+                        <?php if ($dados_pessoais['status'] === 'vendido') : ?>
+                            <!-- ✅ VENDIDO: Apenas rentabilidade consolidada -->
+                            <div class="text-center">
+                                <div class="text-gray-600 text-sm mb-1">Rentabilidade Consolidada</div>
+                                <div class="font-bold text-lg text-green-600">
+                                    R$ <?php echo number_format($dados_pessoais['valor_recebido'], 0, ',', '.'); ?>
+                                </div>
                                 <div class="text-xs <?php echo $dados_pessoais['rentabilidade_pct'] >= 0 ? 'text-green-500' : 'text-red-500'; ?>">
                                     (<?php echo ($dados_pessoais['rentabilidade_pct'] >= 0 ? '+' : ''); ?><?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
                                 </div>
                             </div>
-                        </div>
+                        <?php else : ?>
+                            <!-- ✅ ATIVO: Rentabilidade projetada normal -->
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600 text-sm">Rentabilidade Projetada</span>
+                                <div class="text-right">
+                                    <span class="font-bold text-lg text-green-600">
+                                        <?php echo ($dados_pessoais['rentabilidade_reais'] >= 0 ? '+' : ''); ?>R$ <?php echo number_format(abs($dados_pessoais['rentabilidade_reais']), 0, ',', '.'); ?>
+                                    </span>
+                                    <div class="text-xs <?php echo $dados_pessoais['rentabilidade_pct'] >= 0 ? 'text-green-500' : 'text-red-500'; ?>">
+                                        (<?php echo ($dados_pessoais['rentabilidade_pct'] >= 0 ? '+' : ''); ?><?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                         
                         <!-- ✅ RESUMO INTELIGENTE -->
                         <?php if ($dados_pessoais['status'] === 'misto') : ?>
@@ -558,7 +562,7 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                                 <br>
                                 (R$ <?php echo number_format($dados_pessoais['valor_atual_ativos_total'], 0, ',', '.'); ?> ativo + R$ <?php echo number_format($dados_pessoais['valor_na_venda_total'], 0, ',', '.'); ?> vendido)
                             </div>
-                        <?php elseif ($dados_pessoais['total_aportes'] > 1) : ?>
+                        <?php elseif ($dados_pessoais['total_aportes'] > 1 && $dados_pessoais['status'] !== 'vendido') : ?>
                             <div class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200 text-center">
                                 <?php echo $dados_pessoais['total_aportes']; ?> aportes
                             </div>
