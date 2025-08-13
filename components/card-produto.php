@@ -107,15 +107,32 @@ if (false === $cached_data) {
             // Somar TODOS os aportes do usuário neste investimento
             $valor_investido_total = 0;
             $venda_status = false;
+            $aportes_ativos = 0;
+            $aportes_vendidos = 0;
+            $aportes_detalhes = [];
             
             // Processar cada aporte individualmente
             foreach ($aportes_usuario as $aporte_item) {
                 $aporte_id = $aporte_item->ID;
                 $venda_status_item = get_field('venda_status', $aporte_id);
                 
+                // Contar aportes por status
                 if ($venda_status_item) {
                     $venda_status = true;
+                    $aportes_vendidos++;
+                } else {
+                    $aportes_ativos++;
                 }
+                
+                // Armazenar detalhes do aporte para modal
+                $aportes_detalhes[] = [
+                    'id' => $aporte_id,
+                    'vendido' => $venda_status_item,
+                    'valor_compra' => (float) get_field('valor_compra', $aporte_id),
+                    'valor_atual' => (float) get_field('valor_atual', $aporte_id),
+                    'venda_valor' => $venda_status_item ? (float) get_field('venda_valor', $aporte_id) : 0,
+                    'venda_data' => $venda_status_item ? get_field('venda_data', $aporte_id) : ''
+                ];
                 
                 // Somar histórico de aportes (para valor investido)
                 $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
@@ -124,17 +141,27 @@ if (false === $cached_data) {
                 }
             }
             
-            if ($venda_status) {
-                // ===== VENDIDO: Somar valores de todos os aportes vendidos =====
+            // Determinar status: todos vendidos, todos ativos, ou misto
+            $status_investimento = 'ativo';
+            if ($aportes_vendidos > 0 && $aportes_ativos === 0) {
+                $status_investimento = 'vendido';
+            } elseif ($aportes_vendidos > 0 && $aportes_ativos > 0) {
+                $status_investimento = 'misto';
+            }
+            
+            if ($status_investimento === 'vendido' || $status_investimento === 'misto') {
+                // ===== VENDIDO/MISTO: Somar valores de aportes vendidos =====
                 $valor_recebido_total = 0;
                 $rentabilidade_reais_total = 0;
                 $rentabilidade_pct_total = 0;
                 $data_venda = '';
+                $valor_atual_vendidos = 0; // ✅ Valor atual dos aportes vendidos
                 
                 foreach ($aportes_usuario as $aporte_item) {
                     $aporte_id = $aporte_item->ID;
                     if (get_field('venda_status', $aporte_id)) {
                         $valor_recebido_total += (float) get_field('venda_valor', $aporte_id);
+                        $valor_atual_vendidos += (float) get_field('valor_atual', $aporte_id); // ✅ Valor na venda
                         $rentabilidade_reais_total += (float) get_field('venda_rentabilidade_reais', $aporte_id);
                         
                         if (!$data_venda) {
@@ -149,14 +176,18 @@ if (false === $cached_data) {
                 }
                 
                 $dados_pessoais = [
-                    'status' => 'vendido',
+                    'status' => $status_investimento,
                     'valor_investido' => $valor_investido_total,
-                    'valor_atual' => $valor_atual_total,
+                    'valor_atual' => $status_investimento === 'vendido' ? $valor_atual_vendidos : $valor_atual, // ✅ Valor correto
                     'valor_recebido' => $valor_recebido_total,
                     'rentabilidade_reais' => $rentabilidade_reais_total,
                     'rentabilidade_pct' => $rentabilidade_pct_total,
                     'data_venda' => $data_venda,
-                    'lucro_realizado' => true
+                    'lucro_realizado' => $status_investimento === 'vendido',
+                    'aportes_ativos' => $aportes_ativos,
+                    'aportes_vendidos' => $aportes_vendidos,
+                    'total_aportes' => count($aportes_usuario),
+                    'aportes_detalhes' => $aportes_detalhes
                 ];
             } else {
         // ===== ATIVO: Calcular rentabilidade projetada =====
@@ -187,7 +218,11 @@ if (false === $cached_data) {
             'valor_atual' => $valor_atual, // ✅ Usar do primeiro aporte
             'rentabilidade_reais' => $rentabilidade_projetada_total,
             'rentabilidade_pct' => $rentabilidade_pct,
-            'lucro_realizado' => false
+            'lucro_realizado' => false,
+            'aportes_ativos' => $aportes_ativos,
+            'aportes_vendidos' => $aportes_vendidos,
+            'total_aportes' => count($aportes_usuario),
+            'aportes_detalhes' => $aportes_detalhes
                 ];
             }
         }
@@ -260,14 +295,37 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
     
     <?php 
     // LÓGICA DE BADGES ATUALIZADA
-    if ($dados_pessoais && $dados_pessoais['status'] === 'vendido') : ?>
-        <div class="absolute top-3 right-3 bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full z-10 shadow-lg">
-            <i class="fas fa-hand-holding-usd mr-1"></i>
-            Vendido
-            <?php if (!empty($dados_pessoais['data_venda'])) : ?>
-                <div class="text-xs opacity-90 mt-1"><?php echo esc_html($dados_pessoais['data_venda']); ?></div>
+    if ($dados_pessoais && ($dados_pessoais['status'] === 'vendido' || $dados_pessoais['status'] === 'misto')) : ?>
+        <div class="absolute top-3 right-3 z-10">
+            <?php if ($dados_pessoais['status'] === 'vendido') : ?>
+                <div class="bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
+                    <i class="fas fa-hand-holding-usd mr-1"></i>
+                    Vendido
+                    <?php if (!empty($dados_pessoais['data_venda'])) : ?>
+                        <div class="text-xs opacity-90 mt-1"><?php echo esc_html($dados_pessoais['data_venda']); ?></div>
+                    <?php endif; ?>
+                </div>
+            <?php else : ?>
+                <!-- Status Misto -->
+                <div class="bg-gradient-to-r from-orange-600 to-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
+                    <i class="fas fa-exchange-alt mr-1"></i>
+                    Misto
+                    <div class="text-xs opacity-90 mt-1">
+                        <?php echo $dados_pessoais['aportes_ativos']; ?> ativo<?php echo $dados_pessoais['aportes_ativos'] > 1 ? 's' : ''; ?> • 
+                        <?php echo $dados_pessoais['aportes_vendidos']; ?> vendido<?php echo $dados_pessoais['aportes_vendidos'] > 1 ? 's' : ''; ?>
+                    </div>
+                </div>
             <?php endif; ?>
         </div>
+        
+        <!-- Badge contador de aportes (canto superior esquerdo) -->
+        <?php if ($dados_pessoais['total_aportes'] > 1) : ?>
+            <div class="absolute top-3 left-3 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full z-10 shadow-lg cursor-pointer" 
+                 onclick="toggleAportesModal(<?php echo esc_attr($id); ?>)">
+                <i class="fas fa-layer-group mr-1"></i>
+                <?php echo $dados_pessoais['total_aportes']; ?> aporte<?php echo $dados_pessoais['total_aportes'] > 1 ? 's' : ''; ?>
+            </div>
+        <?php endif; ?>
     <?php elseif ($context !== 'my-investments') : ?>
         <?php
         // Determinar badge baseado no status
@@ -463,7 +521,15 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                         </div>
                         <div>
                             <span class="text-gray-600 block">
-                                <?php echo $dados_pessoais['status'] === 'vendido' ? 'Valor na Venda' : 'Valor Atual'; ?>
+                                <?php 
+                                if ($dados_pessoais['status'] === 'vendido') {
+                                    echo 'Valor na Venda';
+                                } elseif ($dados_pessoais['status'] === 'misto') {
+                                    echo 'Valor Atual/Venda';
+                                } else {
+                                    echo 'Valor Atual';
+                                }
+                                ?>
                             </span>
                             <span class="font-bold text-lg text-primary">
                                 R$ <?php echo number_format($dados_pessoais['valor_atual'], 0, ',', '.'); ?>
@@ -474,12 +540,22 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                     <div class="bg-gray-50 p-3 rounded-lg">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600 text-sm">
-                                <?php echo $dados_pessoais['status'] === 'vendido' ? 'Rentabilidade Consolidada' : 'Rentabilidade Projetada'; ?>
+                                <?php 
+                                if ($dados_pessoais['status'] === 'vendido') {
+                                    echo 'Rentabilidade Consolidada';
+                                } elseif ($dados_pessoais['status'] === 'misto') {
+                                    echo 'Rentabilidade Mista';
+                                } else {
+                                    echo 'Rentabilidade Projetada';
+                                }
+                                ?>
                             </span>
                             <div class="text-right">
                                 <span class="font-bold text-lg text-green-600">
                                     <?php 
                                     if ($dados_pessoais['status'] === 'vendido') {
+                                        echo 'R$ ' . number_format($dados_pessoais['valor_recebido'], 0, ',', '.');
+                                    } elseif ($dados_pessoais['status'] === 'misto') {
                                         echo 'R$ ' . number_format($dados_pessoais['valor_recebido'], 0, ',', '.');
                                     } else {
                                         echo ($dados_pessoais['rentabilidade_reais'] >= 0 ? '+' : '') . 'R$ ' . number_format(abs($dados_pessoais['rentabilidade_reais']), 0, ',', '.');
@@ -489,6 +565,14 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                                 <div class="text-xs <?php echo $dados_pessoais['rentabilidade_pct'] >= 0 ? 'text-green-500' : 'text-red-500'; ?>">
                                     (<?php echo ($dados_pessoais['rentabilidade_pct'] >= 0 ? '+' : ''); ?><?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
                                 </div>
+                                <?php if ($dados_pessoais['status'] === 'misto') : ?>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        <button onclick="toggleAportesModal(<?php echo esc_attr($id); ?>)" 
+                                                class="text-blue-500 underline hover:text-blue-700">
+                                            Ver detalhes
+                                        </button>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -601,6 +685,90 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
         "interestRate": "<?php echo esc_js($rentabilidade); ?>%"
     }
     </script>
+    
+    <?php if ($context === 'my-investments' && $dados_pessoais && $dados_pessoais['total_aportes'] > 1) : ?>
+        <!-- Modal para detalhes dos aportes -->
+        <div id="aportes-modal-<?php echo esc_attr($id); ?>" 
+             class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full max-h-96 overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            Detalhes dos Aportes
+                        </h3>
+                        <button onclick="toggleAportesModal(<?php echo esc_attr($id); ?>)" 
+                                class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <?php foreach ($dados_pessoais['aportes_detalhes'] as $index => $aporte_detalhe) : ?>
+                            <div class="border border-gray-200 rounded-lg p-3 <?php echo $aporte_detalhe['vendido'] ? 'bg-orange-50' : 'bg-blue-50'; ?>">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium text-sm">
+                                        Aporte #<?php echo $index + 1; ?>
+                                    </span>
+                                    <span class="px-2 py-1 text-xs rounded-full <?php echo $aporte_detalhe['vendido'] ? 'bg-orange-200 text-orange-800' : 'bg-blue-200 text-blue-800'; ?>">
+                                        <?php echo $aporte_detalhe['vendido'] ? 'Vendido' : 'Ativo'; ?>
+                                    </span>
+                                </div>
+                                
+                                <div class="text-xs text-gray-600 space-y-1">
+                                    <div class="flex justify-between">
+                                        <span>Valor de Compra:</span>
+                                        <span>R$ <?php echo number_format($aporte_detalhe['valor_compra'], 2, ',', '.'); ?></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span><?php echo $aporte_detalhe['vendido'] ? 'Valor na Venda:' : 'Valor Atual:'; ?></span>
+                                        <span>R$ <?php echo number_format($aporte_detalhe['valor_atual'], 2, ',', '.'); ?></span>
+                                    </div>
+                                    <?php if ($aporte_detalhe['vendido'] && $aporte_detalhe['venda_valor'] > 0) : ?>
+                                        <div class="flex justify-between font-medium text-green-600">
+                                            <span>Valor Recebido:</span>
+                                            <span>R$ <?php echo number_format($aporte_detalhe['venda_valor'], 2, ',', '.'); ?></span>
+                                        </div>
+                                        <?php if ($aporte_detalhe['venda_data']) : ?>
+                                            <div class="flex justify-between text-xs text-gray-500">
+                                                <span>Data da Venda:</span>
+                                                <span><?php echo esc_html($aporte_detalhe['venda_data']); ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+        function toggleAportesModal(investmentId) {
+            const modal = document.getElementById('aportes-modal-' + investmentId);
+            if (modal) {
+                if (modal.classList.contains('hidden')) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    document.body.style.overflow = 'auto';
+                }
+            }
+        }
+        
+        // Fechar modal ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (e.target.id && e.target.id.startsWith('aportes-modal-')) {
+                if (e.target === e.currentTarget) {
+                    toggleAportesModal(e.target.id.replace('aportes-modal-', ''));
+                }
+            }
+        });
+        </script>
+    <?php endif; ?>
 </article>
 
 <?php wp_reset_postdata(); ?>
