@@ -209,10 +209,25 @@ if (false === $cached_data) {
                     $valor_principal = $valor_atual_ativos_total; // Mistos: só ativos
                 }
                 
-                // Calcular rentabilidades percentuais separadas
-                $rentabilidade_pct_vendidos = $valor_investido_vendidos > 0 ? ($valor_recebido_total / $valor_investido_vendidos) * 100 : 0;
-                $rentabilidade_pct_ativos = $valor_investido_ativos > 0 ? ($rentabilidade_ativa_total / $valor_investido_ativos) * 100 : 0;
-                $rentabilidade_pct_total = $valor_investido_total > 0 ? ($valor_recebido_total / $valor_investido_total) * 100 : 0;
+                // Calcular rentabilidades percentuais corrigidas
+                $rentabilidade_pct_vendidos = 0;
+                $rentabilidade_pct_ativos = 0;
+                $rentabilidade_pct_total = 0;
+                
+                // ✅ Corrigir cálculo da rentabilidade consolidada
+                if ($valor_investido_vendidos > 0 && $valor_recebido_total > 0) {
+                    $rentabilidade_pct_vendidos = (($valor_recebido_total / $valor_investido_vendidos) - 1) * 100;
+                }
+                
+                // ✅ Corrigir cálculo da rentabilidade projetada
+                if ($valor_investido_ativos > 0 && $rentabilidade_ativa_total > 0) {
+                    $rentabilidade_pct_ativos = ($rentabilidade_ativa_total / $valor_investido_ativos) * 100;
+                }
+                
+                // ✅ Cálculo total para vendidos completos
+                if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
+                    $rentabilidade_pct_total = (($valor_recebido_total / $valor_investido_total) - 1) * 100;
+                }
                 
                 $dados_pessoais = [
                     'status' => $status_investimento,
