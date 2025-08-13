@@ -165,19 +165,27 @@ if ($aportes_vendidos > 0 && $aportes_ativos === 0) {
 }
 
 // Calcular rentabilidades percentuais
-$rentabilidade_pct_ativos = 0;
 $rentabilidade_pct_vendidos = 0;
+$rentabilidade_pct_ativos = 0;
 $rentabilidade_pct_geral = 0;
-// ✅ Corrigir cálculo da rentabilidade ativa
-if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
-    $rentabilidade_pct_ativos = (($maior_valor_ativo / $valor_investido_ativos) - 1) * 100;
-}
+
 if ($valor_investido_vendidos > 0 && $valor_recebido_total > 0) {
     $rentabilidade_pct_vendidos = (($valor_recebido_total / $valor_investido_vendidos) - 1) * 100;
 }
 
+// ✅ Corrigir cálculo da rentabilidade ativa
+if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
+    $rentabilidade_pct_ativos = (($maior_valor_ativo / $valor_investido_ativos) - 1) * 100;
+}
+
 if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
     $rentabilidade_pct_geral = (($valor_recebido_total / $valor_investido_total) - 1) * 100;
+}
+
+// ✅ Calcular porcentagem para aportes ativos puros
+$rentabilidade_pct_ativos_puros = 0;
+if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
+    $rentabilidade_pct_ativos_puros = (($maior_valor_ativo / $valor_investido_ativos) - 1) * 100;
 }
 
 // Valores finais para exibição
@@ -187,7 +195,8 @@ $venda_status = ($status_geral === 'vendido');
 $venda_valor = $valor_recebido_total;
 $venda_rentabilidade = $rentabilidade_pct_vendidos;
 $rentabilidade_projetada = $rentabilidade_ativa_total;
-$rentabilidade_pct = ($status_geral === 'misto') ? $rentabilidade_pct_ativos : $rentabilidade_pct_geral;
+$rentabilidade_pct = ($status_geral === 'misto') ? $rentabilidade_pct_ativos : 
+                    ($status_geral === 'ativo' ? $rentabilidade_pct_ativos_puros : $rentabilidade_pct_geral);
 
 // Converter array associativo em indexado para o gráfico
 $rentabilidade_hist = array_values($historico_rentabilidade_consolidado);
