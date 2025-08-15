@@ -76,11 +76,12 @@ $nome_assessor = get_field('nome_assessor', $aporte_principal->ID) ?: 'Assessor'
 $foto_assessor = get_field('foto_assessor', $aporte_principal->ID);
 $contrato = get_field('contrato_pdf', $aporte_principal->ID);
 
-// Valores separados por status
+// Valores separados por status - CORRIGIDO
 $valor_recebido_total = 0;
 $rentabilidade_reais_vendidos = 0;
 $valor_na_venda_total = 0;
 $maior_valor_ativo = 0; // ✅ Maior valor individual ativo
+$valor_atual_ativos_total = 0; // ✅ SOMA de todos os valores atuais ativos
 $rentabilidade_ativa_total = 0;
 $valor_investido_vendidos = 0;
 $valor_investido_ativos = 0;
@@ -116,18 +117,25 @@ foreach ($aporte_posts as $aporte_post) {
         $valor_investido_ativos += $valor_investido_item;
         $valor_atual_aporte = floatval(get_field('valor_atual', $aporte_id) ?: 0);
         
-        // ✅ Pegar apenas o maior valor individual (igual ao card)
+        // ✅ Somar TODOS os valores atuais ativos
+        $valor_atual_ativos_total += $valor_atual_aporte;
+        
+        // ✅ Pegar apenas o maior valor individual (para fallback)
         if ($valor_atual_aporte > $maior_valor_ativo) {
             $maior_valor_ativo = $valor_atual_aporte;
         }
         
-        // Calcular rentabilidade do aporte ativo
+        // ✅ CORRIGIR: Calcular rentabilidade baseada no histórico OU na diferença
         $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id) ?: [];
         if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
             $ultimo_valor = end($rentabilidade_hist);
             if (isset($ultimo_valor['valor'])) {
                 $rentabilidade_ativa_total += floatval($ultimo_valor['valor']);
             }
+        } else {
+            // Se não tem histórico, calcular pela diferença valor_atual - valor_investido
+            $diferenca = $valor_atual_aporte - $valor_investido_item;
+            $rentabilidade_ativa_total += $diferenca;
         }
     }
     
@@ -164,37 +172,49 @@ if ($aportes_vendidos > 0 && $aportes_ativos === 0) {
     $status_geral = 'misto';
 }
 
-// Calcular rentabilidades percentuais
+// ✅ CORRIGIR CÁLCULO DA RENTABILIDADE - usar RENTABILIDADE, não valor atual
 $rentabilidade_pct_vendidos = 0;
 $rentabilidade_pct_ativos = 0;
 $rentabilidade_pct_geral = 0;
 
 if ($valor_investido_vendidos > 0 && $valor_recebido_total > 0) {
-    $rentabilidade_pct_vendidos = (($valor_recebido_total / $valor_investido_vendidos) - 1) * 100;
+    $rentabilidade_pct_vendidos = ($valor_recebido_total / $valor_investido_vendidos) * 100;
 }
 
-// ✅ Corrigir cálculo da rentabilidade ativa
-if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
-    $rentabilidade_pct_ativos = (($maior_valor_ativo / $valor_investido_ativos) - 1) * 100;
+// ✅ CORRIGIR: usar rentabilidade_ativa_total, não valor_atual
+if ($valor_investido_ativos > 0 && $rentabilidade_ativa_total > 0) {
+    $rentabilidade_pct_ativos = ($rentabilidade_ativa_total / $valor_investido_ativos) * 100;
 }
 
 if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
-    $rentabilidade_pct_geral = (($valor_recebido_total / $valor_investido_total) - 1) * 100;
+    $rentabilidade_pct_geral = ($valor_recebido_total / $valor_investido_total) * 100;
 }
 
-// ✅ Calcular porcentagem para aportes ativos puros
+// ✅ CORRIGIR: usar rentabilidade_ativa_total para aportes ativos puros
 $rentabilidade_pct_ativos_puros = 0;
-if ($valor_investido_ativos > 0 && $rentabilidade_ativa_total > 0) {
-    $rentabilidade_pct_ativos_puros = ($rentabilidade_ativa_total / $valor_investido_ativos) * 100;
+if ($valor_investido_total > 0 && $rentabilidade_ativa_total > 0) {
+    $rentabilidade_pct_ativos_puros = ($rentabilidade_ativa_total / $valor_investido_total) * 100;
 }
 
-// Valores finais para exibição
+// Valores finais para exibição - CORRIGIDO NOVAMENTE
 $valor_compra = floatval(get_field('valor_compra', $aporte_principal->ID) ?: 0);
-$valor_atual = ($status_geral === 'vendido') ? $valor_na_venda_total : $maior_valor_ativo; // ✅ Usar maior valor ativo
+
+// ✅ VOLTAR: Valor atual deve ser o MAIOR individual, não soma
+if ($status_geral === 'vendido') {
+    $valor_atual = $valor_na_venda_total; // Soma dos valores na venda
+} elseif ($status_geral === 'misto') {
+    $valor_atual = $maior_valor_ativo; // ✅ VOLTAR: Maior individual para mistos
+} else {
+    $valor_atual = $maior_valor_ativo; // Para um único aporte ativo
+}
+
 $venda_status = ($status_geral === 'vendido');
 $venda_valor = $valor_recebido_total;
 $venda_rentabilidade = $rentabilidade_pct_vendidos;
-$rentabilidade_projetada = $rentabilidade_ativa_total;
+
+// ✅ CORRIGIR RENTABILIDADE PROJETADA: usar histórico, não diferença
+$rentabilidade_projetada = $rentabilidade_ativa_total; // Sempre do histórico
+
 $rentabilidade_pct = ($status_geral === 'misto') ? $rentabilidade_pct_ativos : 
                     ($status_geral === 'ativo' ? $rentabilidade_pct_ativos_puros : $rentabilidade_pct_geral);
 
@@ -211,7 +231,6 @@ usort($rentabilidade_hist, function($a, $b) {
 
 // Dados específicos para dividendos
 $ultimo_dividendo = null;
-$proximo_dividendo = null;
 
 if ($is_private && !empty($historico_dividendos_consolidado)) {
     foreach ($historico_dividendos_consolidado as $dividendo) {
@@ -223,16 +242,6 @@ if ($is_private && !empty($historico_dividendos_consolidado)) {
                 'data' => $data_dividendo
             ];
         }
-    }
-    
-    $proximo_dividendo_data = get_field('proximo_dividendo_data', $aporte_principal->ID) ?: '';
-    $proximo_dividendo_valor = floatval(get_field('proximo_dividendo_valor', $aporte_principal->ID) ?: 0);
-    
-    if ($proximo_dividendo_data) {
-        $proximo_dividendo = [
-            'data' => $proximo_dividendo_data,
-            'valor' => $proximo_dividendo_valor
-        ];
     }
 }
 
@@ -336,7 +345,7 @@ $docs = get_field('documentos', $inv_id) ?: [];
         </div>
         
         <!-- CARDS DE VALORES -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-10 px-2 md:px-0">
+        <div class="grid grid-cols-2 <?php echo $is_private ? 'lg:grid-cols-3' : 'lg:grid-cols-4'; ?> gap-3 md:gap-4 mb-8 md:mb-10 px-2 md:px-0">
             <!-- Card 1: Valor Investido -->
             <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                 <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Valor Investido</div>
@@ -344,7 +353,7 @@ $docs = get_field('documentos', $inv_id) ?: [];
             </div>
             
             <?php if ($is_private) : ?>
-                <!-- PRODUTOS PRIVATE/SCP - Cards específicos -->
+                <!-- PRODUTOS PRIVATE/SCP - Cards específicos (SEM PRÓXIMO DIVIDENDO) -->
                 
                 <!-- Card 2: Total de Dividendos Recebidos -->
                 <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
@@ -363,18 +372,6 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     ?>
                     <div class="text-lg md:text-xl lg:text-2xl font-semibold text-purple-400"><?php echo number_format($yield_percentual, 1, ',', '.'); ?>%</div>
                     <div class="text-xs text-slate-500 mt-1">Yield acumulado</div>
-                </div>
-                
-                <!-- Card 4: Próximo Dividendo -->
-                <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
-                    <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Próximo Dividendo</div>
-                    <?php if ($proximo_dividendo && $proximo_dividendo['valor'] > 0) : ?>
-                        <div class="text-lg md:text-xl lg:text-2xl font-semibold text-yellow-400">R$ <?php echo number_format($proximo_dividendo['valor'], 2, ',', '.'); ?></div>
-                        <div class="text-xs text-slate-500 mt-1"><?php echo esc_html($proximo_dividendo['data']); ?></div>
-                    <?php else : ?>
-                        <div class="text-lg md:text-xl lg:text-2xl font-semibold text-slate-500">A definir</div>
-                        <div class="text-xs text-slate-500 mt-1">Aguardando</div>
-                    <?php endif; ?>
                 </div>
                 
             <?php else : ?>
@@ -396,25 +393,30 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Rentabilidade Final</div>
                         <div class="text-lg md:text-xl lg:text-2xl font-semibold text-green-400">R$ <?php echo number_format($venda_valor, 2, ',', '.'); ?></div>
-                        <div class="text-xs <?php echo $venda_rentabilidade >= 0 ? 'text-green-300' : 'text-red-300'; ?> mt-1">
-                            (<?php echo ($venda_rentabilidade >= 0 ? '+' : ''); ?><?php echo number_format($venda_rentabilidade, 1, ',', '.'); ?>%)
+                        <div class="text-xs text-green-300 mt-1">
+                            (<?php echo number_format($venda_rentabilidade, 1, ',', '.'); ?>%)
                         </div>
                     </div>
                 <?php elseif ($status_geral === 'misto') : ?>
-                    <!-- Produto TRADE misto -->
+                    <!-- Produto TRADE misto - USAR RENTABILIDADE DO HISTÓRICO -->
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
-                        <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Valor Atual (Ativos)</div>
-                        <div class="text-lg md:text-xl lg:text-2xl font-semibold">R$ <?php echo number_format($valor_atual_ativos_total, 2, ',', '.'); ?></div>
+                        <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Valor Atual (Maior Ativo)</div>
+                        <div class="text-lg md:text-xl lg:text-2xl font-semibold">R$ <?php echo number_format($maior_valor_ativo, 2, ',', '.'); ?></div>
                         <div class="text-xs text-slate-500 mt-1">Vendidos: R$ <?php echo number_format($valor_na_venda_total, 2, ',', '.'); ?></div>
                     </div>
                     
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Rentabilidade Ativa</div>
-                        <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400">+R$ <?php echo number_format($rentabilidade_ativa_total, 2, ',', '.'); ?></div>
-                        <div class="text-xs <?php echo $rentabilidade_pct_ativos >= 0 ? 'text-green-300' : 'text-red-300'; ?> mt-1">
-                            (<?php echo ($rentabilidade_pct_ativos >= 0 ? '+' : ''); ?><?php echo number_format($rentabilidade_pct_ativos, 1, ',', '.'); ?>%)
+                        <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400">
+                            +R$ <?php echo number_format($rentabilidade_ativa_total, 2, ',', '.'); ?>
                         </div>
-                        <div class="text-xs text-slate-500 mt-1">Vendidos: R$ <?php echo number_format($valor_recebido_total, 2, ',', '.'); ?> (<?php echo number_format($rentabilidade_pct_vendidos, 1, ',', '.'); ?>%)</div>
+                        <div class="text-xs <?php echo $rentabilidade_pct_ativos >= 0 ? 'text-green-300' : 'text-red-300'; ?> mt-1">
+                            (<?php echo number_format($rentabilidade_pct_ativos, 1, ',', '.'); ?>%)
+                        </div>
+                        <div class="text-xs text-slate-500 mt-1">
+                            Vendidos: R$ <?php echo number_format($valor_recebido_total, 2, ',', '.'); ?> 
+                            (<?php echo number_format($rentabilidade_pct_vendidos, 1, ',', '.'); ?>%)
+                        </div>
                     </div>
                 <?php else : ?>
                     <!-- Produto TRADE ativo -->
@@ -426,8 +428,8 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Rentabilidade Projetada</div>
                         <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400">+R$ <?php echo number_format($rentabilidade_projetada, 2, ',', '.'); ?></div>
-                        <div class="text-xs <?php echo $rentabilidade_pct >= 0 ? 'text-green-300' : 'text-red-300'; ?> mt-1">
-                            (<?php echo ($rentabilidade_pct >= 0 ? '+' : ''); ?><?php echo number_format($rentabilidade_pct, 1, ',', '.'); ?>%)
+                        <div class="text-xs text-green-300 mt-1">
+                            (<?php echo number_format($rentabilidade_pct, 1, ',', '.'); ?>%)
                         </div>
                     </div>
                 <?php endif; ?>
