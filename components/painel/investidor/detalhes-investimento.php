@@ -172,7 +172,7 @@ if ($aportes_vendidos > 0 && $aportes_ativos === 0) {
     $status_geral = 'misto';
 }
 
-// ✅ CORRIGIR CÁLCULO DA RENTABILIDADE - FÓRMULA A: valor_recebido / valor_investido * 100
+// ✅ CORRIGIR CÁLCULO DA RENTABILIDADE - usar MAIOR valor individual
 $rentabilidade_pct_vendidos = 0;
 $rentabilidade_pct_ativos = 0;
 $rentabilidade_pct_geral = 0;
@@ -181,29 +181,29 @@ if ($valor_investido_vendidos > 0 && $valor_recebido_total > 0) {
     $rentabilidade_pct_vendidos = ($valor_recebido_total / $valor_investido_vendidos) * 100;
 }
 
-// ✅ Corrigir cálculo da rentabilidade ativa - usar SOMA dos valores atuais
-if ($valor_investido_ativos > 0 && $valor_atual_ativos_total > 0) {
-    $rentabilidade_pct_ativos = ($valor_atual_ativos_total / $valor_investido_ativos) * 100;
+// ✅ VOLTAR: usar MAIOR valor ativo individual para cálculo de %
+if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
+    $rentabilidade_pct_ativos = ($maior_valor_ativo / $valor_investido_ativos) * 100;
 }
 
 if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
     $rentabilidade_pct_geral = ($valor_recebido_total / $valor_investido_total) * 100;
 }
 
-// ✅ Calcular porcentagem para aportes ativos puros - CORRIGIDO
+// ✅ CORRIGIR: usar maior valor individual para aportes ativos puros
 $rentabilidade_pct_ativos_puros = 0;
-if ($valor_investido_ativos > 0 && $valor_atual_ativos_total > 0) {
-    $rentabilidade_pct_ativos_puros = ($valor_atual_ativos_total / $valor_investido_ativos) * 100;
+if ($valor_investido_total > 0 && $maior_valor_ativo > 0) {
+    $rentabilidade_pct_ativos_puros = ($maior_valor_ativo / $valor_investido_total) * 100;
 }
 
-// Valores finais para exibição - CORRIGIDO
+// Valores finais para exibição - CORRIGIDO NOVAMENTE
 $valor_compra = floatval(get_field('valor_compra', $aporte_principal->ID) ?: 0);
 
-// ✅ CORRIGIR LÓGICA DO VALOR ATUAL
+// ✅ VOLTAR: Valor atual deve ser o MAIOR individual, não soma
 if ($status_geral === 'vendido') {
     $valor_atual = $valor_na_venda_total; // Soma dos valores na venda
 } elseif ($status_geral === 'misto') {
-    $valor_atual = $valor_atual_ativos_total; // Soma dos valores atuais ativos
+    $valor_atual = $maior_valor_ativo; // ✅ VOLTAR: Maior individual para mistos
 } else {
     $valor_atual = $maior_valor_ativo; // Para um único aporte ativo
 }
@@ -212,12 +212,8 @@ $venda_status = ($status_geral === 'vendido');
 $venda_valor = $valor_recebido_total;
 $venda_rentabilidade = $rentabilidade_pct_vendidos;
 
-// ✅ CORRIGIR RENTABILIDADE PROJETADA
-if ($status_geral === 'misto') {
-    $rentabilidade_projetada = $valor_atual_ativos_total - $valor_investido_ativos; // Lucro dos ativos
-} else {
-    $rentabilidade_projetada = $rentabilidade_ativa_total; // Original para ativo único
-}
+// ✅ CORRIGIR RENTABILIDADE PROJETADA: usar histórico, não diferença
+$rentabilidade_projetada = $rentabilidade_ativa_total; // Sempre do histórico
 
 $rentabilidade_pct = ($status_geral === 'misto') ? $rentabilidade_pct_ativos : 
                     ($status_geral === 'ativo' ? $rentabilidade_pct_ativos_puros : $rentabilidade_pct_geral);
@@ -402,19 +398,17 @@ $docs = get_field('documentos', $inv_id) ?: [];
                         </div>
                     </div>
                 <?php elseif ($status_geral === 'misto') : ?>
-                    <!-- Produto TRADE misto - CORRIGIDO -->
+                    <!-- Produto TRADE misto - VOLTAR LÓGICA ORIGINAL -->
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
-                        <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Valor Atual (Ativos)</div>
-                        <div class="text-lg md:text-xl lg:text-2xl font-semibold">R$ <?php echo number_format($valor_atual_ativos_total, 2, ',', '.'); ?></div>
+                        <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Valor Atual (Maior Ativo)</div>
+                        <div class="text-lg md:text-xl lg:text-2xl font-semibold">R$ <?php echo number_format($maior_valor_ativo, 2, ',', '.'); ?></div>
                         <div class="text-xs text-slate-500 mt-1">Vendidos: R$ <?php echo number_format($valor_na_venda_total, 2, ',', '.'); ?></div>
                     </div>
                     
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Rentabilidade Ativa</div>
                         <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400">
-                            <?php 
-                            $lucro_ativo = $valor_atual_ativos_total - $valor_investido_ativos;
-                            echo ($lucro_ativo >= 0 ? '+' : ''); ?>R$ <?php echo number_format(abs($lucro_ativo), 2, ',', '.'); ?>
+                            +R$ <?php echo number_format($rentabilidade_ativa_total, 2, ',', '.'); ?>
                         </div>
                         <div class="text-xs <?php echo $rentabilidade_pct_ativos >= 0 ? 'text-green-300' : 'text-red-300'; ?> mt-1">
                             (<?php echo number_format($rentabilidade_pct_ativos, 1, ',', '.'); ?>%)

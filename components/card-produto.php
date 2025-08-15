@@ -150,12 +150,12 @@ if (false === $cached_data) {
             }
             
             if ($aportes_vendidos > 0) {
-                // ===== TEM APORTES VENDIDOS - CORRIGIDO =====
+                // ===== TEM APORTES VENDIDOS - VOLTAR LÓGICA ORIGINAL =====
                 $valor_recebido_total = 0;
                 $rentabilidade_reais_total = 0;
                 $data_venda = '';
                 $maior_valor_vendido = 0; // ✅ Maior valor individual vendido
-                $valor_atual_ativos_total = 0; // ✅ SOMA de todos os valores atuais ativos
+                $maior_valor_ativo = 0; // ✅ VOLTAR: Maior valor individual ativo
                 $rentabilidade_ativa_total = 0; // ✅ Rentabilidade dos aportes ativos
                 $valor_investido_vendidos = 0; // ✅ Valor investido nos vendidos
                 $valor_investido_ativos = 0; // ✅ Valor investido nos ativos
@@ -189,20 +189,20 @@ if (false === $cached_data) {
                     } else {
                         // Aporte ativo
                         $valor_atual_aporte_ativo = (float) get_field('valor_atual', $aporte_id);
-                        $valor_atual_ativos_total += $valor_atual_aporte_ativo; // ✅ SOMAR todos os ativos
                         $valor_investido_ativos += $valor_investido_item;
                         
-                        // ✅ CORRIGIR: Calcular rentabilidade baseada no histórico OU na diferença
+                        // ✅ VOLTAR: Pegar apenas o MAIOR valor ativo individual
+                        if ($valor_atual_aporte_ativo > $maior_valor_ativo) {
+                            $maior_valor_ativo = $valor_atual_aporte_ativo;
+                        }
+                        
+                        // ✅ Calcular rentabilidade baseada no histórico
                         $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id);
                         if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
                             $ultimo_valor = end($rentabilidade_hist);
                             if (isset($ultimo_valor['valor'])) {
                                 $rentabilidade_ativa_total += floatval($ultimo_valor['valor']);
                             }
-                        } else {
-                            // Se não tem histórico, calcular pela diferença
-                            $diferenca = $valor_atual_aporte_ativo - $valor_investido_item;
-                            $rentabilidade_ativa_total += $diferenca;
                         }
                     }
                 }
@@ -211,10 +211,10 @@ if (false === $cached_data) {
                 if ($status_investimento === 'vendido') {
                     $valor_principal = $maior_valor_vendido; // Maior valor vendido
                 } else {
-                    $valor_principal = $valor_atual_ativos_total; // Mistos: SOMA dos ativos
+                    $valor_principal = $maior_valor_ativo; // ✅ VOLTAR: Maior ativo individual
                 }
                 
-                // ✅ CORRIGIR CÁLCULO DA RENTABILIDADE - FÓRMULA A: valor_recebido / valor_investido * 100
+                // ✅ CORRIGIR CÁLCULO DA RENTABILIDADE - usar maior valor individual
                 $rentabilidade_pct_vendidos = 0;
                 $rentabilidade_pct_ativos = 0;
                 $rentabilidade_pct_total = 0;
@@ -224,9 +224,9 @@ if (false === $cached_data) {
                     $rentabilidade_pct_vendidos = ($valor_recebido_total / $valor_investido_vendidos) * 100;
                 }
                 
-                // ✅ Corrigir cálculo da rentabilidade projetada - usar SOMA dos ativos
-                if ($valor_investido_ativos > 0 && $valor_atual_ativos_total > 0) {
-                    $rentabilidade_pct_ativos = ($valor_atual_ativos_total / $valor_investido_ativos) * 100;
+                // ✅ VOLTAR: usar maior valor ativo individual
+                if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
+                    $rentabilidade_pct_ativos = ($maior_valor_ativo / $valor_investido_ativos) * 100;
                 }
                 
                 // ✅ Cálculo total para vendidos completos
@@ -240,7 +240,7 @@ if (false === $cached_data) {
                     'valor_atual' => $valor_principal,
                     'valor_recebido' => $valor_recebido_total,
                     'rentabilidade_reais' => $status_investimento === 'misto' ? 
-                        ($valor_atual_ativos_total - $valor_investido_ativos) : $rentabilidade_reais_total, // ✅ CORRIGIDO
+                        $rentabilidade_ativa_total : $rentabilidade_reais_total, // ✅ Usar histórico
                     'rentabilidade_pct' => $status_investimento === 'misto' ? $rentabilidade_pct_ativos : $rentabilidade_pct_total,
                     'rentabilidade_pct_vendidos' => $rentabilidade_pct_vendidos, // ✅ % específica dos vendidos
                     'data_venda' => $data_venda,
@@ -249,49 +249,42 @@ if (false === $cached_data) {
                     'aportes_vendidos' => $aportes_vendidos,
                     'total_aportes' => count($aportes_usuario),
                     'valor_na_venda_total' => $maior_valor_vendido, // Para resumo
-                    'valor_atual_ativos_total' => $valor_atual_ativos_total, // Para resumo
+                    'valor_atual_ativos_total' => $maior_valor_ativo, // ✅ CORRIGIDO
                     'aportes_detalhes' => $aportes_detalhes
                 ];
             } else {
-                // ===== ATIVO: Calcular rentabilidade projetada - CORRIGIDO =====
+                // ===== ATIVO: Calcular rentabilidade projetada - VOLTAR ORIGINAL =====
                 $rentabilidade_projetada_total = 0;
-                $valor_atual_total_ativo = 0; // ✅ Somar todos os valores atuais
+                $maior_valor_ativo = 0; // ✅ Maior valor individual
                 
                 foreach ($aportes_usuario as $aporte_item) {
                     $aporte_id = $aporte_item->ID;
                     $valor_atual_aporte = (float) get_field('valor_atual', $aporte_id);
-                    $valor_atual_total_ativo += $valor_atual_aporte; // ✅ SOMAR valores atuais
                     
-                    // Calcular valor investido deste aporte
-                    $historico_aportes_item = get_field('historico_aportes', $aporte_id) ?: [];
-                    $valor_investido_item = 0;
-                    foreach ($historico_aportes_item as $item) {
-                        $valor_investido_item += (float) ($item['valor_aporte'] ?? 0);
+                    // ✅ VOLTAR: Pegar apenas o MAIOR valor individual
+                    if ($valor_atual_aporte > $maior_valor_ativo) {
+                        $maior_valor_ativo = $valor_atual_aporte;
                     }
                     
-                    // ✅ CORRIGIR: Usar histórico se disponível, senão usar diferença
+                    // ✅ Calcular rentabilidade baseada no histórico
                     $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id);
                     if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
                         $ultimo_valor = end($rentabilidade_hist);
                         if (isset($ultimo_valor['valor'])) {
                             $rentabilidade_projetada_total += floatval($ultimo_valor['valor']);
                         }
-                    } else {
-                        // Se não tem histórico, calcular pela diferença
-                        $diferenca = $valor_atual_aporte - $valor_investido_item;
-                        $rentabilidade_projetada_total += $diferenca;
                     }
                 }
                 
-                // ✅ CORRIGIR CÁLCULO DA RENTABILIDADE ATIVA - FÓRMULA A
+                // ✅ CORRIGIR CÁLCULO DA RENTABILIDADE ATIVA - usar maior valor individual
                 $rentabilidade_pct = $valor_investido_total > 0 ? 
-                    ($valor_atual_total_ativo / $valor_investido_total) * 100 : 0;
+                    ($maior_valor_ativo / $valor_investido_total) * 100 : 0;
                     
                 $dados_pessoais = [
                     'status' => 'ativo',
                     'valor_investido' => $valor_investido_total,
-                    'valor_atual' => $valor_atual_total_ativo, // ✅ Usar soma total
-                    'rentabilidade_reais' => $valor_atual_total_ativo - $valor_investido_total, // ✅ Lucro real
+                    'valor_atual' => $maior_valor_ativo, // ✅ Usar maior valor individual
+                    'rentabilidade_reais' => $rentabilidade_projetada_total, // ✅ Usar histórico
                     'rentabilidade_pct' => $rentabilidade_pct,
                     'lucro_realizado' => false,
                     'aportes_ativos' => $aportes_ativos,
