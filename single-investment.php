@@ -13,6 +13,7 @@ get_header();
 
 $terms         = get_the_terms( get_the_ID(), 'tipo_produto' );
 $tipo_produto  = $terms[0]->name ?? '';
+$tipo_produto_slug = $terms[0]->slug ?? '';
 $localizacao   = get_field( 'localizacao' );
 
 $total_captado = floatval( get_field( 'total_captado')) ?: 0;
@@ -105,6 +106,7 @@ $quantidade_cotas = get_field('quantidade_cotas');
 $cotas_vendidas = get_field('cotas_vendidas');
 $regiao_projeto = get_field('regiao_projeto');
 $data_lancamento = get_field('data_lancamento');
+$percentual_vgv_por_cota = get_field('percentual_vgv_por_cota');
 
 // Calcular cotas vendidas automaticamente se não estiver preenchido
 if ($quantidade_cotas && !$cotas_vendidas) {
@@ -157,7 +159,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
         </p>
         <h1 class="text-3xl font-bold"><?= get_the_title() ?></h1>
         
-        <!-- BADGES DE STATUS -->
+        <!-- BADGES DE STATUS - AGORA COM TRIBUTAÇÃO -->
         <div class="flex flex-wrap gap-2 items-center">
           <span class="inline-block <?= $badge_class ?> text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase">
             <i class="fas <?= $status_captacao === 'em_breve' ? 'fa-clock' : ($status_captacao === 'ativa' ? 'fa-check-circle' : 'fa-times-circle') ?> mr-1"></i>
@@ -168,6 +170,18 @@ if ($quantidade_cotas && !$cotas_vendidas) {
             <span class="inline-block <?= $risco_badge_class ?> text-white text-xs font-bold px-3 py-1 rounded uppercase">
               Risco <?= ucfirst($risco) ?>
             </span>
+          <?php endif; ?>
+
+          <?php 
+          // NOVA BADGE DE TRIBUTAÇÃO
+          $impostos = wp_get_post_terms(get_the_ID(), 'imposto');
+          if (!empty($impostos) && !is_wp_error($impostos)) : ?>
+            <?php foreach ($impostos as $imposto) : ?>
+              <span class="inline-block bg-yellow-500/20 text-yellow-400 text-xs font-bold px-3 py-1 rounded uppercase">
+                <i class="fas fa-percent mr-1"></i>
+                <?= esc_html($imposto->name) ?>
+              </span>
+            <?php endforeach; ?>
           <?php endif; ?>
         </div>
       </header>
@@ -202,8 +216,10 @@ if ($quantidade_cotas && !$cotas_vendidas) {
         </div>
       </div>
 
-      <!-- GRID DE INFORMAÇÕES ATUALIZADO -->
+      <!-- GRID DE INFORMAÇÕES REORGANIZADO CONFORME SOLICITADO -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base">
+        
+        <!-- 1. RENTABILIDADE PROJETADA -->
         <div class="p-3 bg-slate-800 rounded">
           <p class="text-xs text-gray-400">Rentabilidade Projetada</p>
           <?php 
@@ -212,31 +228,13 @@ if ($quantidade_cotas && !$cotas_vendidas) {
           <p class="mt-1 font-medium"><?= esc_html( number_format( $r, 2, ',', '.' ) ) ?>% a.a</p>
         </div>
 
+        <!-- 2. APORTE MÍNIMO -->
         <div class="p-3 bg-slate-800 rounded">
           <p class="text-xs text-gray-400">Aporte Mínimo</p>
           <p class="mt-1 font-medium">R$ <?= number_format(get_field('aporte_minimo'),0,',','.') ?></p>
         </div>
 
-        <!-- NOVOS CAMPOS ADICIONAIS -->
-        <?php if ($quantidade_cotas) : ?>
-        <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Cotas</p>
-          <p class="mt-1 font-medium">
-            <?php if ($cotas_vendidas) : ?>
-              <span class="text-secondary"><?= number_format($cotas_vendidas, 0, ',', '.') ?></span>
-              <span class="text-gray-400"> / </span>
-            <?php endif; ?>
-            <?= number_format($quantidade_cotas, 0, ',', '.') ?>
-          </p>
-          <?php if ($cotas_vendidas && $quantidade_cotas > 0) : ?>
-            <?php $percentual_cotas = ($cotas_vendidas / $quantidade_cotas) * 100; ?>
-            <p class="text-xs text-gray-500 mt-1">
-              <?= number_format($percentual_cotas, 1, ',', '.') ?>% vendidas
-            </p>
-          <?php endif; ?>
-        </div>
-        <?php endif; ?>
-
+        <!-- 3. REGIÃO -->
         <?php if ($regiao_projeto) : ?>
         <div class="p-3 bg-slate-800 rounded">
           <p class="text-xs text-gray-400">Região</p>
@@ -244,33 +242,35 @@ if ($quantidade_cotas && !$cotas_vendidas) {
         </div>
         <?php endif; ?>
 
+        <!-- 4. LANÇAMENTO (com tooltip) -->
         <?php if ($data_lancamento) : ?>
         <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Lançamento</p>
+          <p class="text-xs text-gray-400 flex items-center gap-1">
+            Lançamento
+            <span class="tooltip-container">
+              <i class="fas fa-info-circle text-gray-500 cursor-help" style="font-size: 10px;"></i>
+              <span class="tooltip-text">data de início das vendas</span>
+            </span>
+          </p>
           <p class="mt-1 font-medium"><?= esc_html($data_lancamento) ?></p>
         </div>
         <?php endif; ?>
 
+        <!-- 5. % DO VGV POR COTA (apenas para SCP) -->
+        <?php if ($tipo_produto_slug === 'private-scp' && $percentual_vgv_por_cota) : ?>
+        <div class="p-3 bg-slate-800 rounded">
+          <p class="text-xs text-gray-400">% do VGV por Cota</p>
+          <p class="mt-1 font-medium"><?= number_format($percentual_vgv_por_cota, 3, ',', '.') ?>%</p>
+        </div>
+        <?php endif; ?>
+
+        <!-- 6. INÍCIO DA CAPTAÇÃO -->
         <div class="p-3 bg-slate-800 rounded">
           <p class="text-xs text-gray-400">Início da Captação</p>
           <p class="mt-1 font-medium"><?= esc_html($display_inicio) ?></p>
         </div>
 
-        <?php 
-        $impostos = wp_get_post_terms(get_the_ID(), 'imposto');
-        if (!empty($impostos) && !is_wp_error($impostos)) : ?>
-        <div class="p-3 bg-slate-800 rounded">
-          <p class="text-xs text-gray-400">Tributação</p>
-          <p class="mt-1 space-x-1">
-            <?php foreach ($impostos as $imposto) : ?>
-              <span class="inline-block bg-yellow-500/20 text-yellow-400 text-xs font-bold rounded px-2 py-1">
-                <?= esc_html($imposto->name) ?>
-              </span>
-            <?php endforeach; ?>
-          </p>
-        </div>
-        <?php endif; ?>
-
+        <!-- 7. ORIGINADORA -->
         <div class="p-3 bg-slate-800 rounded col-span-full">
           <p class="text-xs text-gray-400 mb-1">Originadora</p>
           <?php
@@ -384,5 +384,58 @@ if ($quantidade_cotas && !$cotas_vendidas) {
   </section>
 
 </main>
+
+<style>
+/* Tooltip personalizado para o ícone de lançamento */
+.tooltip-container {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-container .tooltip-text {
+    visibility: hidden;
+    width: 180px;
+    background-color: #1f2937;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px 12px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -90px;
+    opacity: 0;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    font-size: 12px;
+    font-weight: normal;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tooltip-container .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #1f2937 transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Responsivo: ajustar posição em telas menores */
+@media (max-width: 640px) {
+    .tooltip-container .tooltip-text {
+        width: 160px;
+        margin-left: -80px;
+        font-size: 11px;
+    }
+}
+</style>
 
 <?php get_footer(); ?>
