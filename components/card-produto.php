@@ -214,7 +214,7 @@ if (false === $cached_data) {
                     $valor_principal = $maior_valor_ativo; // ✅ VOLTAR: Maior ativo individual
                 }
                 
-                // ✅ CORRIGIR CÁLCULO DA RENTABILIDADE - usar maior valor individual
+                // ✅ CORRIGIR CÁLCULO DA RENTABILIDADE - usar rentabilidade, não valor atual
                 $rentabilidade_pct_vendidos = 0;
                 $rentabilidade_pct_ativos = 0;
                 $rentabilidade_pct_total = 0;
@@ -224,9 +224,9 @@ if (false === $cached_data) {
                     $rentabilidade_pct_vendidos = ($valor_recebido_total / $valor_investido_vendidos) * 100;
                 }
                 
-                // ✅ VOLTAR: usar maior valor ativo individual
-                if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
-                    $rentabilidade_pct_ativos = ($maior_valor_ativo / $valor_investido_ativos) * 100;
+                // ✅ CORRIGIR: usar rentabilidade_ativa_total, não valor_atual
+                if ($valor_investido_ativos > 0 && $rentabilidade_ativa_total > 0) {
+                    $rentabilidade_pct_ativos = ($rentabilidade_ativa_total / $valor_investido_ativos) * 100;
                 }
                 
                 // ✅ Cálculo total para vendidos completos
@@ -276,15 +276,15 @@ if (false === $cached_data) {
                     }
                 }
                 
-                // ✅ CORRIGIR CÁLCULO DA RENTABILIDADE ATIVA - usar maior valor individual
-                $rentabilidade_pct = $valor_investido_total > 0 ? 
-                    ($maior_valor_ativo / $valor_investido_total) * 100 : 0;
+                // ✅ CORRIGIR CÁLCULO DA RENTABILIDADE ATIVA - usar rentabilidade, não valor atual
+                $rentabilidade_pct = $valor_investido_total > 0 && $rentabilidade_projetada_total > 0 ? 
+                    ($rentabilidade_projetada_total / $valor_investido_total) * 100 : 0;
                     
                 $dados_pessoais = [
                     'status' => 'ativo',
                     'valor_investido' => $valor_investido_total,
                     'valor_atual' => $maior_valor_ativo, // ✅ Usar maior valor individual
-                    'rentabilidade_reais' => $rentabilidade_projetada_total, // ✅ Usar histórico
+                    'rentabilidade_reais' => $rentabilidade_projetada_total, // ✅ Usar rentabilidade do histórico
                     'rentabilidade_pct' => $rentabilidade_pct,
                     'lucro_realizado' => false,
                     'aportes_ativos' => $aportes_ativos,

@@ -172,7 +172,7 @@ if ($aportes_vendidos > 0 && $aportes_ativos === 0) {
     $status_geral = 'misto';
 }
 
-// ✅ CORRIGIR CÁLCULO DA RENTABILIDADE - usar MAIOR valor individual
+// ✅ CORRIGIR CÁLCULO DA RENTABILIDADE - usar RENTABILIDADE, não valor atual
 $rentabilidade_pct_vendidos = 0;
 $rentabilidade_pct_ativos = 0;
 $rentabilidade_pct_geral = 0;
@@ -181,19 +181,19 @@ if ($valor_investido_vendidos > 0 && $valor_recebido_total > 0) {
     $rentabilidade_pct_vendidos = ($valor_recebido_total / $valor_investido_vendidos) * 100;
 }
 
-// ✅ VOLTAR: usar MAIOR valor ativo individual para cálculo de %
-if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
-    $rentabilidade_pct_ativos = ($maior_valor_ativo / $valor_investido_ativos) * 100;
+// ✅ CORRIGIR: usar rentabilidade_ativa_total, não valor_atual
+if ($valor_investido_ativos > 0 && $rentabilidade_ativa_total > 0) {
+    $rentabilidade_pct_ativos = ($rentabilidade_ativa_total / $valor_investido_ativos) * 100;
 }
 
 if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
     $rentabilidade_pct_geral = ($valor_recebido_total / $valor_investido_total) * 100;
 }
 
-// ✅ CORRIGIR: usar maior valor individual para aportes ativos puros
+// ✅ CORRIGIR: usar rentabilidade_ativa_total para aportes ativos puros
 $rentabilidade_pct_ativos_puros = 0;
-if ($valor_investido_total > 0 && $maior_valor_ativo > 0) {
-    $rentabilidade_pct_ativos_puros = ($maior_valor_ativo / $valor_investido_total) * 100;
+if ($valor_investido_total > 0 && $rentabilidade_ativa_total > 0) {
+    $rentabilidade_pct_ativos_puros = ($rentabilidade_ativa_total / $valor_investido_total) * 100;
 }
 
 // Valores finais para exibição - CORRIGIDO NOVAMENTE
@@ -398,7 +398,7 @@ $docs = get_field('documentos', $inv_id) ?: [];
                         </div>
                     </div>
                 <?php elseif ($status_geral === 'misto') : ?>
-                    <!-- Produto TRADE misto - VOLTAR LÓGICA ORIGINAL -->
+                    <!-- Produto TRADE misto - USAR RENTABILIDADE DO HISTÓRICO -->
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Valor Atual (Maior Ativo)</div>
                         <div class="text-lg md:text-xl lg:text-2xl font-semibold">R$ <?php echo number_format($maior_valor_ativo, 2, ',', '.'); ?></div>
