@@ -209,24 +209,24 @@ if (false === $cached_data) {
                     $valor_principal = $valor_atual_ativos_total; // Mistos: só ativos
                 }
                 
-                // Calcular rentabilidades percentuais corrigidas
+                // ✅ CORRIGIR CÁLCULO DA RENTABILIDADE - FÓRMULA A: valor_recebido / valor_investido * 100
                 $rentabilidade_pct_vendidos = 0;
                 $rentabilidade_pct_ativos = 0;
                 $rentabilidade_pct_total = 0;
                 
                 // ✅ Corrigir cálculo da rentabilidade consolidada
                 if ($valor_investido_vendidos > 0 && $valor_recebido_total > 0) {
-                    $rentabilidade_pct_vendidos = (($valor_recebido_total / $valor_investido_vendidos) - 1) * 100;
+                    $rentabilidade_pct_vendidos = ($valor_recebido_total / $valor_investido_vendidos) * 100;
                 }
                 
                 // ✅ Corrigir cálculo da rentabilidade projetada
                 if ($valor_investido_ativos > 0 && $valor_atual_ativos_total > 0) {
-                    $rentabilidade_pct_ativos = (($valor_atual_ativos_total / $valor_investido_ativos) - 1) * 100;
+                    $rentabilidade_pct_ativos = ($valor_atual_ativos_total / $valor_investido_ativos) * 100;
                 }
                 
                 // ✅ Cálculo total para vendidos completos
                 if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
-                    $rentabilidade_pct_total = (($valor_recebido_total / $valor_investido_total) - 1) * 100;
+                    $rentabilidade_pct_total = ($valor_recebido_total / $valor_investido_total) * 100;
                 }
                 
                 $dados_pessoais = [
@@ -247,39 +247,41 @@ if (false === $cached_data) {
                     'aportes_detalhes' => $aportes_detalhes
                 ];
             } else {
-        // ===== ATIVO: Calcular rentabilidade projetada =====
-        $rentabilidade_projetada_total = 0;
-        
-        foreach ($aportes_usuario as $aporte_item) {
-            $aporte_id = $aporte_item->ID;
-            $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id);
-            
-            if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
-                $ultimo_valor = end($rentabilidade_hist);
-                if (isset($ultimo_valor['valor'])) {
-                    $rentabilidade_projetada_total += floatval($ultimo_valor['valor']);
+                // ===== ATIVO: Calcular rentabilidade projetada =====
+                $rentabilidade_projetada_total = 0;
+                
+                foreach ($aportes_usuario as $aporte_item) {
+                    $aporte_id = $aporte_item->ID;
+                    $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id);
+                    
+                    if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
+                        $ultimo_valor = end($rentabilidade_hist);
+                        if (isset($ultimo_valor['valor'])) {
+                            $rentabilidade_projetada_total += floatval($ultimo_valor['valor']);
+                        }
+                    } else {
+                        $diferenca = $valor_atual - $valor_investido_total;
+                        if ($diferenca <= ($valor_investido_total * 10)) {
+                            $rentabilidade_projetada_total += $diferenca;
+                        }
+                    }
                 }
-            } else {
-                $diferenca = $valor_atual - $valor_investido_total;
-                if ($diferenca <= ($valor_investido_total * 10)) {
-                    $rentabilidade_projetada_total += $diferenca;
-                }
-            }
-        }
-        
-        $rentabilidade_pct = $valor_investido_total > 0 ? 
-            ($rentabilidade_projetada_total / $valor_investido_total) * 100 : 0;
-        $dados_pessoais = [
-            'status' => 'ativo',
-            'valor_investido' => $valor_investido_total,
-            'valor_atual' => $valor_atual, // ✅ Usar do primeiro aporte
-            'rentabilidade_reais' => $rentabilidade_projetada_total,
-            'rentabilidade_pct' => $rentabilidade_pct,
-            'lucro_realizado' => false,
-            'aportes_ativos' => $aportes_ativos,
-            'aportes_vendidos' => $aportes_vendidos,
-            'total_aportes' => count($aportes_usuario),
-            'aportes_detalhes' => $aportes_detalhes
+                
+                // ✅ CORRIGIR CÁLCULO DA RENTABILIDADE ATIVA - FÓRMULA A
+                $rentabilidade_pct = $valor_investido_total > 0 ? 
+                    ($valor_atual / $valor_investido_total) * 100 : 0;
+                    
+                $dados_pessoais = [
+                    'status' => 'ativo',
+                    'valor_investido' => $valor_investido_total,
+                    'valor_atual' => $valor_atual, // ✅ Usar do primeiro aporte
+                    'rentabilidade_reais' => $rentabilidade_projetada_total,
+                    'rentabilidade_pct' => $rentabilidade_pct,
+                    'lucro_realizado' => false,
+                    'aportes_ativos' => $aportes_ativos,
+                    'aportes_vendidos' => $aportes_vendidos,
+                    'total_aportes' => count($aportes_usuario),
+                    'aportes_detalhes' => $aportes_detalhes
                 ];
             }
         }
@@ -574,8 +576,8 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                                 <div class="font-bold text-lg text-green-600">
                                     R$ <?php echo number_format($dados_pessoais['valor_recebido'], 0, ',', '.'); ?>
                                 </div>
-                                <div class="text-xs <?php echo $dados_pessoais['rentabilidade_pct'] >= 0 ? 'text-green-500' : 'text-red-500'; ?>">
-                                    (<?php echo ($dados_pessoais['rentabilidade_pct'] >= 0 ? '+' : ''); ?><?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
+                                <div class="text-xs text-green-500">
+                                    (<?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
                                 </div>
                             </div>
                         <?php elseif ($dados_pessoais['status'] === 'misto') : ?>
@@ -586,8 +588,8 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                                     <span class="font-bold text-lg text-green-600">
                                         <?php echo ($dados_pessoais['rentabilidade_reais'] >= 0 ? '+' : ''); ?>R$ <?php echo number_format(abs($dados_pessoais['rentabilidade_reais']), 0, ',', '.'); ?>
                                     </span>
-                                    <div class="text-xs <?php echo $dados_pessoais['rentabilidade_pct'] >= 0 ? 'text-green-500' : 'text-red-500'; ?>">
-                                        (<?php echo ($dados_pessoais['rentabilidade_pct'] >= 0 ? '+' : ''); ?><?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
+                                    <div class="text-xs text-green-500">
+                                        (<?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
                                     </div>
                                 </div>
                             </div>
@@ -595,7 +597,7 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                             <!-- Info consolidada minimalista -->
                             <div class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200 text-center">
                                 Vendido: R$ <?php echo number_format($dados_pessoais['valor_recebido'], 0, ',', '.'); ?> 
-                                (<?php echo ($dados_pessoais['rentabilidade_pct_vendidos'] >= 0 ? '+' : ''); ?><?php echo number_format($dados_pessoais['rentabilidade_pct_vendidos'], 1, ',', '.'); ?>%) 
+                                (<?php echo number_format($dados_pessoais['rentabilidade_pct_vendidos'], 1, ',', '.'); ?>%) 
                                 <?php if ($dados_pessoais['data_venda']) : ?>• <?php echo esc_html($dados_pessoais['data_venda']); ?><?php endif; ?>
                             </div>
                         <?php else : ?>
@@ -606,8 +608,8 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
                                     <span class="font-bold text-lg text-green-600">
                                         <?php echo ($dados_pessoais['rentabilidade_reais'] >= 0 ? '+' : ''); ?>R$ <?php echo number_format(abs($dados_pessoais['rentabilidade_reais']), 0, ',', '.'); ?>
                                     </span>
-                                    <div class="text-xs <?php echo $dados_pessoais['rentabilidade_pct'] >= 0 ? 'text-green-500' : 'text-red-500'; ?>">
-                                        (<?php echo ($dados_pessoais['rentabilidade_pct'] >= 0 ? '+' : ''); ?><?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
+                                    <div class="text-xs text-green-500">
+                                        (<?php echo number_format($dados_pessoais['rentabilidade_pct'], 1, ',', '.'); ?>%)
                                     </div>
                                 </div>
                             </div>

@@ -164,28 +164,28 @@ if ($aportes_vendidos > 0 && $aportes_ativos === 0) {
     $status_geral = 'misto';
 }
 
-// Calcular rentabilidades percentuais
+// ✅ CORRIGIR CÁLCULO DA RENTABILIDADE - FÓRMULA A: valor_recebido / valor_investido * 100
 $rentabilidade_pct_vendidos = 0;
 $rentabilidade_pct_ativos = 0;
 $rentabilidade_pct_geral = 0;
 
 if ($valor_investido_vendidos > 0 && $valor_recebido_total > 0) {
-    $rentabilidade_pct_vendidos = (($valor_recebido_total / $valor_investido_vendidos) - 1) * 100;
+    $rentabilidade_pct_vendidos = ($valor_recebido_total / $valor_investido_vendidos) * 100;
 }
 
 // ✅ Corrigir cálculo da rentabilidade ativa
 if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
-    $rentabilidade_pct_ativos = (($maior_valor_ativo / $valor_investido_ativos) - 1) * 100;
+    $rentabilidade_pct_ativos = ($maior_valor_ativo / $valor_investido_ativos) * 100;
 }
 
 if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
-    $rentabilidade_pct_geral = (($valor_recebido_total / $valor_investido_total) - 1) * 100;
+    $rentabilidade_pct_geral = ($valor_recebido_total / $valor_investido_total) * 100;
 }
 
-// ✅ Calcular porcentagem para aportes ativos puros
+// ✅ Calcular porcentagem para aportes ativos puros - CORRIGIDO
 $rentabilidade_pct_ativos_puros = 0;
-if ($valor_investido_ativos > 0 && $rentabilidade_ativa_total > 0) {
-    $rentabilidade_pct_ativos_puros = ($rentabilidade_ativa_total / $valor_investido_ativos) * 100;
+if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
+    $rentabilidade_pct_ativos_puros = ($maior_valor_ativo / $valor_investido_ativos) * 100;
 }
 
 // Valores finais para exibição
@@ -211,7 +211,6 @@ usort($rentabilidade_hist, function($a, $b) {
 
 // Dados específicos para dividendos
 $ultimo_dividendo = null;
-$proximo_dividendo = null;
 
 if ($is_private && !empty($historico_dividendos_consolidado)) {
     foreach ($historico_dividendos_consolidado as $dividendo) {
@@ -223,16 +222,6 @@ if ($is_private && !empty($historico_dividendos_consolidado)) {
                 'data' => $data_dividendo
             ];
         }
-    }
-    
-    $proximo_dividendo_data = get_field('proximo_dividendo_data', $aporte_principal->ID) ?: '';
-    $proximo_dividendo_valor = floatval(get_field('proximo_dividendo_valor', $aporte_principal->ID) ?: 0);
-    
-    if ($proximo_dividendo_data) {
-        $proximo_dividendo = [
-            'data' => $proximo_dividendo_data,
-            'valor' => $proximo_dividendo_valor
-        ];
     }
 }
 
@@ -336,7 +325,7 @@ $docs = get_field('documentos', $inv_id) ?: [];
         </div>
         
         <!-- CARDS DE VALORES -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-10 px-2 md:px-0">
+        <div class="grid grid-cols-2 <?php echo $is_private ? 'lg:grid-cols-3' : 'lg:grid-cols-4'; ?> gap-3 md:gap-4 mb-8 md:mb-10 px-2 md:px-0">
             <!-- Card 1: Valor Investido -->
             <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                 <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Valor Investido</div>
@@ -344,7 +333,7 @@ $docs = get_field('documentos', $inv_id) ?: [];
             </div>
             
             <?php if ($is_private) : ?>
-                <!-- PRODUTOS PRIVATE/SCP - Cards específicos -->
+                <!-- PRODUTOS PRIVATE/SCP - Cards específicos (SEM PRÓXIMO DIVIDENDO) -->
                 
                 <!-- Card 2: Total de Dividendos Recebidos -->
                 <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
@@ -363,18 +352,6 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     ?>
                     <div class="text-lg md:text-xl lg:text-2xl font-semibold text-purple-400"><?php echo number_format($yield_percentual, 1, ',', '.'); ?>%</div>
                     <div class="text-xs text-slate-500 mt-1">Yield acumulado</div>
-                </div>
-                
-                <!-- Card 4: Próximo Dividendo -->
-                <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
-                    <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Próximo Dividendo</div>
-                    <?php if ($proximo_dividendo && $proximo_dividendo['valor'] > 0) : ?>
-                        <div class="text-lg md:text-xl lg:text-2xl font-semibold text-yellow-400">R$ <?php echo number_format($proximo_dividendo['valor'], 2, ',', '.'); ?></div>
-                        <div class="text-xs text-slate-500 mt-1"><?php echo esc_html($proximo_dividendo['data']); ?></div>
-                    <?php else : ?>
-                        <div class="text-lg md:text-xl lg:text-2xl font-semibold text-slate-500">A definir</div>
-                        <div class="text-xs text-slate-500 mt-1">Aguardando</div>
-                    <?php endif; ?>
                 </div>
                 
             <?php else : ?>
@@ -396,8 +373,8 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Rentabilidade Final</div>
                         <div class="text-lg md:text-xl lg:text-2xl font-semibold text-green-400">R$ <?php echo number_format($venda_valor, 2, ',', '.'); ?></div>
-                        <div class="text-xs <?php echo $venda_rentabilidade >= 0 ? 'text-green-300' : 'text-red-300'; ?> mt-1">
-                            (<?php echo ($venda_rentabilidade >= 0 ? '+' : ''); ?><?php echo number_format($venda_rentabilidade, 1, ',', '.'); ?>%)
+                        <div class="text-xs text-green-300 mt-1">
+                            (<?php echo number_format($venda_rentabilidade, 1, ',', '.'); ?>%)
                         </div>
                     </div>
                 <?php elseif ($status_geral === 'misto') : ?>
@@ -411,8 +388,8 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Rentabilidade Ativa</div>
                         <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400">+R$ <?php echo number_format($rentabilidade_ativa_total, 2, ',', '.'); ?></div>
-                        <div class="text-xs <?php echo $rentabilidade_pct_ativos >= 0 ? 'text-green-300' : 'text-red-300'; ?> mt-1">
-                            (<?php echo ($rentabilidade_pct_ativos >= 0 ? '+' : ''); ?><?php echo number_format($rentabilidade_pct_ativos, 1, ',', '.'); ?>%)
+                        <div class="text-xs text-green-300 mt-1">
+                            (<?php echo number_format($rentabilidade_pct_ativos, 1, ',', '.'); ?>%)
                         </div>
                         <div class="text-xs text-slate-500 mt-1">Vendidos: R$ <?php echo number_format($valor_recebido_total, 2, ',', '.'); ?> (<?php echo number_format($rentabilidade_pct_vendidos, 1, ',', '.'); ?>%)</div>
                     </div>
@@ -426,8 +403,8 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Rentabilidade Projetada</div>
                         <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400">+R$ <?php echo number_format($rentabilidade_projetada, 2, ',', '.'); ?></div>
-                        <div class="text-xs <?php echo $rentabilidade_pct >= 0 ? 'text-green-300' : 'text-red-300'; ?> mt-1">
-                            (<?php echo ($rentabilidade_pct >= 0 ? '+' : ''); ?><?php echo number_format($rentabilidade_pct, 1, ',', '.'); ?>%)
+                        <div class="text-xs text-green-300 mt-1">
+                            (<?php echo number_format($rentabilidade_pct, 1, ',', '.'); ?>%)
                         </div>
                     </div>
                 <?php endif; ?>
