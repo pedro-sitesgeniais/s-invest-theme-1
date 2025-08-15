@@ -76,11 +76,12 @@ $nome_assessor = get_field('nome_assessor', $aporte_principal->ID) ?: 'Assessor'
 $foto_assessor = get_field('foto_assessor', $aporte_principal->ID);
 $contrato = get_field('contrato_pdf', $aporte_principal->ID);
 
-// Valores separados por status
+// Valores separados por status - CORRIGIDO
 $valor_recebido_total = 0;
 $rentabilidade_reais_vendidos = 0;
 $valor_na_venda_total = 0;
 $maior_valor_ativo = 0; // ✅ Maior valor individual ativo
+$valor_atual_ativos_total = 0; // ✅ SOMA de todos os valores atuais ativos
 $rentabilidade_ativa_total = 0;
 $valor_investido_vendidos = 0;
 $valor_investido_ativos = 0;
@@ -116,18 +117,25 @@ foreach ($aporte_posts as $aporte_post) {
         $valor_investido_ativos += $valor_investido_item;
         $valor_atual_aporte = floatval(get_field('valor_atual', $aporte_id) ?: 0);
         
-        // ✅ Pegar apenas o maior valor individual (igual ao card)
+        // ✅ Somar TODOS os valores atuais ativos
+        $valor_atual_ativos_total += $valor_atual_aporte;
+        
+        // ✅ Pegar apenas o maior valor individual (para fallback)
         if ($valor_atual_aporte > $maior_valor_ativo) {
             $maior_valor_ativo = $valor_atual_aporte;
         }
         
-        // Calcular rentabilidade do aporte ativo
+        // ✅ CORRIGIR: Calcular rentabilidade baseada no histórico OU na diferença
         $rentabilidade_hist = get_field('rentabilidade_historico', $aporte_id) ?: [];
         if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist)) {
             $ultimo_valor = end($rentabilidade_hist);
             if (isset($ultimo_valor['valor'])) {
                 $rentabilidade_ativa_total += floatval($ultimo_valor['valor']);
             }
+        } else {
+            // Se não tem histórico, calcular pela diferença valor_atual - valor_investido
+            $diferenca = $valor_atual_aporte - $valor_investido_item;
+            $rentabilidade_ativa_total += $diferenca;
         }
     }
     
@@ -173,9 +181,9 @@ if ($valor_investido_vendidos > 0 && $valor_recebido_total > 0) {
     $rentabilidade_pct_vendidos = ($valor_recebido_total / $valor_investido_vendidos) * 100;
 }
 
-// ✅ Corrigir cálculo da rentabilidade ativa
-if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
-    $rentabilidade_pct_ativos = ($maior_valor_ativo / $valor_investido_ativos) * 100;
+// ✅ Corrigir cálculo da rentabilidade ativa - usar SOMA dos valores atuais
+if ($valor_investido_ativos > 0 && $valor_atual_ativos_total > 0) {
+    $rentabilidade_pct_ativos = ($valor_atual_ativos_total / $valor_investido_ativos) * 100;
 }
 
 if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
@@ -184,17 +192,33 @@ if ($valor_investido_total > 0 && $valor_recebido_total > 0) {
 
 // ✅ Calcular porcentagem para aportes ativos puros - CORRIGIDO
 $rentabilidade_pct_ativos_puros = 0;
-if ($valor_investido_ativos > 0 && $maior_valor_ativo > 0) {
-    $rentabilidade_pct_ativos_puros = ($maior_valor_ativo / $valor_investido_ativos) * 100;
+if ($valor_investido_ativos > 0 && $valor_atual_ativos_total > 0) {
+    $rentabilidade_pct_ativos_puros = ($valor_atual_ativos_total / $valor_investido_ativos) * 100;
 }
 
-// Valores finais para exibição
+// Valores finais para exibição - CORRIGIDO
 $valor_compra = floatval(get_field('valor_compra', $aporte_principal->ID) ?: 0);
-$valor_atual = ($status_geral === 'vendido') ? $valor_na_venda_total : $maior_valor_ativo; // ✅ Usar maior valor ativo
+
+// ✅ CORRIGIR LÓGICA DO VALOR ATUAL
+if ($status_geral === 'vendido') {
+    $valor_atual = $valor_na_venda_total; // Soma dos valores na venda
+} elseif ($status_geral === 'misto') {
+    $valor_atual = $valor_atual_ativos_total; // Soma dos valores atuais ativos
+} else {
+    $valor_atual = $maior_valor_ativo; // Para um único aporte ativo
+}
+
 $venda_status = ($status_geral === 'vendido');
 $venda_valor = $valor_recebido_total;
 $venda_rentabilidade = $rentabilidade_pct_vendidos;
-$rentabilidade_projetada = $rentabilidade_ativa_total;
+
+// ✅ CORRIGIR RENTABILIDADE PROJETADA
+if ($status_geral === 'misto') {
+    $rentabilidade_projetada = $valor_atual_ativos_total - $valor_investido_ativos; // Lucro dos ativos
+} else {
+    $rentabilidade_projetada = $rentabilidade_ativa_total; // Original para ativo único
+}
+
 $rentabilidade_pct = ($status_geral === 'misto') ? $rentabilidade_pct_ativos : 
                     ($status_geral === 'ativo' ? $rentabilidade_pct_ativos_puros : $rentabilidade_pct_geral);
 
@@ -378,7 +402,7 @@ $docs = get_field('documentos', $inv_id) ?: [];
                         </div>
                     </div>
                 <?php elseif ($status_geral === 'misto') : ?>
-                    <!-- Produto TRADE misto -->
+                    <!-- Produto TRADE misto - CORRIGIDO -->
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Valor Atual (Ativos)</div>
                         <div class="text-lg md:text-xl lg:text-2xl font-semibold">R$ <?php echo number_format($valor_atual_ativos_total, 2, ',', '.'); ?></div>
@@ -387,11 +411,18 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Rentabilidade Ativa</div>
-                        <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400">+R$ <?php echo number_format($rentabilidade_ativa_total, 2, ',', '.'); ?></div>
-                        <div class="text-xs text-green-300 mt-1">
+                        <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400">
+                            <?php 
+                            $lucro_ativo = $valor_atual_ativos_total - $valor_investido_ativos;
+                            echo ($lucro_ativo >= 0 ? '+' : ''); ?>R$ <?php echo number_format(abs($lucro_ativo), 2, ',', '.'); ?>
+                        </div>
+                        <div class="text-xs <?php echo $rentabilidade_pct_ativos >= 0 ? 'text-green-300' : 'text-red-300'; ?> mt-1">
                             (<?php echo number_format($rentabilidade_pct_ativos, 1, ',', '.'); ?>%)
                         </div>
-                        <div class="text-xs text-slate-500 mt-1">Vendidos: R$ <?php echo number_format($valor_recebido_total, 2, ',', '.'); ?> (<?php echo number_format($rentabilidade_pct_vendidos, 1, ',', '.'); ?>%)</div>
+                        <div class="text-xs text-slate-500 mt-1">
+                            Vendidos: R$ <?php echo number_format($valor_recebido_total, 2, ',', '.'); ?> 
+                            (<?php echo number_format($rentabilidade_pct_vendidos, 1, ',', '.'); ?>%)
+                        </div>
                     </div>
                 <?php else : ?>
                     <!-- Produto TRADE ativo -->
