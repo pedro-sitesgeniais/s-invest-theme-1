@@ -285,7 +285,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
   </section>
 
   <!-- RESTO DO CÓDIGO PERMANECE IGUAL (seção de tabs) -->
-  <section class="bg-gray-100 text-primary py-10" x-data="investmentTabs()">
+  <!-- <section class="bg-gray-100 text-primary py-10" x-data="investmentTabs()">
     <div class="max-w-[1440px] mx-auto px-4">
       <?php
       $tabs_disponiveis = [];
@@ -375,7 +375,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
           
       <?php } ?>
     </div>
-  </section>
+  </section> -->
 
 </main>
 
