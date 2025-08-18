@@ -76,6 +76,23 @@ $nome_assessor = get_field('nome_assessor', $aporte_principal->ID) ?: 'Assessor'
 $foto_assessor = get_field('foto_assessor', $aporte_principal->ID);
 $contrato = get_field('contrato_pdf', $aporte_principal->ID);
 
+// Buscar contratos de venda de aportes vendidos
+$contratos_venda = [];
+foreach ($aporte_posts as $aporte_post) {
+    $venda_status_item = get_field('venda_status', $aporte_post->ID);
+    if ($venda_status_item) {
+        $contrato_venda = get_field('contrato_venda_pdf', $aporte_post->ID);
+        if ($contrato_venda && isset($contrato_venda['url'])) {
+            $contratos_venda[] = [
+                'url' => $contrato_venda['url'],
+                'nome' => $contrato_venda['title'] ?? 'Contrato de Venda',
+                'data_venda' => get_field('venda_data', $aporte_post->ID) ?? '',
+                'aporte_titulo' => get_the_title($aporte_post->ID)
+            ];
+        }
+    }
+}
+
 // Valores separados por status - CORRIGIDO
 $valor_recebido_total = 0;
 $rentabilidade_reais_vendidos = 0;
@@ -471,6 +488,52 @@ $docs = get_field('documentos', $inv_id) ?: [];
             </a>
         <?php endif; ?>
         
+        <!-- Contratos de Venda -->
+        <?php if (!empty($contratos_venda)) : ?>
+            <?php if (count($contratos_venda) == 1) : ?>
+                <!-- Um único contrato de venda -->
+                <a href="<?php echo esc_url($contratos_venda[0]['url']); ?>" 
+                   class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-green-900 border border-green-800 hover:bg-green-600 transition-colors"
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   title="Contrato de venda de <?php echo esc_attr($contratos_venda[0]['data_venda']); ?>">
+                    <i class="fas fa-file-signature text-lg"></i>
+                    Contrato de Venda
+                </a>
+            <?php else : ?>
+                <!-- Múltiplos contratos de venda - botão dropdown -->
+                <div class="relative" data-dropdown="contratos-venda">
+                    <button class="flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 text-sm md:text-base rounded-xl bg-green-900 border border-green-800 hover:bg-green-600 transition-colors w-full"
+                            type="button"
+                            onclick="toggleDropdown('contratos-venda')">
+                        <i class="fas fa-file-signature text-lg"></i>
+                        Contratos de Venda (<?php echo count($contratos_venda); ?>)
+                        <i class="fas fa-chevron-down text-xs transition-transform" id="chevron-contratos-venda"></i>
+                    </button>
+                    
+                    <!-- Dropdown menu -->
+                    <div class="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg opacity-0 invisible transform scale-95 transition-all duration-200 z-20"
+                         id="dropdown-contratos-venda">
+                        <?php foreach ($contratos_venda as $index => $contrato_venda) : ?>
+                            <a href="<?php echo esc_url($contrato_venda['url']); ?>" 
+                               class="flex items-center gap-3 p-3 text-sm hover:bg-gray-700 transition-colors <?php echo $index === 0 ? 'rounded-t-lg' : ''; ?> <?php echo $index === count($contratos_venda) - 1 ? 'rounded-b-lg' : 'border-b border-gray-700'; ?>"
+                               target="_blank" 
+                               rel="noopener noreferrer">
+                                <i class="fas fa-file-signature text-green-400"></i>
+                                <div class="flex-1">
+                                    <div class="font-medium text-white">Venda de <?php echo esc_html($contrato_venda['data_venda']); ?></div>
+                                    <?php if ($contrato_venda['aporte_titulo']) : ?>
+                                        <div class="text-xs text-gray-400"><?php echo esc_html($contrato_venda['aporte_titulo']); ?></div>
+                                    <?php endif; ?>
+                                </div>
+                                <i class="fas fa-external-link-alt text-xs text-gray-400"></i>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
+        
         <!-- Lâmina Técnica -->
         <?php if ($lamina_tecnica) : ?>
             <a href="<?php echo esc_url($lamina_tecnica); ?>" 
@@ -701,6 +764,57 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     setTimeout(initChart, 300);
+});
+</script>
+<?php endif; ?>
+
+<!-- SCRIPT PARA DROPDOWN DOS CONTRATOS -->
+<?php if (!empty($contratos_venda) && count($contratos_venda) > 1) : ?>
+<script>
+function toggleDropdown(dropdownId) {
+    const dropdown = document.getElementById('dropdown-' + dropdownId);
+    const chevron = document.getElementById('chevron-' + dropdownId);
+    
+    if (!dropdown || !chevron) return;
+    
+    // Fechar outros dropdowns primeiro
+    document.querySelectorAll('[id^="dropdown-"]').forEach(function(otherDropdown) {
+        if (otherDropdown.id !== 'dropdown-' + dropdownId) {
+            otherDropdown.classList.add('opacity-0', 'invisible', 'scale-95');
+            otherDropdown.classList.remove('opacity-100', 'visible', 'scale-100');
+        }
+    });
+    
+    document.querySelectorAll('[id^="chevron-"]').forEach(function(otherChevron) {
+        if (otherChevron.id !== 'chevron-' + dropdownId) {
+            otherChevron.classList.remove('rotate-180');
+        }
+    });
+    
+    // Toggle o dropdown atual
+    if (dropdown.classList.contains('opacity-0')) {
+        dropdown.classList.remove('opacity-0', 'invisible', 'scale-95');
+        dropdown.classList.add('opacity-100', 'visible', 'scale-100');
+        chevron.classList.add('rotate-180');
+    } else {
+        dropdown.classList.add('opacity-0', 'invisible', 'scale-95');
+        dropdown.classList.remove('opacity-100', 'visible', 'scale-100');
+        chevron.classList.remove('rotate-180');
+    }
+}
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('[data-dropdown]')) {
+        document.querySelectorAll('[id^="dropdown-"]').forEach(function(dropdown) {
+            dropdown.classList.add('opacity-0', 'invisible', 'scale-95');
+            dropdown.classList.remove('opacity-100', 'visible', 'scale-100');
+        });
+        
+        document.querySelectorAll('[id^="chevron-"]').forEach(function(chevron) {
+            chevron.classList.remove('rotate-180');
+        });
+    }
 });
 </script>
 <?php endif; ?>
