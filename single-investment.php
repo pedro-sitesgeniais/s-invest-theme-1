@@ -149,7 +149,8 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 <?php if ( ! empty($documentos) && is_array($documentos) ) : ?>
   <button onclick="openDocumentsModal()"
           class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2
-                 bg-secondary text-primary border-2 px-6 py-3 text-base font-semibold
+                 bg-secondary text-primary hover:bg-primary hover:text-secondary
+                 hover:border-secondary border-2 border-secondarypx-6 py-3 text-base font-semibold
                  rounded hover:bg-opacity-80 transition-all">
     <i class="fas fa-folder-open"></i>
     Documentos (<?= count($documentos) ?>)
