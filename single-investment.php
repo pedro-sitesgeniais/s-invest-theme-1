@@ -300,7 +300,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
   <!-- MODAL DE DOCUMENTOS -->
   <?php if ( ! empty($documentos) && is_array($documentos) ) : ?>
   <div id="documentsModal" 
-       class="fixed inset-0 z-50 flex items-center justify-center bg-black opacity-50 backdrop-blur-sm invisible transition-all duration-300">
+       class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-opacity-10 backdrop-blur-sm opacity-0 invisible transition-all duration-300">
     <!-- Container do Modal -->
     <div class="bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden transform scale-95 transition-transform duration-300"
          onclick="event.stopPropagation()">
