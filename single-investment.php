@@ -121,7 +121,44 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 ?>
 
 <main class="pt-30 bg-radial-[at_10%_80%] from-slate-900 to-primary text-white">
-  <section class="max-w-[1440px] mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+  <!-- CONTAINER PRINCIPAL COM MENU LATERAL -->
+  <div class="flex max-w-[1440px] mx-auto">
+    
+    <!-- MENU LATERAL -->
+    <aside class="w-80 min-h-screen bg-slate-800/50 backdrop-blur-sm border-r border-slate-700/50 sticky top-0">
+      <div class="p-6">
+        <nav class="space-y-2">
+          <a href="#porque-gostamos" onclick="scrollToSection('porque-gostamos')" 
+             class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all group menu-item" data-section="porque-gostamos">
+            <i class="fas fa-heart text-secondary group-hover:scale-110 transition-transform icon-glow"></i>
+            <span class="font-medium">Porque gostamos deste ativo</span>
+          </a>
+          
+          <a href="#riscos" onclick="scrollToSection('riscos')" 
+             class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all group menu-item" data-section="riscos">
+            <i class="fas fa-exclamation-triangle text-yellow-500 group-hover:scale-110 transition-transform icon-glow"></i>
+            <span class="font-medium">Riscos</span>
+          </a>
+          
+          <a href="#documentos" onclick="scrollToSection('documentos')" 
+             class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all group menu-item" data-section="documentos">
+            <i class="fas fa-folder-open text-blue-400 group-hover:scale-110 transition-transform icon-glow"></i>
+            <span class="font-medium">Documentos</span>
+          </a>
+          
+          <a href="#disclaimer" onclick="scrollToSection('disclaimer')" 
+             class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all group menu-item" data-section="disclaimer">
+            <i class="fas fa-info-circle text-gray-400 group-hover:scale-110 transition-transform icon-glow"></i>
+            <span class="font-medium">Disclaimer</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
+    
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div class="flex-1">
+      <!-- SEÇÃO HERO COM INFORMAÇÕES DO INVESTIMENTO -->
+      <section class="px-8 py-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
 
     <div class="space-y-6">
       <?php if ( has_post_thumbnail() ) : ?>
@@ -294,8 +331,193 @@ if ($quantidade_cotas && !$cotas_vendidas) {
           ?>
         </div>
       </div>
+      </div>
+      </section>
+      
+      <!-- SEÇÃO: PORQUE GOSTAMOS DESTE ATIVO -->
+      <section id="porque-gostamos" class="px-8 py-16 border-t border-slate-700/30">
+        <div class="max-w-4xl">
+          <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
+            <i class="fas fa-heart text-secondary"></i>
+            Porque gostamos deste ativo
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <?php 
+            $motivos = get_field('motivos_investimento');
+            if ($motivos && is_array($motivos)) : 
+              foreach ($motivos as $motivo) : 
+                $titulo = $motivo['titulo'] ?? '';
+                $descricao = $motivo['descricao'] ?? '';
+                $icone = $motivo['icone'] ?? 'fas fa-check-circle';
+            ?>
+            <div class="bg-slate-800/50 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50 hover:border-secondary/30 transition-all section-card">
+              <div class="flex items-start gap-4">
+                <div class="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <i class="<?= esc_attr($icone) ?> text-secondary text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-white mb-2"><?= esc_html($titulo) ?></h3>
+                  <p class="text-gray-300 leading-relaxed"><?= esc_html($descricao) ?></p>
+                </div>
+              </div>
+            </div>
+            <?php 
+              endforeach;
+            else :
+            ?>
+            <div class="col-span-full">
+              <div class="bg-slate-800/50 backdrop-blur-sm p-8 rounded-xl border border-slate-700/50 text-center">
+                <i class="fas fa-info-circle text-gray-400 text-3xl mb-4"></i>
+                <p class="text-gray-400">Os motivos para este investimento serão adicionados em breve.</p>
+              </div>
+            </div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </section>
+      
+      <!-- SEÇÃO: RISCOS -->
+      <section id="riscos" class="px-8 py-16 border-t border-slate-700/30">
+        <div class="max-w-4xl">
+          <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
+            <i class="fas fa-exclamation-triangle text-yellow-500"></i>
+            Riscos
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <?php 
+            $riscos_lista = get_field('riscos_operacao');
+            if ($riscos_lista && is_array($riscos_lista)) : 
+              foreach ($riscos_lista as $risco_item) : 
+                $titulo = $risco_item['titulo'] ?? '';
+                $descricao = $risco_item['descricao'] ?? '';
+                $nivel = $risco_item['nivel'] ?? 'medio';
+                
+                $cor_nivel = [
+                  'baixo' => 'text-green-500 border-green-500/30 bg-green-500/5',
+                  'medio' => 'text-yellow-500 border-yellow-500/30 bg-yellow-500/5',
+                  'alto' => 'text-red-500 border-red-500/30 bg-red-500/5'
+                ];
+                $classe_nivel = $cor_nivel[$nivel] ?? $cor_nivel['medio'];
+            ?>
+            <div class="bg-slate-800/50 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50 hover:border-yellow-500/30 transition-all section-card">
+              <div class="flex items-start gap-4">
+                <div class="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <i class="fas fa-exclamation-triangle text-yellow-500 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-3 mb-2">
+                    <h3 class="text-lg font-semibold text-white"><?= esc_html($titulo) ?></h3>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full border <?= $classe_nivel ?>">
+                      <?= ucfirst($nivel) ?>
+                    </span>
+                  </div>
+                  <p class="text-gray-300 leading-relaxed"><?= esc_html($descricao) ?></p>
+                </div>
+              </div>
+            </div>
+            <?php 
+              endforeach;
+            else :
+            ?>
+            <div class="col-span-full">
+              <div class="bg-slate-800/50 backdrop-blur-sm p-8 rounded-xl border border-slate-700/50 text-center">
+                <i class="fas fa-shield-alt text-gray-400 text-3xl mb-4"></i>
+                <p class="text-gray-400">Os riscos específicos desta operação serão detalhados em breve.</p>
+              </div>
+            </div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </section>
+      
+      <!-- SEÇÃO: DOCUMENTOS -->
+      <section id="documentos" class="px-8 py-16 border-t border-slate-700/30">
+        <div class="max-w-4xl">
+          <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
+            <i class="fas fa-folder-open text-blue-400"></i>
+            Documentos
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <?php if ( ! empty($lamina_url) ) : ?>
+            <div class="bg-slate-800/50 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50 hover:border-blue-400/30 transition-all group section-card">
+              <div class="text-center">
+                <div class="w-16 h-16 bg-blue-400/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
+                  <i class="fas fa-file-alt text-blue-400 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-white mb-2">Lâmina Técnica</h3>
+                <p class="text-gray-400 text-sm mb-4">Documento oficial com informações técnicas do investimento</p>
+                <a href="<?= esc_url($lamina_url); ?>" target="_blank" rel="noopener noreferrer"
+                   class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium">
+                  <i class="fas fa-external-link-alt"></i>
+                  Visualizar
+                </a>
+              </div>
+            </div>
+            <?php endif; ?>
+            
+            <?php if ( ! empty($documentos) && is_array($documentos) ) : ?>
+            <div class="bg-slate-800/50 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50 hover:border-blue-400/30 transition-all group section-card">
+              <div class="text-center">
+                <div class="w-16 h-16 bg-blue-400/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
+                  <i class="fas fa-folder-open text-blue-400 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-white mb-2">Documentos Adicionais</h3>
+                <p class="text-gray-400 text-sm mb-4"><?= count($documentos) ?> documento<?= count($documentos) > 1 ? 's' : '' ?> disponível<?= count($documentos) > 1 ? 'eis' : '' ?></p>
+                <button onclick="openDocumentsModal()"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium">
+                  <i class="fas fa-eye"></i>
+                  Ver Documentos
+                </button>
+              </div>
+            </div>
+            <?php endif; ?>
+            
+            <?php if ( empty($lamina_url) && (empty($documentos) || !is_array($documentos)) ) : ?>
+            <div class="col-span-full">
+              <div class="bg-slate-800/50 backdrop-blur-sm p-8 rounded-xl border border-slate-700/50 text-center">
+                <i class="fas fa-folder text-gray-400 text-3xl mb-4"></i>
+                <p class="text-gray-400">Os documentos deste investimento serão disponibilizados em breve.</p>
+              </div>
+            </div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </section>
+      
+      <!-- SEÇÃO: DISCLAIMER -->
+      <section id="disclaimer" class="px-8 py-16 border-t border-slate-700/30">
+        <div class="max-w-4xl">
+          <div class="bg-primary/10 border border-primary/20 backdrop-blur-sm p-8 rounded-xl">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-primary">
+              <i class="fas fa-info-circle"></i>
+              Disclaimer
+            </h2>
+            
+            <div class="space-y-4 text-gray-300 leading-relaxed">
+              <p>
+                <strong class="text-white">Importante:</strong> Este material é de caráter exclusivamente informativo e não constitui oferta, solicitação ou recomendação de investimento. Rentabilidade passada não representa garantia de rentabilidade futura.
+              </p>
+              
+              <p>
+                Os investimentos apresentados podem estar sujeitos a variação de preços e riscos, incluindo a possível perda do capital investido. É recomendável a leitura cuidadosa de todos os documentos relacionados aos investimentos, em especial o regulamento ou lâmina de informações essenciais, antes de qualquer decisão de investimento.
+              </p>
+              
+              <p>
+                Para mais informações sobre riscos, tributação e taxas, consulte os documentos informativos disponibilizados ou entre em contato com nossa equipe de relacionamento.
+              </p>
+              
+              <p class="text-sm text-gray-400 pt-4 border-t border-gray-600">
+                <strong>Brava Forte Investimentos</strong> - CVM nº XXX-X | Este documento foi gerado em <?= date('d/m/Y') ?>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
-  </section>
+  </div>
 
   <!-- MODAL DE DOCUMENTOS -->
   <?php if ( ! empty($documentos) && is_array($documentos) ) : ?>
@@ -633,9 +855,138 @@ if ($quantidade_cotas && !$cotas_vendidas) {
         padding-right: 0.75rem;
     }
 }
+
+/* Estilos para o menu lateral e navegação */
+.menu-item-active {
+    background-color: rgba(46, 210, 248, 0.1) !important;
+    color: #2ED2F8 !important;
+    border-left: 3px solid #2ED2F8;
+    padding-left: calc(1rem - 3px);
+}
+
+.menu-item {
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.menu-item:hover {
+    border-left: 3px solid rgba(46, 210, 248, 0.5);
+    padding-left: calc(1rem - 3px);
+}
+
+/* Scroll suave para toda a página */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Responsividade do menu lateral */
+@media (max-width: 1024px) {
+    aside {
+        display: none;
+    }
+    
+    .flex-1 {
+        width: 100%;
+    }
+}
+
+/* Estilos para as seções */
+section {
+    scroll-margin-top: 100px;
+}
+
+/* Animações para os cards das seções */
+.section-card {
+    transition: all 0.3s ease;
+}
+
+.section-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Efeito de brilho nos ícones */
+.icon-glow:hover {
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* Customização da scrollbar do menu */
+aside::-webkit-scrollbar {
+    width: 6px;
+}
+
+aside::-webkit-scrollbar-thumb {
+    background-color: #2ED2F8;
+    border-radius: 3px;
+}
+
+aside::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(46, 210, 248, 0.8);
+}
+
+aside::-webkit-scrollbar-track {
+    background: rgba(30, 41, 59, 0.5);
+}
 </style>
 
 <script>
+// Função para scroll suave e navegação do menu lateral
+function scrollToSection(sectionId) {
+    const element = document.getElementById(sectionId);
+    if (element) {
+        // Offset para compensar o menu fixo (se houver)
+        const offset = 100;
+        const elementPosition = element.offsetTop - offset;
+        
+        window.scrollTo({
+            top: elementPosition,
+            behavior: 'smooth'
+        });
+    }
+    
+    // Atualizar estado ativo do menu
+    updateActiveMenuItem(sectionId);
+}
+
+// Função para atualizar item ativo do menu
+function updateActiveMenuItem(activeSection) {
+    const menuItems = document.querySelectorAll('.menu-item');
+    
+    menuItems.forEach(item => {
+        item.classList.remove('menu-item-active', 'bg-slate-700/50', 'text-white');
+        item.classList.add('text-gray-300');
+    });
+    
+    const activeItem = document.querySelector(`[data-section="${activeSection}"]`);
+    if (activeItem) {
+        activeItem.classList.add('menu-item-active', 'bg-slate-700/50', 'text-white');
+        activeItem.classList.remove('text-gray-300');
+    }
+}
+
+// Observer para detectar seção visível e atualizar menu automaticamente
+function setupScrollObserver() {
+    const sections = document.querySelectorAll('section[id]');
+    
+    const observerOptions = {
+        root: null,
+        rootMargin: '-50% 0px -50% 0px',
+        threshold: 0
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                updateActiveMenuItem(entry.target.id);
+            }
+        });
+    }, observerOptions);
+    
+    sections.forEach(section => {
+        observer.observe(section);
+    });
+}
+
 // Funções para controlar o modal de documentos
 function openDocumentsModal() {
     const modal = document.getElementById('documentsModal');
@@ -783,6 +1134,12 @@ function closeDocumentPreview() {
 
 // Event listeners para os modais
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar observer para scroll automático
+    setupScrollObserver();
+    
+    // Definir primeiro item como ativo por padrão
+    updateActiveMenuItem('porque-gostamos');
+    
     const documentsModal = document.getElementById('documentsModal');
     const previewModal = document.getElementById('documentPreviewModal');
     
