@@ -149,8 +149,8 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 <?php if ( ! empty($documentos) && is_array($documentos) ) : ?>
   <button onclick="openDocumentsModal()"
           class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2
-                 border-2 border-blue-500 text-blue-400 px-6 py-3 text-base font-semibold
-                 rounded hover:bg-blue-500 hover:text-white transition-all">
+                 bg-secondary text-primary border-2 px-6 py-3 text-base font-semibold
+                 rounded hover:bg-opacity-80 transition-all">
     <i class="fas fa-folder-open"></i>
     Documentos (<?= count($documentos) ?>)
   </button>
@@ -398,21 +398,13 @@ if ($quantidade_cotas && !$cotas_vendidas) {
                   </div>
                 </div>
                 
-                <!-- Botões de Ação -->
-                <div class="flex items-center space-x-2 ml-4">
-                  <a href="<?= esc_url($url) ?>" 
-                     target="_blank" 
-                     rel="noopener noreferrer"
-                     class="inline-flex items-center justify-center w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                     title="Abrir documento">
-                    <i class="fas fa-external-link-alt text-sm"></i>
-                  </a>
-                  <a href="<?= esc_url($url) ?>" 
-                     download
-                     class="inline-flex items-center justify-center w-10 h-10 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded-lg transition-colors"
-                     title="Baixar documento">
-                    <i class="fas fa-download text-sm"></i>
-                  </a>
+                <!-- Botão de Ação -->
+                <div class="flex items-center ml-4">
+                  <button onclick="openDocumentPreview('<?= esc_js($url) ?>', '<?= esc_js($titulo) ?>', '<?= esc_js($tipo) ?>')" 
+                          class="inline-flex items-center justify-center w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                          title="Visualizar documento">
+                    <i class="fas fa-eye text-sm"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -425,7 +417,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
         <div class="flex items-center justify-between">
           <p class="text-slate-400 text-sm">
             <i class="fas fa-info-circle mr-2"></i>
-            Clique em <i class="fas fa-external-link-alt mx-1"></i> para visualizar ou <i class="fas fa-download mx-1"></i> para baixar
+            Clique em <i class="fas fa-eye mx-1"></i> para visualizar o documento
           </p>
           <button onclick="closeDocumentsModal()" 
                   class="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
@@ -436,6 +428,50 @@ if ($quantidade_cotas && !$cotas_vendidas) {
     </div>
   </div>
   <?php endif; ?>
+
+  <!-- MODAL DE PREVIEW DE DOCUMENTO -->
+  <div id="documentPreviewModal" 
+       class="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-90 backdrop-blur-sm opacity-0 invisible transition-all duration-300">
+    <!-- Container do Modal de Preview -->
+    <div class="bg-slate-900 rounded-xl shadow-2xl border border-slate-700 w-full max-w-6xl mx-4 max-h-[95vh] overflow-hidden transform scale-95 transition-transform duration-300"
+         onclick="event.stopPropagation()">
+      
+      <!-- Header do Preview -->
+      <div class="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800">
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-file-alt text-blue-400"></i>
+          <div>
+            <h3 class="text-lg font-semibold text-white" id="previewDocumentTitle">Visualizar Documento</h3>
+            <p class="text-sm text-slate-400" id="previewDocumentType">PDF</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <a id="previewExternalLink" 
+             href="#" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm">
+            <i class="fas fa-external-link-alt mr-2"></i>
+            Abrir em Nova Aba
+          </a>
+          <button onclick="closeDocumentPreview()" 
+                  class="text-slate-400 hover:text-white text-xl transition-colors p-2 hover:bg-slate-700 rounded-lg">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Corpo do Preview -->
+      <div class="p-0 h-[calc(95vh-80px)] bg-white">
+        <div id="previewContent" class="w-full h-full flex items-center justify-center">
+          <div class="text-center text-slate-500">
+            <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
+            <p>Carregando documento...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </main>
 
@@ -540,6 +576,63 @@ if ($quantidade_cotas && !$cotas_vendidas) {
         font-size: 1.5rem;
     }
 }
+
+/* Estilos do Modal de Preview */
+#documentPreviewModal {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 60;
+}
+
+#documentPreviewModal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+#documentPreviewModal.show > div {
+    transform: scale(1);
+}
+
+#previewContent iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white;
+}
+
+#previewContent.image-preview {
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#previewContent.image-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* Responsividade do modal de preview */
+@media (max-width: 768px) {
+    #documentPreviewModal .max-w-6xl {
+        max-width: calc(100vw - 1rem);
+        margin: 0.5rem;
+    }
+    
+    #documentPreviewModal .p-4 {
+        padding: 0.75rem;
+    }
+    
+    #documentPreviewModal .text-lg {
+        font-size: 1rem;
+    }
+    
+    #documentPreviewModal .px-4 {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+}
 </style>
 
 <script>
@@ -566,30 +659,165 @@ function closeDocumentsModal() {
     }
 }
 
-// Event listeners para o modal
-document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('documentsModal');
+// Funções para o modal de preview de documentos
+function openDocumentPreview(url, title, type) {
+    const modal = document.getElementById('documentPreviewModal');
+    const titleElement = document.getElementById('previewDocumentTitle');
+    const typeElement = document.getElementById('previewDocumentType');
+    const contentElement = document.getElementById('previewContent');
+    const externalLink = document.getElementById('previewExternalLink');
     
+    if (modal && contentElement) {
+        // Atualizar informações do header
+        if (titleElement) titleElement.textContent = title || 'Documento';
+        if (typeElement) typeElement.textContent = type.toUpperCase() || 'ARQUIVO';
+        if (externalLink) externalLink.href = url;
+        
+        // Limpar conteúdo anterior
+        contentElement.innerHTML = '';
+        contentElement.className = 'w-full h-full flex items-center justify-center';
+        
+        // Mostrar loading
+        contentElement.innerHTML = `
+            <div class="text-center text-slate-500">
+                <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
+                <p>Carregando documento...</p>
+            </div>
+        `;
+        
+        // Mostrar modal
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        
+        // Carregar conteúdo baseado no tipo
+        setTimeout(() => {
+            loadDocumentContent(url, type, contentElement);
+        }, 500);
+    }
+}
+
+function loadDocumentContent(url, type, contentElement) {
+    const lowerType = type.toLowerCase();
+    
+    try {
+        if (lowerType === 'pdf') {
+            // Para PDFs, usar iframe com Google Docs Viewer como fallback
+            contentElement.innerHTML = `
+                <iframe src="${url}#toolbar=0&navpanes=0&scrollbar=0" 
+                        onload="this.style.opacity=1" 
+                        style="opacity:0; transition: opacity 0.3s"
+                        onerror="this.src='https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true'">
+                </iframe>
+            `;
+        } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(lowerType)) {
+            // Para imagens
+            contentElement.className = 'w-full h-full image-preview';
+            contentElement.innerHTML = `
+                <img src="${url}" 
+                     alt="Preview da imagem"
+                     onload="this.style.opacity=1" 
+                     style="opacity:0; transition: opacity 0.3s"
+                     onerror="showPreviewError(this.parentElement)" />
+            `;
+        } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(lowerType)) {
+            // Para documentos Office, usar Google Docs Viewer
+            contentElement.innerHTML = `
+                <iframe src="https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true"
+                        onload="this.style.opacity=1" 
+                        style="opacity:0; transition: opacity 0.3s"
+                        onerror="showPreviewError(this.parentElement)">
+                </iframe>
+            `;
+        } else {
+            // Para outros tipos, mostrar opção de abrir em nova aba
+            showPreviewUnsupported(contentElement, url);
+        }
+    } catch (error) {
+        showPreviewError(contentElement);
+    }
+}
+
+function showPreviewError(contentElement) {
+    contentElement.innerHTML = `
+        <div class="text-center text-slate-500">
+            <i class="fas fa-exclamation-triangle text-3xl mb-4 text-yellow-500"></i>
+            <p class="mb-4">Não foi possível carregar o preview do documento.</p>
+            <button onclick="window.open(document.getElementById('previewExternalLink').href, '_blank')" 
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                <i class="fas fa-external-link-alt mr-2"></i>
+                Abrir em Nova Aba
+            </button>
+        </div>
+    `;
+}
+
+function showPreviewUnsupported(contentElement, url) {
+    contentElement.innerHTML = `
+        <div class="text-center text-slate-500">
+            <i class="fas fa-file text-3xl mb-4"></i>
+            <p class="mb-4">Preview não disponível para este tipo de arquivo.</p>
+            <button onclick="window.open('${url}', '_blank')" 
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                <i class="fas fa-external-link-alt mr-2"></i>
+                Abrir Documento
+            </button>
+        </div>
+    `;
+}
+
+function closeDocumentPreview() {
+    const modal = document.getElementById('documentPreviewModal');
     if (modal) {
-        // Fechar modal ao clicar no backdrop
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+        
+        // Limpar conteúdo para liberar recursos
+        setTimeout(() => {
+            const contentElement = document.getElementById('previewContent');
+            if (contentElement) {
+                contentElement.innerHTML = '';
+            }
+        }, 300);
+    }
+}
+
+// Event listeners para os modais
+document.addEventListener('DOMContentLoaded', function() {
+    const documentsModal = document.getElementById('documentsModal');
+    const previewModal = document.getElementById('documentPreviewModal');
+    
+    // Event listeners para o modal de documentos
+    if (documentsModal) {
+        documentsModal.addEventListener('click', function(e) {
+            if (e.target === documentsModal) {
                 closeDocumentsModal();
             }
         });
         
-        // Fechar modal com a tecla ESC
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && modal.classList.contains('show')) {
-                closeDocumentsModal();
-            }
-        });
-        
-        // Prevenir scroll quando o modal estiver aberto
-        modal.addEventListener('scroll', function(e) {
+        documentsModal.addEventListener('scroll', function(e) {
             e.stopPropagation();
         });
     }
+    
+    // Event listeners para o modal de preview
+    if (previewModal) {
+        previewModal.addEventListener('click', function(e) {
+            if (e.target === previewModal) {
+                closeDocumentPreview();
+            }
+        });
+    }
+    
+    // Event listener global para ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (previewModal && previewModal.classList.contains('show')) {
+                closeDocumentPreview();
+            } else if (documentsModal && documentsModal.classList.contains('show')) {
+                closeDocumentsModal();
+            }
+        }
+    });
 });
 
 // Função para track de eventos (opcional - para analytics)
