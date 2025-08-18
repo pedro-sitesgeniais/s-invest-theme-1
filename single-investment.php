@@ -235,15 +235,12 @@ if ($quantidade_cotas && !$cotas_vendidas) {
         </div>
 
         <!-- 3. REGIÃO -->
-        <?php if ($regiao_projeto) : ?>
         <div class="p-3 bg-slate-800 rounded">
           <p class="text-xs text-gray-400">Região</p>
-          <p class="mt-1 font-medium"><?= esc_html($regiao_projeto) ?></p>
+          <p class="mt-1 font-medium"><?= $regiao_projeto ? esc_html($regiao_projeto) : ($localizacao ? esc_html($localizacao) : '—') ?></p>
         </div>
-        <?php endif; ?>
 
         <!-- 4. LANÇAMENTO (com tooltip) -->
-        <?php if ($data_lancamento) : ?>
         <div class="p-3 bg-slate-800 rounded">
           <p class="text-xs text-gray-400 flex items-center gap-1">
             Lançamento
@@ -252,17 +249,14 @@ if ($quantidade_cotas && !$cotas_vendidas) {
               <span class="tooltip-text">data de início das vendas</span>
             </span>
           </p>
-          <p class="mt-1 font-medium"><?= esc_html($data_lancamento) ?></p>
+          <p class="mt-1 font-medium"><?= $data_lancamento ? esc_html($data_lancamento) : '—' ?></p>
         </div>
-        <?php endif; ?>
 
-        <!-- 5. % DO VGV POR COTA (apenas para SCP) -->
-        <?php if ($tipo_produto_slug === 'private-scp' && $percentual_vgv_por_cota) : ?>
+        <!-- 5. % DO VGV POR COTA -->
         <div class="p-3 bg-slate-800 rounded">
           <p class="text-xs text-gray-400">% do VGV por Cota</p>
-          <p class="mt-1 font-medium"><?= number_format($percentual_vgv_por_cota, 3, ',', '.') ?>%</p>
+          <p class="mt-1 font-medium"><?= $percentual_vgv_por_cota ? number_format($percentual_vgv_por_cota, 3, ',', '.') . '%' : '—' ?></p>
         </div>
-        <?php endif; ?>
 
         <!-- 6. INÍCIO DA CAPTAÇÃO -->
         <div class="p-3 bg-slate-800 rounded">
