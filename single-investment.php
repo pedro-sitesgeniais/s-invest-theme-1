@@ -101,6 +101,9 @@ $whatsapp_no   = get_field('whatsapp_contato')
                  ?: '5599999999999';
 $investment_title = urlencode( get_the_title() );
 
+// Buscar documentos do investimento
+$documentos = get_field('documentos') ?: [];
+
 // ========== NOVOS CAMPOS ADICIONAIS ==========
 $quantidade_cotas = get_field('quantidade_cotas');
 $cotas_vendidas = get_field('cotas_vendidas');
@@ -141,6 +144,16 @@ if ($quantidade_cotas && !$cotas_vendidas) {
     <i class="fas fa-file-alt"></i>
     Lâmina Técnica
   </a>
+<?php endif; ?>
+
+<?php if ( ! empty($documentos) && is_array($documentos) ) : ?>
+  <button onclick="openDocumentsModal()"
+          class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2
+                 border-2 border-blue-500 text-blue-400 px-6 py-3 text-base font-semibold
+                 rounded hover:bg-blue-500 hover:text-white transition-all">
+    <i class="fas fa-folder-open"></i>
+    Documentos (<?= count($documentos) ?>)
+  </button>
 <?php endif; ?>
         </div>
       </div>
@@ -283,6 +296,147 @@ if ($quantidade_cotas && !$cotas_vendidas) {
       </div>
     </div>
   </section>
+
+  <!-- MODAL DE DOCUMENTOS -->
+  <?php if ( ! empty($documentos) && is_array($documentos) ) : ?>
+  <div id="documentsModal" 
+       class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm opacity-0 invisible transition-all duration-300">
+    <!-- Container do Modal -->
+    <div class="bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden transform scale-95 transition-transform duration-300"
+         onclick="event.stopPropagation()">
+      
+      <!-- Header do Modal -->
+      <div class="flex items-center justify-between p-6 border-b border-slate-700">
+        <div>
+          <h2 class="text-2xl font-bold text-white mb-1">
+            <i class="fas fa-folder-open text-blue-400 mr-3"></i>
+            Documentos do Investimento
+          </h2>
+          <p class="text-slate-400 text-sm">
+            <?= get_the_title() ?> • <?= count($documentos) ?> documento<?= count($documentos) > 1 ? 's' : '' ?>
+          </p>
+        </div>
+        <button onclick="closeDocumentsModal()" 
+                class="text-slate-400 hover:text-white text-2xl transition-colors p-2 hover:bg-slate-700 rounded-lg">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <!-- Corpo do Modal - Lista de Documentos -->
+      <div class="p-6 max-h-[70vh] overflow-y-auto">
+        <div class="grid gap-4">
+          <?php foreach ($documentos as $index => $documento) : ?>
+            <?php 
+            $titulo = $documento['title'] ?? 'Documento ' . ($index + 1);
+            $arquivo = $documento['url'] ?? null;
+            
+            // Verificar se é array (dados do ACF) ou string (URL direta)
+            if (is_array($arquivo) && isset($arquivo['url'])) {
+                $url = $arquivo['url'];
+                $nome_arquivo = $arquivo['filename'] ?? basename($url);
+                $tamanho = $arquivo['filesize'] ?? 0;
+                $tipo = $arquivo['subtype'] ?? 'file';
+            } elseif (is_string($arquivo) && !empty($arquivo)) {
+                $url = $arquivo;
+                $nome_arquivo = basename($url);
+                $tamanho = 0;
+                $tipo = pathinfo($url, PATHINFO_EXTENSION) ?? 'file';
+            } else {
+                continue; // Pular se não há URL válida
+            }
+            
+            // Definir ícone baseado no tipo de arquivo
+            $icone_map = [
+                'pdf' => 'fas fa-file-pdf text-red-500',
+                'doc' => 'fas fa-file-word text-blue-500',
+                'docx' => 'fas fa-file-word text-blue-500',
+                'xls' => 'fas fa-file-excel text-green-500',
+                'xlsx' => 'fas fa-file-excel text-green-500',
+                'jpg' => 'fas fa-file-image text-purple-500',
+                'jpeg' => 'fas fa-file-image text-purple-500',
+                'png' => 'fas fa-file-image text-purple-500',
+                'zip' => 'fas fa-file-archive text-yellow-500',
+                'rar' => 'fas fa-file-archive text-yellow-500',
+            ];
+            $icone = $icone_map[$tipo] ?? 'fas fa-file text-slate-400';
+            
+            // Formatar tamanho do arquivo
+            $tamanho_formatado = '';
+            if ($tamanho > 0) {
+                if ($tamanho >= 1048576) {
+                    $tamanho_formatado = number_format($tamanho / 1048576, 1) . ' MB';
+                } elseif ($tamanho >= 1024) {
+                    $tamanho_formatado = number_format($tamanho / 1024, 1) . ' KB';
+                } else {
+                    $tamanho_formatado = $tamanho . ' bytes';
+                }
+            }
+            ?>
+            
+            <div class="group bg-slate-900 hover:bg-slate-750 rounded-xl p-4 border border-slate-700 hover:border-slate-600 transition-all">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4 flex-1">
+                  <!-- Ícone do Arquivo -->
+                  <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center">
+                      <i class="<?= $icone ?> text-xl"></i>
+                    </div>
+                  </div>
+                  
+                  <!-- Informações do Arquivo -->
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-white font-semibold text-lg leading-tight mb-1 truncate">
+                      <?= esc_html($titulo) ?>
+                    </h3>
+                    <div class="flex flex-col sm:flex-row sm:items-center text-sm text-slate-400 gap-1 sm:gap-3">
+                      <span class="truncate"><?= esc_html($nome_arquivo) ?></span>
+                      <?php if ($tamanho_formatado) : ?>
+                        <span class="hidden sm:inline">•</span>
+                        <span><?= esc_html($tamanho_formatado) ?></span>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Botões de Ação -->
+                <div class="flex items-center space-x-2 ml-4">
+                  <a href="<?= esc_url($url) ?>" 
+                     target="_blank" 
+                     rel="noopener noreferrer"
+                     class="inline-flex items-center justify-center w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                     title="Abrir documento">
+                    <i class="fas fa-external-link-alt text-sm"></i>
+                  </a>
+                  <a href="<?= esc_url($url) ?>" 
+                     download
+                     class="inline-flex items-center justify-center w-10 h-10 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded-lg transition-colors"
+                     title="Baixar documento">
+                    <i class="fas fa-download text-sm"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      
+      <!-- Footer do Modal -->
+      <div class="p-6 border-t border-slate-700 bg-slate-900">
+        <div class="flex items-center justify-between">
+          <p class="text-slate-400 text-sm">
+            <i class="fas fa-info-circle mr-2"></i>
+            Clique em <i class="fas fa-external-link-alt mx-1"></i> para visualizar ou <i class="fas fa-download mx-1"></i> para baixar
+          </p>
+          <button onclick="closeDocumentsModal()" 
+                  class="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <?php endif; ?>
+
 </main>
 
 <style>
@@ -336,6 +490,118 @@ if ($quantidade_cotas && !$cotas_vendidas) {
         font-size: 11px;
     }
 }
+
+/* Estilos do Modal de Documentos */
+#documentsModal {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+#documentsModal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+#documentsModal.show > div {
+    transform: scale(1);
+}
+
+/* Scrollbar customizada para o corpo do modal */
+#documentsModal .max-h-\[70vh\]::-webkit-scrollbar {
+    width: 8px;
+}
+
+#documentsModal .max-h-\[70vh\]::-webkit-scrollbar-track {
+    background: #1e293b;
+    border-radius: 4px;
+}
+
+#documentsModal .max-h-\[70vh\]::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 4px;
+}
+
+#documentsModal .max-h-\[70vh\]::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Responsividade do modal */
+@media (max-width: 768px) {
+    #documentsModal .max-w-4xl {
+        max-width: calc(100vw - 2rem);
+        margin: 1rem;
+    }
+    
+    #documentsModal .p-6 {
+        padding: 1rem;
+    }
+    
+    #documentsModal .text-2xl {
+        font-size: 1.5rem;
+    }
+}
 </style>
+
+<script>
+// Funções para controlar o modal de documentos
+function openDocumentsModal() {
+    const modal = document.getElementById('documentsModal');
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden'; // Prevenir scroll do corpo
+        
+        // Focar no botão de fechar para acessibilidade
+        setTimeout(() => {
+            const closeButton = modal.querySelector('button[onclick="closeDocumentsModal()"]');
+            if (closeButton) closeButton.focus();
+        }, 100);
+    }
+}
+
+function closeDocumentsModal() {
+    const modal = document.getElementById('documentsModal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = ''; // Restaurar scroll do corpo
+    }
+}
+
+// Event listeners para o modal
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('documentsModal');
+    
+    if (modal) {
+        // Fechar modal ao clicar no backdrop
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeDocumentsModal();
+            }
+        });
+        
+        // Fechar modal com a tecla ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('show')) {
+                closeDocumentsModal();
+            }
+        });
+        
+        // Prevenir scroll quando o modal estiver aberto
+        modal.addEventListener('scroll', function(e) {
+            e.stopPropagation();
+        });
+    }
+});
+
+// Função para track de eventos (opcional - para analytics)
+function trackDocumentView(documentName) {
+    // Aqui você pode adicionar código de tracking/analytics
+    console.log('Documento visualizado:', documentName);
+}
+
+function trackDocumentDownload(documentName) {
+    // Aqui você pode adicionar código de tracking/analytics
+    console.log('Documento baixado:', documentName);
+}
+</script>
 
 <?php get_footer(); ?>
