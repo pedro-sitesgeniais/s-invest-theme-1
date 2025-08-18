@@ -117,7 +117,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 }
 ?>
 
-<main class="pt-30 h-full bg-radial-[at_10%_80%] from-slate-900 to-primary text-white">
+<main class="pt-50 pb-50 bg-radial-[at_10%_80%] from-slate-900 to-primary text-white">
   <section class="max-w-[1440px] mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
 
     <div class="space-y-6">
