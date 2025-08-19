@@ -573,7 +573,8 @@ if ($quantidade_cotas && !$cotas_vendidas) {
             ?>
             
             <div class="group bg-slate-900 hover:bg-slate-750 rounded-xl p-4 border border-slate-700 hover:border-slate-600 transition-all">
-              <div class="flex items-center justify-between">
+              <!-- Layout mobile: stacked -->
+              <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div class="flex items-center space-x-4 flex-1">
                   <!-- Ícone do Arquivo -->
                   <div class="flex-shrink-0">
@@ -584,11 +585,11 @@ if ($quantidade_cotas && !$cotas_vendidas) {
                   
                   <!-- Informações do Arquivo -->
                   <div class="flex-1 min-w-0">
-                    <h3 class="text-white font-semibold text-lg leading-tight mb-1 truncate">
+                    <h3 class="text-white font-semibold text-lg leading-tight mb-1">
                       <?= esc_html($titulo) ?>
                     </h3>
                     <div class="flex flex-col sm:flex-row sm:items-center text-sm text-slate-400 gap-1 sm:gap-3">
-                      <span class="truncate"><?= esc_html($nome_arquivo) ?></span>
+                      <span class="break-words"><?= esc_html($nome_arquivo) ?></span>
                       <?php if ($tamanho_formatado) : ?>
                         <span class="hidden sm:inline">•</span>
                         <span><?= esc_html($tamanho_formatado) ?></span>
@@ -597,12 +598,13 @@ if ($quantidade_cotas && !$cotas_vendidas) {
                   </div>
                 </div>
                 
-                <!-- Botão de Ação -->
-                <div class="flex items-center ml-4">
+                <!-- Botão de Ação - Mobile: largura total, Desktop: compact -->
+                <div class="flex items-center justify-center sm:ml-4">
                   <button onclick="openDocumentPreview('<?= esc_js($url) ?>', '<?= esc_js($titulo) ?>', '<?= esc_js($tipo) ?>')" 
-                          class="inline-flex items-center justify-center w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                          class="inline-flex items-center justify-center w-full sm:w-12 h-10 sm:h-12 px-4 sm:px-0 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
                           title="Visualizar documento">
-                    <i class="fas fa-eye text-sm"></i>
+                    <i class="fas fa-eye mr-2 sm:mr-0"></i>
+                    <span class="sm:hidden">Visualizar Documento</span>
                   </button>
                 </div>
               </div>
@@ -630,30 +632,30 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 
   <!-- MODAL DE PREVIEW DE DOCUMENTO -->
   <div id="documentPreviewModal" 
-       class="fixed inset-0 z-999 flex items-center justify-center bg-black/90 backdrop-blur-sm opacity-0 invisible transition-all duration-300">
+       class="fixed inset-0 z-999 flex items-center justify-center bg-black/90 backdrop-blur-sm opacity-0 invisible transition-all duration-300 p-2 sm:p-4">
     <!-- Container do Modal de Preview -->
-    <div class="modal-content bg-slate-900 rounded-xl shadow-2xl border border-slate-700 w-full max-w-6xl mx-4 max-h-[95vh] overflow-hidden transform scale-95 transition-transform duration-300"
+    <div class="modal-content bg-slate-900 rounded-xl shadow-2xl border border-slate-700 w-full max-w-6xl max-h-[98vh] sm:max-h-[95vh] overflow-hidden transform scale-95 transition-transform duration-300"
          onclick="event.stopPropagation()">
       
       <!-- Header do Preview -->
-      <div class="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800">
-        <div class="flex items-center space-x-3">
-          <i class="fas fa-file-alt text-blue-400"></i>
-          <div>
-            <h3 class="text-lg font-semibold text-white" id="previewDocumentTitle">Visualizar Documento</h3>
-            <p class="text-sm text-slate-400" id="previewDocumentType">PDF</p>
+      <div class="flex items-center justify-between p-3 sm:p-4 border-b border-slate-700 bg-slate-800">
+        <div class="flex items-center space-x-3 flex-1 min-w-0">
+          <i class="fas fa-file-alt text-blue-400 flex-shrink-0"></i>
+          <div class="min-w-0 flex-1">
+            <h3 class="text-base sm:text-lg font-semibold text-white truncate" id="previewDocumentTitle">Visualizar Documento</h3>
+            <p class="text-xs sm:text-sm text-slate-400" id="previewDocumentType">PDF</p>
           </div>
         </div>
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center ml-2">
           <button onclick="closeDocumentPreview()" 
-                  class="text-slate-400 hover:text-white text-xl transition-colors p-2 hover:bg-slate-700 rounded-lg">
+                  class="text-slate-400 hover:text-white text-lg sm:text-xl transition-colors p-2 hover:bg-slate-700 rounded-lg flex-shrink-0">
             <i class="fas fa-times"></i>
           </button>
         </div>
       </div>
       
       <!-- Corpo do Preview -->
-      <div class="p-0 h-[calc(95vh-80px)] bg-white">
+      <div class="p-0 h-[calc(98vh-100px)] sm:h-[calc(95vh-80px)] bg-white">
         <div id="previewContent" class="w-full h-full flex items-center justify-center">
           <div class="text-center text-slate-500">
             <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
@@ -834,22 +836,30 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 
 /* Responsividade do modal de preview */
 @media (max-width: 768px) {
-    #documentPreviewModal .max-w-6xl {
-        max-width: calc(100vw - 1rem);
-        margin: 0.5rem;
+    #documentPreviewModal {
+        padding: 0.5rem;
     }
     
-    #documentPreviewModal .p-4 {
-        padding: 0.75rem;
+    #documentPreviewModal .modal-content {
+        max-width: 100%;
+        max-height: 98vh;
+        border-radius: 0.75rem;
     }
     
-    #documentPreviewModal .text-lg {
-        font-size: 1rem;
+    #documentPreviewModal iframe {
+        min-height: 70vh;
     }
     
-    #documentPreviewModal .px-4 {
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
+    /* Melhor scroll no mobile */
+    #documentPreviewModal #previewContent {
+        -webkit-overflow-scrolling: touch;
+        overflow-y: auto;
+    }
+    
+    /* Ajustes para área de toque */
+    #documentPreviewModal button {
+        min-height: 44px;
+        min-width: 44px;
     }
 }
 
@@ -1046,17 +1056,29 @@ function openDocumentPreview(url, title, type) {
 
 function loadDocumentContent(url, type, contentElement) {
     const lowerType = type.toLowerCase();
+    const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     try {
         if (lowerType === 'pdf') {
-            // Para PDFs, usar iframe com Google Docs Viewer como fallback
-            contentElement.innerHTML = `
-                <iframe src="${url}#toolbar=0&navpanes=0&scrollbar=0" 
-                        onload="this.style.opacity=1" 
-                        style="opacity:0; transition: opacity 0.3s"
-                        onerror="this.src='https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true'">
-                </iframe>
-            `;
+            if (isMobile) {
+                // No mobile, usar Google Docs Viewer diretamente
+                contentElement.innerHTML = `
+                    <iframe src="https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true" 
+                            onload="this.style.opacity=1; handlePdfLoadSuccess()" 
+                            onerror="handlePdfLoadError(this.parentElement)"
+                            style="opacity:0; transition: opacity 0.3s">
+                    </iframe>
+                `;
+            } else {
+                // Desktop: tentar PDF direto primeiro, fallback para Google Docs
+                contentElement.innerHTML = `
+                    <iframe src="${url}#toolbar=0&navpanes=0&scrollbar=0" 
+                            onload="this.style.opacity=1; handlePdfLoadSuccess()" 
+                            onerror="this.src='https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true'"
+                            style="opacity:0; transition: opacity 0.3s">
+                    </iframe>
+                `;
+            }
         } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(lowerType)) {
             // Para imagens
             contentElement.className = 'w-full h-full image-preview';
@@ -1087,12 +1109,58 @@ function loadDocumentContent(url, type, contentElement) {
 
 function showPreviewError(contentElement) {
     contentElement.innerHTML = `
-        <div class="text-center text-slate-500">
+        <div class="text-center text-slate-500 p-6">
             <i class="fas fa-exclamation-triangle text-3xl mb-4 text-yellow-500"></i>
             <p class="mb-4">Não foi possível carregar o preview do documento.</p>
             <p class="text-sm text-gray-400">Entre em contato com o suporte para acessar este documento.</p>
         </div>
     `;
+}
+
+// Função para lidar com sucesso no carregamento
+function handlePdfLoadSuccess() {
+    console.log('PDF carregado com sucesso');
+}
+
+// Função específica para erro de PDF
+function handlePdfLoadError(contentElement) {
+    const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    contentElement.innerHTML = `
+        <div class="text-center text-slate-500 p-6">
+            <i class="fas fa-file-pdf text-3xl mb-4 text-red-500"></i>
+            <p class="mb-4">Não foi possível exibir o documento PDF.</p>
+            ${isMobile ? 
+                '<p class="text-sm text-gray-400 mb-4">Alguns dispositivos móveis têm limitações para visualizar PDFs no navegador.</p>' :
+                '<p class="text-sm text-gray-400 mb-4">Tente atualizar a página ou entre em contato com o suporte.</p>'
+            }
+            <button onclick="retryPdfLoad(this.parentElement.parentElement)" 
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm">
+                <i class="fas fa-redo mr-2"></i>
+                Tentar Novamente
+            </button>
+        </div>
+    `;
+}
+
+// Função para tentar recarregar o PDF
+function retryPdfLoad(contentElement) {
+    const modal = document.getElementById('documentPreviewModal');
+    const titleElement = document.getElementById('previewDocumentTitle');
+    const title = titleElement ? titleElement.textContent : 'Documento';
+    
+    // Simular recarregamento
+    contentElement.innerHTML = `
+        <div class="text-center text-slate-500 p-6">
+            <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
+            <p>Recarregando documento...</p>
+        </div>
+    `;
+    
+    // Tentar recarregar após 1 segundo
+    setTimeout(() => {
+        showPreviewError(contentElement);
+    }, 2000);
 }
 
 function showPreviewUnsupported(contentElement, url) {
