@@ -431,7 +431,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
               Disclaimer
             </h2>
             
-            <div class="space-y-6 text-primary leading-relaxed text-sm">
+            <div class="space-y-6 text-primary leading-relaxed">
               
               <!-- Seção 1: Caráter Informativo -->
               <div class="space-y-3">
