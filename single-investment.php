@@ -645,14 +645,6 @@ if ($quantidade_cotas && !$cotas_vendidas) {
           </div>
         </div>
         <div class="flex items-center space-x-2">
-          <a id="previewExternalLink" 
-             href="#" 
-             target="_blank" 
-             rel="noopener noreferrer"
-             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm">
-            <i class="fas fa-external-link-alt mr-2"></i>
-            Abrir em Nova Aba
-          </a>
           <button onclick="closeDocumentPreview()" 
                   class="text-slate-400 hover:text-white text-xl transition-colors p-2 hover:bg-slate-700 rounded-lg">
             <i class="fas fa-times"></i>
@@ -781,6 +773,36 @@ if ($quantidade_cotas && !$cotas_vendidas) {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     z-index: 999;
+}
+
+/* Proteções do Modal de Preview */
+#documentPreviewModal * {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    pointer-events: none !important;
+}
+
+#documentPreviewModal button {
+    pointer-events: auto !important;
+}
+
+#documentPreviewModal iframe {
+    pointer-events: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+}
+
+/* Desabilitar print para o modal */
+@media print {
+    #documentPreviewModal {
+        display: none !important;
+    }
 }
 
 #documentPreviewModal.show {
@@ -992,13 +1014,11 @@ function openDocumentPreview(url, title, type) {
     const titleElement = document.getElementById('previewDocumentTitle');
     const typeElement = document.getElementById('previewDocumentType');
     const contentElement = document.getElementById('previewContent');
-    const externalLink = document.getElementById('previewExternalLink');
     
     if (modal && contentElement) {
         // Atualizar informações do header
         if (titleElement) titleElement.textContent = title || 'Documento';
         if (typeElement) typeElement.textContent = type.toUpperCase() || 'ARQUIVO';
-        if (externalLink) externalLink.href = url;
         
         // Limpar conteúdo anterior
         contentElement.innerHTML = '';
@@ -1015,6 +1035,9 @@ function openDocumentPreview(url, title, type) {
         // Mostrar modal
         modal.classList.add('show');
         document.body.style.overflow = 'hidden';
+        
+        // Ativar proteções do modal
+        activateModalProtections();
         
         // Carregar conteúdo baseado no tipo
         setTimeout(() => {
@@ -1069,11 +1092,7 @@ function showPreviewError(contentElement) {
         <div class="text-center text-slate-500">
             <i class="fas fa-exclamation-triangle text-3xl mb-4 text-yellow-500"></i>
             <p class="mb-4">Não foi possível carregar o preview do documento.</p>
-            <button onclick="window.open(document.getElementById('previewExternalLink').href, '_blank')" 
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                <i class="fas fa-external-link-alt mr-2"></i>
-                Abrir em Nova Aba
-            </button>
+            <p class="text-sm text-gray-400">Entre em contato com o suporte para acessar este documento.</p>
         </div>
     `;
 }
@@ -1083,11 +1102,7 @@ function showPreviewUnsupported(contentElement, url) {
         <div class="text-center text-slate-500">
             <i class="fas fa-file text-3xl mb-4"></i>
             <p class="mb-4">Preview não disponível para este tipo de arquivo.</p>
-            <button onclick="window.open('${url}', '_blank')" 
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                <i class="fas fa-external-link-alt mr-2"></i>
-                Abrir Documento
-            </button>
+            <p class="text-sm text-gray-400">Entre em contato com o suporte para acessar este documento.</p>
         </div>
     `;
 }
@@ -1098,6 +1113,9 @@ function closeDocumentPreview() {
         modal.classList.remove('show');
         document.body.style.overflow = '';
         
+        // Desativar proteções do modal
+        deactivateModalProtections();
+        
         // Limpar conteúdo para liberar recursos
         setTimeout(() => {
             const contentElement = document.getElementById('previewContent');
@@ -1106,6 +1124,87 @@ function closeDocumentPreview() {
             }
         }, 300);
     }
+}
+
+// Variáveis globais para gerenciar eventos
+let modalProtectionActive = false;
+let originalOnContextMenu = null;
+let originalOnKeyDown = null;
+
+// Função para ativar proteções do modal
+function activateModalProtections() {
+    if (modalProtectionActive) return;
+    modalProtectionActive = true;
+    
+    // Salvar handlers originais
+    originalOnContextMenu = document.oncontextmenu;
+    originalOnKeyDown = document.onkeydown;
+    
+    // Desabilitar menu de contexto
+    document.oncontextmenu = function(e) {
+        if (document.getElementById('documentPreviewModal').classList.contains('show')) {
+            e.preventDefault();
+            return false;
+        }
+        return originalOnContextMenu ? originalOnContextMenu(e) : true;
+    };
+    
+    // Desabilitar atalhos de teclado
+    document.onkeydown = function(e) {
+        if (document.getElementById('documentPreviewModal').classList.contains('show')) {
+            // Bloquear Ctrl+S (salvar), Ctrl+P (imprimir), Ctrl+A (selecionar tudo), 
+            // Ctrl+C (copiar), Ctrl+V (colar), Ctrl+X (cortar), F12 (dev tools), 
+            // Ctrl+Shift+I (dev tools), Ctrl+U (view source), Print Screen
+            if (
+                (e.ctrlKey && (e.keyCode === 83 || e.keyCode === 80 || e.keyCode === 65 || 
+                              e.keyCode === 67 || e.keyCode === 86 || e.keyCode === 88 || 
+                              e.keyCode === 85)) ||
+                e.keyCode === 123 || // F12
+                (e.ctrlKey && e.shiftKey && e.keyCode === 73) || // Ctrl+Shift+I
+                e.keyCode === 44 || // Print Screen
+                (e.ctrlKey && e.shiftKey && e.keyCode === 67) || // Ctrl+Shift+C
+                (e.ctrlKey && e.shiftKey && e.keyCode === 74) // Ctrl+Shift+J
+            ) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Permitir apenas ESC para fechar
+            if (e.keyCode === 27) {
+                closeDocumentPreview();
+                return false;
+            }
+        }
+        return originalOnKeyDown ? originalOnKeyDown(e) : true;
+    };
+    
+    // Desabilitar seleção de texto
+    document.onselectstart = function() {
+        if (document.getElementById('documentPreviewModal').classList.contains('show')) {
+            return false;
+        }
+        return true;
+    };
+    
+    // Desabilitar drag
+    document.ondragstart = function() {
+        if (document.getElementById('documentPreviewModal').classList.contains('show')) {
+            return false;
+        }
+        return true;
+    };
+}
+
+// Função para desativar proteções do modal
+function deactivateModalProtections() {
+    if (!modalProtectionActive) return;
+    modalProtectionActive = false;
+    
+    // Restaurar handlers originais
+    document.oncontextmenu = originalOnContextMenu;
+    document.onkeydown = originalOnKeyDown;
+    document.onselectstart = null;
+    document.ondragstart = null;
 }
 
 // Event listeners para os modais
