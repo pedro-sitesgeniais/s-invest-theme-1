@@ -287,8 +287,8 @@ if ($quantidade_cotas && !$cotas_vendidas) {
     </div>
   </section>
 
-  <!-- SEÇÃO DE NAVEGAÇÃO COM FUNDO MAIS CLARO -->
-  <section class="bg-gradient-to-b from-slate-900 to-slate-800 py-8">
+  <!-- SEÇÃO DE NAVEGAÇÃO -->
+  <section class="bg-slate-800 py-8">
     <!-- NAVEGAÇÃO COM ABAS SIMPLES -->
   <div class="max-w-[1440px] mx-auto px-4 py-8">
     <div class="flex flex-wrap items-center justify-center gap-4">
@@ -320,7 +320,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
   </section>
   
   <!-- SEÇÃO: ANÁLISE DO INVESTIMENTO - FUNDO BRANCO -->
-  <section id="porque-gostamos" class="bg-white text-slate-800 py-16">
+  <section id="porque-gostamos" class="bg-slate-100 text-slate-800 py-16">
     <div class="max-w-[1440px] mx-auto px-4">
       <div class="max-w-6xl mx-auto">
           <h2 class="text-3xl font-bold mb-8 flex items-center gap-3 text-primary">
@@ -365,11 +365,11 @@ if ($quantidade_cotas && !$cotas_vendidas) {
   </section>
       
   <!-- SEÇÃO: RISCOS - FUNDO ESCURO -->
-  <section id="riscos" class="bg-slate-900 text-white py-16">
+  <section id="riscos" class="bg-slate-100 text-slate-800 py-16">
     <div class="max-w-[1440px] mx-auto px-4">
       <div class="max-w-6xl mx-auto">
-          <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
-            <i class="fas fa-exclamation-triangle text-yellow-500"></i>
+          <h2 class="text-3xl font-bold mb-8 flex items-center gap-3 text-primary">
+            <i class="fas fa-shield-alt text-yellow-600"></i>
             Riscos
           </h2>
           
@@ -389,19 +389,19 @@ if ($quantidade_cotas && !$cotas_vendidas) {
                 ];
                 $classe_nivel = $cor_nivel[$nivel] ?? $cor_nivel['medio'];
             ?>
-            <div class="bg-slate-800/50 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50 hover:border-yellow-500/30 transition-all section-card">
+            <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 hover:border-yellow-500/50 transition-all section-card shadow-sm">
               <div class="flex items-start gap-4">
-                <div class="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <i class="fas fa-exclamation-triangle text-yellow-500 text-xl"></i>
+                <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
                 </div>
                 <div class="flex-1">
                   <div class="flex items-center gap-3 mb-2">
-                    <h3 class="text-lg font-semibold text-white"><?= esc_html($titulo) ?></h3>
+                    <h3 class="text-lg font-semibold text-slate-800"><?= esc_html($titulo) ?></h3>
                     <span class="px-2 py-1 text-xs font-medium rounded-full border <?= $classe_nivel ?>">
                       <?= ucfirst($nivel) ?>
                     </span>
                   </div>
-                  <p class="text-gray-300 leading-relaxed"><?= esc_html($descricao) ?></p>
+                  <p class="text-slate-600 leading-relaxed"><?= esc_html($descricao) ?></p>
                 </div>
               </div>
             </div>
@@ -410,9 +410,9 @@ if ($quantidade_cotas && !$cotas_vendidas) {
             else :
             ?>
             <div class="col-span-full">
-              <div class="bg-slate-800/50 backdrop-blur-sm p-8 rounded-xl border border-slate-700/50 text-center">
-                <i class="fas fa-shield-alt text-gray-400 text-3xl mb-4"></i>
-                <p class="text-gray-400">Os riscos específicos desta operação serão detalhados em breve.</p>
+              <div class="bg-slate-50 p-8 rounded-xl border border-slate-200 text-center">
+                <i class="fas fa-shield-alt text-slate-400 text-3xl mb-4"></i>
+                <p class="text-slate-600">Os riscos específicos desta operação serão detalhados em breve.</p>
               </div>
             </div>
             <?php endif; ?>
@@ -422,31 +422,75 @@ if ($quantidade_cotas && !$cotas_vendidas) {
   </section>
       
   <!-- SEÇÃO: DISCLAIMER - FUNDO CLARO -->
-  <section id="disclaimer" class="bg-slate-100 text-slate-800 py-16">
+  <section id="disclaimer" class="bg-slate-900 text-white py-16">
     <div class="max-w-[1440px] mx-auto px-4">
       <div class="max-w-6xl mx-auto">
           <div class="bg-white border border-slate-200 p-8 rounded-xl shadow-lg">
-            <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-primary">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-secondary">
               <i class="fas fa-info-circle"></i>
               Disclaimer
             </h2>
             
-            <div class="space-y-4 text-slate-600 leading-relaxed">
-              <p>
-                <strong class="text-slate-800">Importante:</strong> Este material é de caráter exclusivamente informativo e não constitui oferta, solicitação ou recomendação de investimento. Rentabilidade passada não representa garantia de rentabilidade futura.
-              </p>
+            <div class="space-y-6 text-slate-100 leading-relaxed text-sm">
               
-              <p>
-                Os investimentos apresentados podem estar sujeitos a variação de preços e riscos, incluindo a possível perda do capital investido. É recomendável a leitura cuidadosa de todos os documentos relacionados aos investimentos, em especial o regulamento ou lâmina de informações essenciais, antes de qualquer decisão de investimento.
-              </p>
+              <!-- Seção 1: Caráter Informativo -->
+              <div class="space-y-3">
+                <p>
+                  <strong class="text-white">Caráter Informativo:</strong> Esta apresentação foi preparada pela Bravaforte, com caráter meramente informativo. Qualquer oferta de investimento só poderá ser feita de acordo com o contrato de SCP, que poderá conter informações relevantes não aqui contidas (incluindo certos riscos).
+                </p>
+                
+                <p>
+                  Antes de decidir participar, os potenciais parceiros devem prestar especial atenção aos <strong class="text-yellow-300">fatores de risco</strong>, incluindo, mas não se limitando a: cenário macroeconômico, prazo de lançamento, prazo de entrega, velocidade de vendas, valor de vendas, prazo de distribuição de dividendos, taxas e tributos.
+                </p>
+              </div>
+
+              <!-- Seção 2: Garantias e Projeções -->
+              <div class="space-y-3 pt-4 border-t border-slate-600">
+                <p>
+                  <strong class="text-white">Garantias:</strong> Esta apresentação não implica qualquer garantia com relação às informações aqui contidas, e as expectativas de retornos futuros e/ou valor principal integralizado, podendo variar de acordo com as condições econômicas, de mercado, tributárias, entre outros fatores. <strong class="text-yellow-300">O desempenho passado não é garantia de resultados futuros.</strong>
+                </p>
+                
+                <p>
+                  Esta apresentação contém dados históricos e projeções feitas sob determinadas premissas. Embora a Bravaforte acredite que estas projeções são razoáveis e viáveis, não garantimos que sejam precisas ou válidas nas condições reais de mercado ou que todos os fatores de risco relevantes tenham sido esgotados.
+                </p>
+              </div>
+
+              <!-- Seção 3: Confidencialidade -->
+              <div class="space-y-3 pt-4 border-t border-slate-600">
+                <p>
+                  <strong class="text-white">Confidencialidade:</strong> A Bravaforte reserva-se o direito de alterar o conteúdo desta apresentação a qualquer momento, sem aviso prévio. Esta apresentação é confidencial e só deve ser visualizada por seus destinatários. Não poderá ser divulgada, distribuída, reproduzida ou copiada sem autorização expressa da Bravaforte.
+                </p>
+              </div>
+
+              <!-- Seção 4: Natureza Jurídica -->
+              <div class="space-y-3 pt-4 border-t border-slate-600">
+                <p>
+                  <strong class="text-white">Natureza Jurídica:</strong> Esta apresentação não constitui e nem deve ser interpretada como oferta pública de valores mobiliários, nos termos da Lei nº 6.385/76 e da Resolução CVM nº 88/2022. É destinada exclusivamente a parceiros estratégicos, em ambiente restrito de apresentação institucional.
+                </p>
+                
+                <p>
+                  A relação jurídica entre as partes se dá por meio de contrato de <strong class="text-secondary">Sociedade em Conta de Participação (SCP)</strong>, de natureza associativa, sem garantias de rendimento ou retorno fixo.
+                </p>
+              </div>
+
+              <!-- Seção 5: Tributação e Proteção de Dados -->
+              <div class="space-y-3 pt-4 border-t border-slate-600">
+                <p>
+                  <strong class="text-white">Tributação:</strong> A eventual incidência de tributos será determinada conforme a legislação vigente aplicável a cada participante, sendo recomendável consulta a assessoria contábil ou jurídica.
+                </p>
+                
+                <p>
+                  <strong class="text-white">Proteção de Dados:</strong> Este material está protegido pela <strong class="text-secondary">LGPD</strong> (Lei Geral de Proteção de Dados Pessoais).
+                </p>
+              </div>
               
-              <p>
-                Para mais informações sobre riscos, tributação e taxas, consulte os documentos informativos disponibilizados ou entre em contato com nossa equipe de relacionamento.
-              </p>
-              
-              <p class="text-sm text-slate-500 pt-4 border-t border-slate-300">
-                <strong>Brava Forte Investimentos</strong> - CVM nº XXX-X | Este documento foi gerado em <?= date('d/m/Y') ?>
-              </p>
+              <!-- Footer -->
+              <div class="text-xs text-slate-400 pt-6 border-t border-slate-600 text-center">
+                <p>
+                  <strong class="text-slate-300">Bravaforte Investimentos</strong><br>
+                  Documento gerado em <?= date('d/m/Y \à\s H:i') ?> | Versão confidencial
+                </p>
+              </div>
             </div>
           </div>
       </div>
