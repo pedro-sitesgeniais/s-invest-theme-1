@@ -297,23 +297,38 @@ if ($quantidade_cotas && !$cotas_vendidas) {
     </div>
   </section>
 
-  <!-- NAVEGAÇÃO SIMPLES -->
-  <section class="max-w-[1440px] mx-auto px-4 py-8">
-    <nav class="flex flex-wrap justify-center gap-4 mb-8">
-      <a href="#porque-gostamos" class="px-6 py-3 bg-slate-800 hover:bg-secondary text-white hover:text-primary rounded-lg font-medium transition-all">
+  <!-- NAVEGAÇÃO FLUTUANTE -->
+  <div class="floating-nav fixed left-4 top-1/2 transform -translate-y-1/2 z-50 space-y-3">
+    
+    <a href="#porque-gostamos" class="floating-nav-item group relative flex items-center justify-center w-12 h-12 bg-slate-800/90 backdrop-blur-sm hover:bg-secondary text-white hover:text-primary rounded-full shadow-lg transition-all duration-300 hover:scale-110" data-tooltip="Porque gostamos deste ativo">
+      <i class="fas fa-heart text-lg"></i>
+      <span class="tooltip absolute left-16 top-1/2 transform -translate-y-1/2 bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none">
         Porque gostamos deste ativo
-      </a>
-      <a href="#riscos" class="px-6 py-3 bg-slate-800 hover:bg-yellow-500 text-white hover:text-primary rounded-lg font-medium transition-all">
+      </span>
+    </a>
+    
+    <a href="#riscos" class="floating-nav-item group relative flex items-center justify-center w-12 h-12 bg-slate-800/90 backdrop-blur-sm hover:bg-yellow-500 text-white hover:text-primary rounded-full shadow-lg transition-all duration-300 hover:scale-110" data-tooltip="Riscos">
+      <i class="fas fa-exclamation-triangle text-lg"></i>
+      <span class="tooltip absolute left-16 top-1/2 transform -translate-y-1/2 bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none">
         Riscos
-      </a>
-      <a href="#documentos" class="px-6 py-3 bg-slate-800 hover:bg-blue-500 text-white hover:text-primary rounded-lg font-medium transition-all">
+      </span>
+    </a>
+    
+    <a href="#documentos" class="floating-nav-item group relative flex items-center justify-center w-12 h-12 bg-slate-800/90 backdrop-blur-sm hover:bg-blue-500 text-white hover:text-primary rounded-full shadow-lg transition-all duration-300 hover:scale-110" data-tooltip="Documentos">
+      <i class="fas fa-folder-open text-lg"></i>
+      <span class="tooltip absolute left-16 top-1/2 transform -translate-y-1/2 bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none">
         Documentos
-      </a>
-      <a href="#disclaimer" class="px-6 py-3 bg-slate-800 hover:bg-primary text-white rounded-lg font-medium transition-all">
+      </span>
+    </a>
+    
+    <a href="#disclaimer" class="floating-nav-item group relative flex items-center justify-center w-12 h-12 bg-slate-800/90 backdrop-blur-sm hover:bg-primary text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110" data-tooltip="Disclaimer">
+      <i class="fas fa-info-circle text-lg"></i>
+      <span class="tooltip absolute left-16 top-1/2 transform -translate-y-1/2 bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none">
         Disclaimer
-      </a>
-    </nav>
-  </section>
+      </span>
+    </a>
+    
+  </div>
   
   <!-- SEÇÃO: PORQUE GOSTAMOS DESTE ATIVO -->
   <section id="porque-gostamos" class="max-w-[1440px] mx-auto px-4 py-16 border-t border-slate-700/30">
@@ -854,9 +869,213 @@ section {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
+
+/* Estilos do menu de navegação flutuante */
+.floating-nav {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.floating-nav-item {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.floating-nav-item:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1) !important;
+}
+
+.floating-nav-item.active {
+    background: linear-gradient(135deg, #2ED2F8, #1e40af);
+    box-shadow: 0 0 20px rgba(46, 210, 248, 0.4);
+}
+
+/* Tooltips */
+.tooltip {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    z-index: 60;
+}
+
+.tooltip::before {
+    content: '';
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-right-color: #0f172a;
+}
+
+/* Responsividade do menu flutuante */
+@media (max-width: 768px) {
+    .floating-nav {
+        left: 2px;
+        top: auto;
+        bottom: 20px;
+        transform: none;
+        flex-direction: row;
+        display: flex;
+        justify-content: center;
+        width: calc(100% - 4px);
+        space-y: 0;
+        gap: 12px;
+        padding: 0 8px;
+    }
+    
+    .floating-nav-item {
+        width: 48px;
+        height: 48px;
+        position: relative;
+    }
+    
+    .floating-nav-item .tooltip {
+        left: 50%;
+        top: auto;
+        bottom: 120%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+    }
+    
+    .floating-nav-item .tooltip::before {
+        left: 50%;
+        top: 100%;
+        right: auto;
+        bottom: auto;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: #0f172a;
+        border-right-color: transparent;
+    }
+}
+
+@media (max-width: 480px) {
+    .floating-nav {
+        gap: 8px;
+        padding: 0 4px;
+    }
+    
+    .floating-nav-item {
+        width: 44px;
+        height: 44px;
+    }
+    
+    .floating-nav-item i {
+        font-size: 16px;
+    }
+}
+
+/* Animação de entrada do menu */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.floating-nav {
+    animation: slideInLeft 0.6s ease-out;
+}
+
+@media (max-width: 768px) {
+    .floating-nav {
+        animation: slideInUp 0.6s ease-out;
+    }
+}
+
+/* Efeito de pulsação para indicar item ativo */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(46, 210, 248, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(46, 210, 248, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(46, 210, 248, 0);
+    }
+}
+
+.floating-nav-item.active {
+    animation: pulse 2s infinite;
+}
 </style>
 
 <script>
+// Funções para o menu de navegação flutuante
+function scrollToSection(sectionId) {
+    const element = document.getElementById(sectionId);
+    if (element) {
+        const offset = 80;
+        const elementPosition = element.offsetTop - offset;
+        
+        window.scrollTo({
+            top: elementPosition,
+            behavior: 'smooth'
+        });
+    }
+}
+
+function updateActiveNavItem() {
+    const sections = document.querySelectorAll('section[id]');
+    const navItems = document.querySelectorAll('.floating-nav-item');
+    
+    let currentSection = '';
+    
+    sections.forEach(section => {
+        const sectionTop = section.offsetTop - 100;
+        const sectionBottom = sectionTop + section.offsetHeight;
+        
+        if (window.scrollY >= sectionTop && window.scrollY < sectionBottom) {
+            currentSection = section.id;
+        }
+    });
+    
+    navItems.forEach(item => {
+        item.classList.remove('active');
+        const href = item.getAttribute('href');
+        if (href === `#${currentSection}`) {
+            item.classList.add('active');
+        }
+    });
+}
+
+// Event listeners para o menu flutuante
+function setupFloatingNav() {
+    const navItems = document.querySelectorAll('.floating-nav-item');
+    
+    navItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            scrollToSection(targetId);
+        });
+    });
+    
+    // Observer para atualizar item ativo baseado no scroll
+    window.addEventListener('scroll', updateActiveNavItem);
+    
+    // Definir primeiro item como ativo inicialmente
+    setTimeout(() => {
+        updateActiveNavItem();
+    }, 100);
+}
+
 // Funções para controlar o modal de documentos
 function openDocumentsModal() {
     const modal = document.getElementById('documentsModal');
@@ -1004,6 +1223,9 @@ function closeDocumentPreview() {
 
 // Event listeners para os modais
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar menu flutuante
+    setupFloatingNav();
+    
     const documentsModal = document.getElementById('documentsModal');
     const previewModal = document.getElementById('documentPreviewModal');
     
