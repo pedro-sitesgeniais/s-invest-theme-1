@@ -288,7 +288,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
   </section>
 
   <!-- SEÇÃO DE NAVEGAÇÃO COM FUNDO MAIS CLARO -->
-  <section class="bg-slate-100 py-8">
+  <section class="bg-gradient-to-b from-slate-900 to-slate-800 py-8">
     <!-- NAVEGAÇÃO COM ABAS SIMPLES -->
   <div class="max-w-[1440px] mx-auto px-4 py-8">
     <div class="flex flex-wrap items-center justify-center gap-4">
