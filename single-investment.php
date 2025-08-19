@@ -120,7 +120,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 }
 ?>
 
-<main class="pt-30 bg-radial-[at_10%_80%] from-slate-900 to-primary text-white">
+<main class="pt-30 bg-gradient-to-b from-slate-900 to-slate-800 text-white">
   <section class="max-w-[1440px] mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
 
     <div class="space-y-6">
@@ -287,7 +287,9 @@ if ($quantidade_cotas && !$cotas_vendidas) {
     </div>
   </section>
 
-  <!-- NAVEGAÇÃO COM ABAS SIMPLES -->
+  <!-- SEÇÃO DE NAVEGAÇÃO COM FUNDO MAIS CLARO -->
+  <section class="bg-slate-100 py-8">
+    <!-- NAVEGAÇÃO COM ABAS SIMPLES -->
   <div class="max-w-[1440px] mx-auto px-4 py-8">
     <div class="flex flex-wrap items-center justify-center gap-4">
       <!-- Abas de Navegação -->
@@ -315,12 +317,13 @@ if ($quantidade_cotas && !$cotas_vendidas) {
       </button>
       <?php endif; ?>
     </div>
-  </div>
+  </section>
   
-  <!-- SEÇÃO: PORQUE GOSTAMOS DESTE ATIVO -->
-  <section id="porque-gostamos" class="max-w-[1440px] mx-auto px-4 py-16 border-t border-slate-700/30">
-    <div class="max-w-6xl mx-auto">
-          <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
+  <!-- SEÇÃO: ANÁLISE DO INVESTIMENTO - FUNDO BRANCO -->
+  <section id="porque-gostamos" class="bg-white text-slate-800 py-16">
+    <div class="max-w-[1440px] mx-auto px-4">
+      <div class="max-w-6xl mx-auto">
+          <h2 class="text-3xl font-bold mb-8 flex items-center gap-3 text-primary">
             <i class="fas fa-chart-line text-secondary"></i>
             Análise do Investimento
           </h2>
@@ -334,14 +337,14 @@ if ($quantidade_cotas && !$cotas_vendidas) {
                 $descricao = $motivo['descricao'] ?? '';
                 $icone = $motivo['icone'] ?? 'fas fa-check-circle';
             ?>
-            <div class="bg-slate-800/50 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50 hover:border-secondary/30 transition-all section-card">
+            <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 hover:border-secondary/50 transition-all section-card shadow-sm">
               <div class="flex items-start gap-4">
-                <div class="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div class="w-12 h-12 bg-secondary/20 rounded-lg flex items-center justify-center flex-shrink-0">
                   <i class="<?= esc_attr($icone) ?> text-secondary text-xl"></i>
                 </div>
                 <div>
-                  <h3 class="text-lg font-semibold text-white mb-2"><?= esc_html($titulo) ?></h3>
-                  <p class="text-gray-300 leading-relaxed"><?= esc_html($descricao) ?></p>
+                  <h3 class="text-lg font-semibold text-slate-800 mb-2"><?= esc_html($titulo) ?></h3>
+                  <p class="text-slate-600 leading-relaxed"><?= esc_html($descricao) ?></p>
                 </div>
               </div>
             </div>
@@ -350,19 +353,21 @@ if ($quantidade_cotas && !$cotas_vendidas) {
             else :
             ?>
             <div class="col-span-full">
-              <div class="bg-slate-800/50 backdrop-blur-sm p-8 rounded-xl border border-slate-700/50 text-center">
-                <i class="fas fa-info-circle text-gray-400 text-3xl mb-4"></i>
-                <p class="text-gray-400">Os motivos para este investimento serão adicionados em breve.</p>
+              <div class="bg-slate-50 p-8 rounded-xl border border-slate-200 text-center">
+                <i class="fas fa-info-circle text-slate-400 text-3xl mb-4"></i>
+                <p class="text-slate-600">Os motivos para este investimento serão adicionados em breve.</p>
               </div>
             </div>
             <?php endif; ?>
           </div>
+      </div>
     </div>
   </section>
       
-  <!-- SEÇÃO: RISCOS -->
-  <section id="riscos" class="max-w-[1440px] mx-auto px-4 py-16 border-t border-slate-700/30">
-    <div class="max-w-6xl mx-auto">
+  <!-- SEÇÃO: RISCOS - FUNDO ESCURO -->
+  <section id="riscos" class="bg-slate-900 text-white py-16">
+    <div class="max-w-[1440px] mx-auto px-4">
+      <div class="max-w-6xl mx-auto">
           <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
             <i class="fas fa-exclamation-triangle text-yellow-500"></i>
             Riscos
@@ -412,22 +417,23 @@ if ($quantidade_cotas && !$cotas_vendidas) {
             </div>
             <?php endif; ?>
           </div>
+      </div>
     </div>
   </section>
       
-      
-  <!-- SEÇÃO: DISCLAIMER -->
-  <section id="disclaimer" class="max-w-[1440px] mx-auto px-4 py-16 border-t border-slate-700/30">
-    <div class="max-w-6xl mx-auto">
-          <div class="bg-primary/10 border border-primary/20 backdrop-blur-sm p-8 rounded-xl">
+  <!-- SEÇÃO: DISCLAIMER - FUNDO CLARO -->
+  <section id="disclaimer" class="bg-slate-100 text-slate-800 py-16">
+    <div class="max-w-[1440px] mx-auto px-4">
+      <div class="max-w-6xl mx-auto">
+          <div class="bg-white border border-slate-200 p-8 rounded-xl shadow-lg">
             <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-primary">
               <i class="fas fa-info-circle"></i>
               Disclaimer
             </h2>
             
-            <div class="space-y-4 text-gray-300 leading-relaxed">
+            <div class="space-y-4 text-slate-600 leading-relaxed">
               <p>
-                <strong class="text-white">Importante:</strong> Este material é de caráter exclusivamente informativo e não constitui oferta, solicitação ou recomendação de investimento. Rentabilidade passada não representa garantia de rentabilidade futura.
+                <strong class="text-slate-800">Importante:</strong> Este material é de caráter exclusivamente informativo e não constitui oferta, solicitação ou recomendação de investimento. Rentabilidade passada não representa garantia de rentabilidade futura.
               </p>
               
               <p>
@@ -438,11 +444,12 @@ if ($quantidade_cotas && !$cotas_vendidas) {
                 Para mais informações sobre riscos, tributação e taxas, consulte os documentos informativos disponibilizados ou entre em contato com nossa equipe de relacionamento.
               </p>
               
-              <p class="text-sm text-gray-400 pt-4 border-t border-gray-600">
+              <p class="text-sm text-slate-500 pt-4 border-t border-slate-300">
                 <strong>Brava Forte Investimentos</strong> - CVM nº XXX-X | Este documento foi gerado em <?= date('d/m/Y') ?>
               </p>
             </div>
           </div>
+      </div>
     </div>
   </section>
 
@@ -822,6 +829,34 @@ section {
 /* Animação suave ao clicar */
 .nav-tab:active {
     transform: translateY(0);
+}
+
+/* Estilos para seções com fundos alternados */
+.section-white {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.section-dark {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+/* Cards com melhor contraste */
+.card-light {
+    background: rgba(248, 250, 252, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+.card-light:hover {
+    background: rgba(241, 245, 249, 0.9);
+    border-color: rgba(46, 210, 248, 0.3);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+}
+
+/* Melhor legibilidade para textos */
+.text-readable {
+    line-height: 1.7;
+    font-size: 16px;
 }
 </style>
 
