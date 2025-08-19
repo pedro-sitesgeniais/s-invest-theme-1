@@ -630,7 +630,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 
   <!-- MODAL DE PREVIEW DE DOCUMENTO -->
   <div id="documentPreviewModal" 
-       class="fixed inset-0 z-999 flex items-center justify-center bg-black bg-opacity-90 backdrop-blur-sm opacity-0 invisible transition-all duration-300">
+       class="fixed inset-0 z-999 flex items-center justify-center bg-black/90 backdrop-blur-sm opacity-0 invisible transition-all duration-300">
     <!-- Container do Modal de Preview -->
     <div class="bg-slate-900 rounded-xl shadow-2xl border border-slate-700 w-full max-w-6xl mx-4 max-h-[95vh] overflow-hidden transform scale-95 transition-transform duration-300"
          onclick="event.stopPropagation()">
