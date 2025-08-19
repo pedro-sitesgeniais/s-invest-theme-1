@@ -632,7 +632,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
   <div id="documentPreviewModal" 
        class="fixed inset-0 z-999 flex items-center justify-center bg-black/90 backdrop-blur-sm opacity-0 invisible transition-all duration-300">
     <!-- Container do Modal de Preview -->
-    <div class="bg-slate-900 rounded-xl shadow-2xl border border-slate-700 w-full max-w-6xl mx-4 max-h-[95vh] overflow-hidden transform scale-95 transition-transform duration-300"
+    <div class="modal-content bg-slate-900 rounded-xl shadow-2xl border border-slate-700 w-full max-w-6xl mx-4 max-h-[95vh] overflow-hidden transform scale-95 transition-transform duration-300"
          onclick="event.stopPropagation()">
       
       <!-- Header do Preview -->
@@ -775,15 +775,14 @@ if ($quantidade_cotas && !$cotas_vendidas) {
     z-index: 999;
 }
 
-/* Proteções do Modal de Preview */
-#documentPreviewModal * {
+/* Proteções do Modal de Preview - apenas no conteúdo do documento */
+#documentPreviewModal #previewContent * {
     -webkit-user-select: none !important;
     -moz-user-select: none !important;
     -ms-user-select: none !important;
     user-select: none !important;
     -webkit-touch-callout: none !important;
     -webkit-tap-highlight-color: transparent !important;
-    pointer-events: none !important;
 }
 
 #documentPreviewModal button {
@@ -791,7 +790,6 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 }
 
 #documentPreviewModal iframe {
-    pointer-events: none !important;
     -webkit-user-select: none !important;
     -moz-user-select: none !important;
     -ms-user-select: none !important;
@@ -1178,18 +1176,27 @@ function activateModalProtections() {
         return originalOnKeyDown ? originalOnKeyDown(e) : true;
     };
     
-    // Desabilitar seleção de texto
-    document.onselectstart = function() {
+    // Desabilitar seleção de texto apenas no conteúdo do preview
+    document.onselectstart = function(e) {
         if (document.getElementById('documentPreviewModal').classList.contains('show')) {
-            return false;
+            // Permitir seleção em elementos de interface (botões, headers)
+            if (e.target && (e.target.closest('button') || e.target.closest('.bg-slate-800'))) {
+                return true;
+            }
+            // Bloquear seleção no conteúdo do documento
+            if (e.target && e.target.closest('#previewContent')) {
+                return false;
+            }
         }
         return true;
     };
     
-    // Desabilitar drag
-    document.ondragstart = function() {
+    // Desabilitar drag apenas no conteúdo do preview
+    document.ondragstart = function(e) {
         if (document.getElementById('documentPreviewModal').classList.contains('show')) {
-            return false;
+            if (e.target && e.target.closest('#previewContent')) {
+                return false;
+            }
         }
         return true;
     };
