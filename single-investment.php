@@ -135,26 +135,16 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 
       <div class="mt-6 flex flex-col space-y-4">
         <div class="flex flex-wrap gap-4">
-<?php if ( ! empty($lamina_url) ) : ?>
-  <a href="<?= esc_url($lamina_url); ?>"
-     target="_blank" rel="noopener noreferrer"
-     class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2
-            border-2 border-secondary text-secondary px-6 py-3 text-base font-semibold
-            rounded hover:bg-secondary hover:text-primary hover:border-primary transition">
-    <i class="fas fa-file-alt"></i>
-    Lâmina Técnica
-  </a>
-<?php endif; ?>
-
-<?php if ( ! empty($documentos) && is_array($documentos) ) : ?>
-  <button onclick="openDocumentsModal()"
-          class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2
-                 bg-secondary text-primary border-2 hover:bg-primary hover:text-secondary hover:border-secondary px-6 py-3 text-base font-semibold
-                 rounded hover:bg-opacity-80 transition-all">
-    <i class="fas fa-folder-open"></i>
-    Documentos (<?= count($documentos) ?>)
-  </button>
-<?php endif; ?>
+          <?php if ( ! empty($lamina_url) ) : ?>
+            <a href="<?= esc_url($lamina_url); ?>"
+              target="_blank" rel="noopener noreferrer"
+              class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2
+                      border-2 border-secondary text-secondary px-6 py-3 text-base font-semibold
+                      rounded hover:bg-secondary hover:text-primary hover:border-primary transition">
+              <i class="fas fa-file-alt"></i>
+              Lâmina Técnica
+            </a>
+          <?php endif; ?>
         </div>
       </div>
     </div>
