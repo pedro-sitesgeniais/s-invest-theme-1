@@ -156,6 +156,25 @@ foreach ($aportes as $aporte) {
         $valor_recebido = floatval(get_field('venda_valor', $aporte_id));
         $rentabilidade_consolidada += $valor_recebido;
         
+        // Incluir venda no gráfico mensal de rentabilidade consolidada
+        $data_venda = get_field('venda_data', $aporte_id) ?: get_field('data_venda', $aporte_id);
+        if (!empty($data_venda) && $valor_recebido > 0) {
+            $data = DateTime::createFromFormat('d/m/Y', $data_venda);
+            if ($data) {
+                $mesIngles = $data->format('M');
+                $ano = $data->format('Y');
+                $mes = $mesesTraducao[$mesIngles] ?? '';
+                $mesAno = $mes . ' ' . $ano;
+                
+                if ($mes) {
+                    if (!isset($rentabilidadeConsolidadaPorMesAno[$mesAno])) {
+                        $rentabilidadeConsolidadaPorMesAno[$mesAno] = 0;
+                    }
+                    $rentabilidadeConsolidadaPorMesAno[$mesAno] += $valor_recebido;
+                }
+            }
+        }
+        
     } elseif ($eh_scp) {
         // ===== SCP: Verificar status de captação =====
         
