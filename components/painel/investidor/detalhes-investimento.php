@@ -235,16 +235,62 @@ $rentabilidade_projetada = $rentabilidade_ativa_total; // Sempre do histórico
 $rentabilidade_pct = ($status_geral === 'misto') ? $rentabilidade_pct_ativos : 
                     ($status_geral === 'ativo' ? $rentabilidade_pct_ativos_puros : $rentabilidade_pct_geral);
 
-// Converter array associativo em indexado para o gráfico
-$rentabilidade_hist = array_values($historico_rentabilidade_consolidado);
+// ===== PREPARAR DADOS PARA GRÁFICO =====
+$dados_grafico = [];
 
-// Ordenar por data
-usort($rentabilidade_hist, function($a, $b) {
-    $dateA = DateTime::createFromFormat('d/m/Y', $a['data_rentabilidade']);
-    $dateB = DateTime::createFromFormat('d/m/Y', $b['data_rentabilidade']);
-    if (!$dateA || !$dateB) return 0;
-    return $dateA->getTimestamp() - $dateB->getTimestamp();
-});
+if ($is_private) {
+    // Para produtos SCP: agrupar dividendos por mês/ano
+    $dividendos_por_mes = [];
+    
+    foreach ($historico_dividendos_consolidado as $dividendo) {
+        $data_dividendo = $dividendo['data_dividendo'] ?? $dividendo['data'] ?? '';
+        $valor_dividendo = floatval($dividendo['valor'] ?? 0);
+        
+        if ($data_dividendo && $valor_dividendo > 0) {
+            try {
+                $date = DateTime::createFromFormat('d/m/Y', $data_dividendo);
+                if ($date) {
+                    $mes_ano = $date->format('m/Y');
+                    $mes_ano_label = $date->format('M/Y');
+                    
+                    if (!isset($dividendos_por_mes[$mes_ano])) {
+                        $dividendos_por_mes[$mes_ano] = [
+                            'data_dividendo' => $mes_ano_label,
+                            'valor' => 0,
+                            'timestamp' => $date->getTimestamp()
+                        ];
+                    }
+                    
+                    $dividendos_por_mes[$mes_ano]['valor'] += $valor_dividendo;
+                }
+            } catch (Exception $e) {
+                // Ignorar datas inválidas
+            }
+        }
+    }
+    
+    // Ordenar por data e converter para array indexado
+    uasort($dividendos_por_mes, function($a, $b) {
+        return $a['timestamp'] - $b['timestamp'];
+    });
+    
+    $dados_grafico = array_values($dividendos_por_mes);
+    
+} else {
+    // Para produtos TRADE: usar rentabilidade histórica existente
+    $dados_grafico = array_values($historico_rentabilidade_consolidado);
+    
+    // Ordenar por data
+    usort($dados_grafico, function($a, $b) {
+        $dateA = DateTime::createFromFormat('d/m/Y', $a['data_rentabilidade']);
+        $dateB = DateTime::createFromFormat('d/m/Y', $b['data_rentabilidade']);
+        if (!$dateA || !$dateB) return 0;
+        return $dateA->getTimestamp() - $dateB->getTimestamp();
+    });
+}
+
+// Manter compatibilidade com código existente
+$rentabilidade_hist = $dados_grafico;
 
 // Dados específicos para dividendos
 $ultimo_dividendo = null;
@@ -462,8 +508,21 @@ $docs = get_field('documentos', $inv_id) ?: [];
 
     <!-- GRÁFICO -->
     <?php if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist) && count($rentabilidade_hist) > 0) : ?>
-        <div class="h-[300px] sm:h-[350px] md:h-[400px] my-6 md:my-12">
-            <canvas id="investmentChart"></canvas>
+        <div class="my-6 md:my-12">
+            <!-- Título do Gráfico -->
+            <div class="mb-4 md:mb-6 text-center">
+                <h3 class="text-lg md:text-xl font-semibold text-slate-300 mb-2">
+                    <?php echo $is_private ? 'Histórico de Dividendos Mensais' : 'Evolução da Rentabilidade'; ?>
+                </h3>
+                <p class="text-sm text-slate-400">
+                    <?php echo $is_private ? 'Valores recebidos por mês' : 'Histórico de valores do investimento'; ?>
+                </p>
+            </div>
+            
+            <!-- Canvas do Gráfico -->
+            <div class="h-[300px] sm:h-[350px] md:h-[400px]">
+                <canvas id="investmentChart"></canvas>
+            </div>
         </div>
     <?php endif; ?>
 
@@ -697,17 +756,25 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const ctx = canvas.getContext('2d');
         const historico = <?php echo json_encode($rentabilidade_hist); ?>;
+        const isPrivate = <?php echo $is_private ? 'true' : 'false'; ?>;
 
         if (historico && historico.length > 0) {
             try {
-                new Chart(ctx, {
+                // Definir configurações baseadas no tipo de produto
+                const config = {
                     type: 'bar',
                     data: {
-                        labels: historico.map(item => item.data_rentabilidade || item.mes || 'N/A'),
+                        labels: historico.map(item => {
+                            if (isPrivate) {
+                                return item.data_dividendo || 'N/A';
+                            } else {
+                                return item.data_rentabilidade || item.mes || 'N/A';
+                            }
+                        }),
                         datasets: [{
-                            label: 'Valor (R$)',
+                            label: isPrivate ? 'Dividendos (R$)' : 'Valor (R$)',
                             data: historico.map(item => parseFloat(item.valor || 0)),
-                            backgroundColor: '#2ED2F8',
+                            backgroundColor: isPrivate ? '#10B981' : '#2ED2F8', // Verde para dividendos, azul para rentabilidade
                             borderWidth: 0,
                             borderRadius: 4
                         }]
@@ -722,8 +789,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                 titleColor: '#ffffff',
                                 bodyColor: '#ffffff',
                                 callbacks: {
+                                    title: function(context) {
+                                        if (isPrivate) {
+                                            return 'Dividendos de ' + context[0].label;
+                                        } else {
+                                            return 'Valor em ' + context[0].label;
+                                        }
+                                    },
                                     label: function(context) {
-                                        return 'R$ ' + context.raw.toLocaleString('pt-BR', {
+                                        const prefix = isPrivate ? 'Dividendo: R$ ' : 'Valor: R$ ';
+                                        return prefix + context.raw.toLocaleString('pt-BR', {
                                             minimumFractionDigits: 2,
                                             maximumFractionDigits: 2
                                         });
@@ -745,6 +820,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                         return 'R$ ' + value.toLocaleString('pt-BR');
                                     },
                                     maxTicksLimit: 7
+                                },
+                                title: {
+                                    display: true,
+                                    text: isPrivate ? 'Dividendos (R$)' : 'Valor (R$)',
+                                    color: '#94A3B8',
+                                    font: { size: window.innerWidth < 768 ? 11 : 13 }
                                 }
                             },
                             x: {
@@ -752,11 +833,19 @@ document.addEventListener('DOMContentLoaded', function() {
                                 ticks: { 
                                     color: '#94A3B8',
                                     font: { size: window.innerWidth < 768 ? 10 : 12 }
+                                },
+                                title: {
+                                    display: true,
+                                    text: isPrivate ? 'Período' : 'Data',
+                                    color: '#94A3B8',
+                                    font: { size: window.innerWidth < 768 ? 11 : 13 }
                                 }
                             }
                         }
                     }
-                });
+                };
+                
+                new Chart(ctx, config);
             } catch (error) {
                 console.error('Erro ao criar gráfico:', error);
             }

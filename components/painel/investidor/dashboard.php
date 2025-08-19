@@ -156,6 +156,25 @@ foreach ($aportes as $aporte) {
         $valor_recebido = floatval(get_field('venda_valor', $aporte_id));
         $rentabilidade_consolidada += $valor_recebido;
         
+        // Incluir venda no gráfico mensal de rentabilidade consolidada
+        $data_venda = get_field('venda_data', $aporte_id) ?: get_field('data_venda', $aporte_id);
+        if (!empty($data_venda) && $valor_recebido > 0) {
+            $data = DateTime::createFromFormat('d/m/Y', $data_venda);
+            if ($data) {
+                $mesIngles = $data->format('M');
+                $ano = $data->format('Y');
+                $mes = $mesesTraducao[$mesIngles] ?? '';
+                $mesAno = $mes . ' ' . $ano;
+                
+                if ($mes) {
+                    if (!isset($rentabilidadeConsolidadaPorMesAno[$mesAno])) {
+                        $rentabilidadeConsolidadaPorMesAno[$mesAno] = 0;
+                    }
+                    $rentabilidadeConsolidadaPorMesAno[$mesAno] += $valor_recebido;
+                }
+            }
+        }
+        
     } elseif ($eh_scp) {
         // ===== SCP: Verificar status de captação =====
         
@@ -364,11 +383,25 @@ $chartInvestido = [];
 $chartRentabilidade = [];
 $chartRentabilidadeConsolidada = [];
 
+// Fazer valor investido e rentabilidades serem acumulativos
+$valorInvestidoAcumulado = 0;
+$rentabilidadeAcumulada = 0;
+$rentabilidadeConsolidadaAcumulada = 0;
+
 foreach ($todosMesesAno as $mesAno) {
     $chartLabels[] = $mesAno;
-    $chartInvestido[] = $investidoPorMesAno[$mesAno] ?? 0;
-    $chartRentabilidade[] = $rentabilidadePorMesAno[$mesAno] ?? 0;
-    $chartRentabilidadeConsolidada[] = $rentabilidadeConsolidadaPorMesAno[$mesAno] ?? 0;
+    
+    // Valor investido: acumular mês a mês
+    $valorInvestidoAcumulado += $investidoPorMesAno[$mesAno] ?? 0;
+    $chartInvestido[] = $valorInvestidoAcumulado;
+    
+    // Rentabilidade projetada: acumular mês a mês
+    $rentabilidadeAcumulada += $rentabilidadePorMesAno[$mesAno] ?? 0;
+    $chartRentabilidade[] = $rentabilidadeAcumulada;
+    
+    // Rentabilidade consolidada: acumular mês a mês
+    $rentabilidadeConsolidadaAcumulada += $rentabilidadeConsolidadaPorMesAno[$mesAno] ?? 0;
+    $chartRentabilidadeConsolidada[] = $rentabilidadeConsolidadaAcumulada;
 }
 
 // Ordenar movimentos
@@ -625,7 +658,7 @@ $investimentos_disponiveis_extrato = get_posts([
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-semibold text-gray-900">Performance Mensal</h3>
                 <div class="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                    Histórico de aportes e rentabilidade
+                    Histórico de aportes e rentabilidade acumulada
                 </div>
             </div>
 
@@ -1152,7 +1185,7 @@ $investimentos_disponiveis_extrato = get_posts([
           fill: false // sem área para não poluir
         },
         {
-          label: 'Rentabilidade Projetada Acumulada',
+          label: 'Rentabilidade Projetada',
           data: projetada,
           borderColor: GREEN,
           backgroundColor: makeArea(GREEN),
@@ -1163,7 +1196,7 @@ $investimentos_disponiveis_extrato = get_posts([
           fill: 'start' // área no verde (estilo do print)
         },
         {
-          label: 'Rentabilidade Consolidada Acumulada',
+          label: 'Rentabilidade Consolidada',
           data: consolidada,
           borderColor: AMBER,
           backgroundColor: makeArea(AMBER),
@@ -1219,8 +1252,8 @@ $investimentos_disponiveis_extrato = get_posts([
     container.innerHTML = ''; // evita duplicar
     const chips = [
       { idx: 0, label: 'Valor Investido', color: BLUE },
-      { idx: 1, label: 'Rent. Projetada', color: GREEN },
-      { idx: 2, label: 'Rent. Consolidada', color: AMBER }
+      { idx: 1, label: 'Rentabilidade Projetada', color: GREEN },
+      { idx: 2, label: 'Rentabilidade Consolidada', color: AMBER }
     ];
 
     const setActiveStyle = (btn, color, active) => {
