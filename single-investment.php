@@ -121,44 +121,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
 ?>
 
 <main class="pt-30 bg-radial-[at_10%_80%] from-slate-900 to-primary text-white">
-  <!-- CONTAINER PRINCIPAL COM MENU LATERAL -->
-  <div class="flex max-w-[1440px] mx-auto">
-    
-    <!-- MENU LATERAL -->
-    <aside class="w-80 min-h-screen bg-slate-800/50 backdrop-blur-sm border-r border-slate-700/50 sticky top-0">
-      <div class="p-6">
-        <nav class="space-y-2">
-          <a href="#porque-gostamos" onclick="scrollToSection('porque-gostamos')" 
-             class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all group menu-item" data-section="porque-gostamos">
-            <i class="fas fa-heart text-secondary group-hover:scale-110 transition-transform icon-glow"></i>
-            <span class="font-medium">Porque gostamos deste ativo</span>
-          </a>
-          
-          <a href="#riscos" onclick="scrollToSection('riscos')" 
-             class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all group menu-item" data-section="riscos">
-            <i class="fas fa-exclamation-triangle text-yellow-500 group-hover:scale-110 transition-transform icon-glow"></i>
-            <span class="font-medium">Riscos</span>
-          </a>
-          
-          <a href="#documentos" onclick="scrollToSection('documentos')" 
-             class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all group menu-item" data-section="documentos">
-            <i class="fas fa-folder-open text-blue-400 group-hover:scale-110 transition-transform icon-glow"></i>
-            <span class="font-medium">Documentos</span>
-          </a>
-          
-          <a href="#disclaimer" onclick="scrollToSection('disclaimer')" 
-             class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all group menu-item" data-section="disclaimer">
-            <i class="fas fa-info-circle text-gray-400 group-hover:scale-110 transition-transform icon-glow"></i>
-            <span class="font-medium">Disclaimer</span>
-          </a>
-        </nav>
-      </div>
-    </aside>
-    
-    <!-- CONTEÚDO PRINCIPAL -->
-    <div class="flex-1">
-      <!-- SEÇÃO HERO COM INFORMAÇÕES DO INVESTIMENTO -->
-      <section class="px-8 py-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+  <section class="max-w-[1440px] mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
 
     <div class="space-y-6">
       <?php if ( has_post_thumbnail() ) : ?>
@@ -331,12 +294,30 @@ if ($quantidade_cotas && !$cotas_vendidas) {
           ?>
         </div>
       </div>
-      </div>
-      </section>
-      
-      <!-- SEÇÃO: PORQUE GOSTAMOS DESTE ATIVO -->
-      <section id="porque-gostamos" class="px-8 py-16 border-t border-slate-700/30">
-        <div class="max-w-4xl">
+    </div>
+  </section>
+
+  <!-- NAVEGAÇÃO SIMPLES -->
+  <section class="max-w-[1440px] mx-auto px-4 py-8">
+    <nav class="flex flex-wrap justify-center gap-4 mb-8">
+      <a href="#porque-gostamos" class="px-6 py-3 bg-slate-800 hover:bg-secondary text-white hover:text-primary rounded-lg font-medium transition-all">
+        Porque gostamos deste ativo
+      </a>
+      <a href="#riscos" class="px-6 py-3 bg-slate-800 hover:bg-yellow-500 text-white hover:text-primary rounded-lg font-medium transition-all">
+        Riscos
+      </a>
+      <a href="#documentos" class="px-6 py-3 bg-slate-800 hover:bg-blue-500 text-white hover:text-primary rounded-lg font-medium transition-all">
+        Documentos
+      </a>
+      <a href="#disclaimer" class="px-6 py-3 bg-slate-800 hover:bg-primary text-white rounded-lg font-medium transition-all">
+        Disclaimer
+      </a>
+    </nav>
+  </section>
+  
+  <!-- SEÇÃO: PORQUE GOSTAMOS DESTE ATIVO -->
+  <section id="porque-gostamos" class="max-w-[1440px] mx-auto px-4 py-16 border-t border-slate-700/30">
+    <div class="max-w-6xl mx-auto">
           <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
             <i class="fas fa-heart text-secondary"></i>
             Porque gostamos deste ativo
@@ -374,12 +355,12 @@ if ($quantidade_cotas && !$cotas_vendidas) {
             </div>
             <?php endif; ?>
           </div>
-        </div>
-      </section>
+    </div>
+  </section>
       
-      <!-- SEÇÃO: RISCOS -->
-      <section id="riscos" class="px-8 py-16 border-t border-slate-700/30">
-        <div class="max-w-4xl">
+  <!-- SEÇÃO: RISCOS -->
+  <section id="riscos" class="max-w-[1440px] mx-auto px-4 py-16 border-t border-slate-700/30">
+    <div class="max-w-6xl mx-auto">
           <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
             <i class="fas fa-exclamation-triangle text-yellow-500"></i>
             Riscos
@@ -429,12 +410,12 @@ if ($quantidade_cotas && !$cotas_vendidas) {
             </div>
             <?php endif; ?>
           </div>
-        </div>
-      </section>
+    </div>
+  </section>
       
-      <!-- SEÇÃO: DOCUMENTOS -->
-      <section id="documentos" class="px-8 py-16 border-t border-slate-700/30">
-        <div class="max-w-4xl">
+  <!-- SEÇÃO: DOCUMENTOS -->
+  <section id="documentos" class="max-w-[1440px] mx-auto px-4 py-16 border-t border-slate-700/30">
+    <div class="max-w-6xl mx-auto">
           <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
             <i class="fas fa-folder-open text-blue-400"></i>
             Documentos
@@ -484,12 +465,12 @@ if ($quantidade_cotas && !$cotas_vendidas) {
             </div>
             <?php endif; ?>
           </div>
-        </div>
-      </section>
+    </div>
+  </section>
       
-      <!-- SEÇÃO: DISCLAIMER -->
-      <section id="disclaimer" class="px-8 py-16 border-t border-slate-700/30">
-        <div class="max-w-4xl">
+  <!-- SEÇÃO: DISCLAIMER -->
+  <section id="disclaimer" class="max-w-[1440px] mx-auto px-4 py-16 border-t border-slate-700/30">
+    <div class="max-w-6xl mx-auto">
           <div class="bg-primary/10 border border-primary/20 backdrop-blur-sm p-8 rounded-xl">
             <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-primary">
               <i class="fas fa-info-circle"></i>
@@ -514,10 +495,8 @@ if ($quantidade_cotas && !$cotas_vendidas) {
               </p>
             </div>
           </div>
-        </div>
-      </section>
     </div>
-  </div>
+  </section>
 
   <!-- MODAL DE DOCUMENTOS -->
   <?php if ( ! empty($documentos) && is_array($documentos) ) : ?>
@@ -856,38 +835,9 @@ if ($quantidade_cotas && !$cotas_vendidas) {
     }
 }
 
-/* Estilos para o menu lateral e navegação */
-.menu-item-active {
-    background-color: rgba(46, 210, 248, 0.1) !important;
-    color: #2ED2F8 !important;
-    border-left: 3px solid #2ED2F8;
-    padding-left: calc(1rem - 3px);
-}
-
-.menu-item {
-    transition: all 0.3s ease;
-    border-left: 3px solid transparent;
-}
-
-.menu-item:hover {
-    border-left: 3px solid rgba(46, 210, 248, 0.5);
-    padding-left: calc(1rem - 3px);
-}
-
 /* Scroll suave para toda a página */
 html {
     scroll-behavior: smooth;
-}
-
-/* Responsividade do menu lateral */
-@media (max-width: 1024px) {
-    aside {
-        display: none;
-    }
-    
-    .flex-1 {
-        width: 100%;
-    }
 }
 
 /* Estilos para as seções */
@@ -904,89 +854,9 @@ section {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
-
-/* Efeito de brilho nos ícones */
-.icon-glow:hover {
-    filter: drop-shadow(0 0 8px currentColor);
-}
-
-/* Customização da scrollbar do menu */
-aside::-webkit-scrollbar {
-    width: 6px;
-}
-
-aside::-webkit-scrollbar-thumb {
-    background-color: #2ED2F8;
-    border-radius: 3px;
-}
-
-aside::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(46, 210, 248, 0.8);
-}
-
-aside::-webkit-scrollbar-track {
-    background: rgba(30, 41, 59, 0.5);
-}
 </style>
 
 <script>
-// Função para scroll suave e navegação do menu lateral
-function scrollToSection(sectionId) {
-    const element = document.getElementById(sectionId);
-    if (element) {
-        // Offset para compensar o menu fixo (se houver)
-        const offset = 100;
-        const elementPosition = element.offsetTop - offset;
-        
-        window.scrollTo({
-            top: elementPosition,
-            behavior: 'smooth'
-        });
-    }
-    
-    // Atualizar estado ativo do menu
-    updateActiveMenuItem(sectionId);
-}
-
-// Função para atualizar item ativo do menu
-function updateActiveMenuItem(activeSection) {
-    const menuItems = document.querySelectorAll('.menu-item');
-    
-    menuItems.forEach(item => {
-        item.classList.remove('menu-item-active', 'bg-slate-700/50', 'text-white');
-        item.classList.add('text-gray-300');
-    });
-    
-    const activeItem = document.querySelector(`[data-section="${activeSection}"]`);
-    if (activeItem) {
-        activeItem.classList.add('menu-item-active', 'bg-slate-700/50', 'text-white');
-        activeItem.classList.remove('text-gray-300');
-    }
-}
-
-// Observer para detectar seção visível e atualizar menu automaticamente
-function setupScrollObserver() {
-    const sections = document.querySelectorAll('section[id]');
-    
-    const observerOptions = {
-        root: null,
-        rootMargin: '-50% 0px -50% 0px',
-        threshold: 0
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                updateActiveMenuItem(entry.target.id);
-            }
-        });
-    }, observerOptions);
-    
-    sections.forEach(section => {
-        observer.observe(section);
-    });
-}
-
 // Funções para controlar o modal de documentos
 function openDocumentsModal() {
     const modal = document.getElementById('documentsModal');
@@ -1134,12 +1004,6 @@ function closeDocumentPreview() {
 
 // Event listeners para os modais
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar observer para scroll automático
-    setupScrollObserver();
-    
-    // Definir primeiro item como ativo por padrão
-    updateActiveMenuItem('porque-gostamos');
-    
     const documentsModal = document.getElementById('documentsModal');
     const previewModal = document.getElementById('documentPreviewModal');
     
