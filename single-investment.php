@@ -297,45 +297,42 @@ if ($quantidade_cotas && !$cotas_vendidas) {
     </div>
   </section>
 
-  <!-- NAVEGAÇÃO FLUTUANTE -->
-  <div class="floating-nav fixed left-4 top-1/2 transform -translate-y-1/2 z-50 space-y-3">
-    
-    <a href="#porque-gostamos" class="floating-nav-item group relative flex items-center justify-center w-12 h-12 bg-slate-800/90 backdrop-blur-sm hover:bg-secondary text-white hover:text-primary rounded-full shadow-lg transition-all duration-300 hover:scale-110" data-tooltip="Porque gostamos deste ativo">
-      <i class="fas fa-heart text-lg"></i>
-      <span class="tooltip absolute left-16 top-1/2 transform -translate-y-1/2 bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none">
-        Porque gostamos deste ativo
-      </span>
-    </a>
-    
-    <a href="#riscos" class="floating-nav-item group relative flex items-center justify-center w-12 h-12 bg-slate-800/90 backdrop-blur-sm hover:bg-yellow-500 text-white hover:text-primary rounded-full shadow-lg transition-all duration-300 hover:scale-110" data-tooltip="Riscos">
-      <i class="fas fa-exclamation-triangle text-lg"></i>
-      <span class="tooltip absolute left-16 top-1/2 transform -translate-y-1/2 bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none">
-        Riscos
-      </span>
-    </a>
-    
-    <a href="#documentos" class="floating-nav-item group relative flex items-center justify-center w-12 h-12 bg-slate-800/90 backdrop-blur-sm hover:bg-blue-500 text-white hover:text-primary rounded-full shadow-lg transition-all duration-300 hover:scale-110" data-tooltip="Documentos">
-      <i class="fas fa-folder-open text-lg"></i>
-      <span class="tooltip absolute left-16 top-1/2 transform -translate-y-1/2 bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none">
+  <!-- NAVEGAÇÃO COM ABAS SIMPLES -->
+  <div class="max-w-[1440px] mx-auto px-4 py-8">
+    <div class="flex flex-wrap items-center justify-center gap-4">
+      <!-- Abas de Navegação -->
+      <div class="flex bg-slate-800/50 rounded-lg p-1 gap-1">
+        <a href="#porque-gostamos" class="nav-tab px-4 py-2 rounded-md text-white hover:bg-slate-700 transition-colors flex items-center gap-2 text-sm font-medium">
+          <i class="fas fa-chart-line"></i>
+          Análise
+        </a>
+        <a href="#riscos" class="nav-tab px-4 py-2 rounded-md text-white hover:bg-slate-700 transition-colors flex items-center gap-2 text-sm font-medium">
+          <i class="fas fa-shield-alt"></i>
+          Riscos
+        </a>
+        <a href="#disclaimer" class="nav-tab px-4 py-2 rounded-md text-white hover:bg-slate-700 transition-colors flex items-center gap-2 text-sm font-medium">
+          <i class="fas fa-info-circle"></i>
+          Informações
+        </a>
+      </div>
+      
+      <!-- Botão de Documentos -->
+      <?php if ( ! empty($documentos) && is_array($documentos) ) : ?>
+      <button onclick="openDocumentsModal()"
+              class="bg-secondary hover:bg-secondary/90 text-primary px-4 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium">
+        <i class="fas fa-folder-open"></i>
         Documentos
-      </span>
-    </a>
-    
-    <a href="#disclaimer" class="floating-nav-item group relative flex items-center justify-center w-12 h-12 bg-slate-800/90 backdrop-blur-sm hover:bg-primary text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110" data-tooltip="Disclaimer">
-      <i class="fas fa-info-circle text-lg"></i>
-      <span class="tooltip absolute left-16 top-1/2 transform -translate-y-1/2 bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none">
-        Disclaimer
-      </span>
-    </a>
-    
+      </button>
+      <?php endif; ?>
+    </div>
   </div>
   
   <!-- SEÇÃO: PORQUE GOSTAMOS DESTE ATIVO -->
   <section id="porque-gostamos" class="max-w-[1440px] mx-auto px-4 py-16 border-t border-slate-700/30">
     <div class="max-w-6xl mx-auto">
           <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
-            <i class="fas fa-heart text-secondary"></i>
-            Porque gostamos deste ativo
+            <i class="fas fa-chart-line text-secondary"></i>
+            Análise do Investimento
           </h2>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -428,60 +425,6 @@ if ($quantidade_cotas && !$cotas_vendidas) {
     </div>
   </section>
       
-  <!-- SEÇÃO: DOCUMENTOS -->
-  <section id="documentos" class="max-w-[1440px] mx-auto px-4 py-16 border-t border-slate-700/30">
-    <div class="max-w-6xl mx-auto">
-          <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
-            <i class="fas fa-folder-open text-blue-400"></i>
-            Documentos
-          </h2>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <?php if ( ! empty($lamina_url) ) : ?>
-            <div class="bg-slate-800/50 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50 hover:border-blue-400/30 transition-all group section-card">
-              <div class="text-center">
-                <div class="w-16 h-16 bg-blue-400/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
-                  <i class="fas fa-file-alt text-blue-400 text-2xl"></i>
-                </div>
-                <h3 class="text-lg font-semibold text-white mb-2">Lâmina Técnica</h3>
-                <p class="text-gray-400 text-sm mb-4">Documento oficial com informações técnicas do investimento</p>
-                <a href="<?= esc_url($lamina_url); ?>" target="_blank" rel="noopener noreferrer"
-                   class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium">
-                  <i class="fas fa-external-link-alt"></i>
-                  Visualizar
-                </a>
-              </div>
-            </div>
-            <?php endif; ?>
-            
-            <?php if ( ! empty($documentos) && is_array($documentos) ) : ?>
-            <div class="bg-slate-800/50 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50 hover:border-blue-400/30 transition-all group section-card">
-              <div class="text-center">
-                <div class="w-16 h-16 bg-blue-400/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
-                  <i class="fas fa-folder-open text-blue-400 text-2xl"></i>
-                </div>
-                <h3 class="text-lg font-semibold text-white mb-2">Documentos Adicionais</h3>
-                <p class="text-gray-400 text-sm mb-4"><?= count($documentos) ?> documento<?= count($documentos) > 1 ? 's' : '' ?> disponível<?= count($documentos) > 1 ? 'eis' : '' ?></p>
-                <button onclick="openDocumentsModal()"
-                        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium">
-                  <i class="fas fa-eye"></i>
-                  Ver Documentos
-                </button>
-              </div>
-            </div>
-            <?php endif; ?>
-            
-            <?php if ( empty($lamina_url) && (empty($documentos) || !is_array($documentos)) ) : ?>
-            <div class="col-span-full">
-              <div class="bg-slate-800/50 backdrop-blur-sm p-8 rounded-xl border border-slate-700/50 text-center">
-                <i class="fas fa-folder text-gray-400 text-3xl mb-4"></i>
-                <p class="text-gray-400">Os documentos deste investimento serão disponibilizados em breve.</p>
-              </div>
-            </div>
-            <?php endif; ?>
-          </div>
-    </div>
-  </section>
       
   <!-- SEÇÃO: DISCLAIMER -->
   <section id="disclaimer" class="max-w-[1440px] mx-auto px-4 py-16 border-t border-slate-700/30">
@@ -870,154 +813,30 @@ section {
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
-/* Estilos do menu de navegação flutuante */
-.floating-nav {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+/* Estilos da navegação com abas */
+.nav-tab {
+    transition: all 0.3s ease;
 }
 
-.floating-nav-item {
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+.nav-tab:hover {
+    background: rgba(100, 116, 139, 0.3);
+    transform: translateY(-1px);
 }
 
-.floating-nav-item:hover {
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    transform: scale(1.1) !important;
-}
-
-.floating-nav-item.active {
+.nav-tab.active {
     background: linear-gradient(135deg, #2ED2F8, #1e40af);
-    box-shadow: 0 0 20px rgba(46, 210, 248, 0.4);
+    color: #000E35;
+    font-weight: 600;
 }
 
-/* Tooltips */
-.tooltip {
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    z-index: 60;
-}
-
-.tooltip::before {
-    content: '';
-    position: absolute;
-    right: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-    border: 6px solid transparent;
-    border-right-color: #0f172a;
-}
-
-/* Responsividade do menu flutuante */
-@media (max-width: 768px) {
-    .floating-nav {
-        left: 2px;
-        top: auto;
-        bottom: 20px;
-        transform: none;
-        flex-direction: row;
-        display: flex;
-        justify-content: center;
-        width: calc(100% - 4px);
-        space-y: 0;
-        gap: 12px;
-        padding: 0 8px;
-    }
-    
-    .floating-nav-item {
-        width: 48px;
-        height: 48px;
-        position: relative;
-    }
-    
-    .floating-nav-item .tooltip {
-        left: 50%;
-        top: auto;
-        bottom: 120%;
-        transform: translateX(-50%);
-        white-space: nowrap;
-    }
-    
-    .floating-nav-item .tooltip::before {
-        left: 50%;
-        top: 100%;
-        right: auto;
-        bottom: auto;
-        transform: translateX(-50%);
-        border: 6px solid transparent;
-        border-top-color: #0f172a;
-        border-right-color: transparent;
-    }
-}
-
-@media (max-width: 480px) {
-    .floating-nav {
-        gap: 8px;
-        padding: 0 4px;
-    }
-    
-    .floating-nav-item {
-        width: 44px;
-        height: 44px;
-    }
-    
-    .floating-nav-item i {
-        font-size: 16px;
-    }
-}
-
-/* Animação de entrada do menu */
-@keyframes slideInLeft {
-    from {
-        opacity: 0;
-        transform: translateX(-100%);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes slideInUp {
-    from {
-        opacity: 0;
-        transform: translateY(100%);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.floating-nav {
-    animation: slideInLeft 0.6s ease-out;
-}
-
-@media (max-width: 768px) {
-    .floating-nav {
-        animation: slideInUp 0.6s ease-out;
-    }
-}
-
-/* Efeito de pulsação para indicar item ativo */
-@keyframes pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(46, 210, 248, 0.7);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(46, 210, 248, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(46, 210, 248, 0);
-    }
-}
-
-.floating-nav-item.active {
-    animation: pulse 2s infinite;
+/* Animação suave ao clicar */
+.nav-tab:active {
+    transform: translateY(0);
 }
 </style>
 
 <script>
-// Funções para o menu de navegação flutuante
+// Funções para a navegação com abas
 function scrollToSection(sectionId) {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -1033,7 +852,7 @@ function scrollToSection(sectionId) {
 
 function updateActiveNavItem() {
     const sections = document.querySelectorAll('section[id]');
-    const navItems = document.querySelectorAll('.floating-nav-item');
+    const navItems = document.querySelectorAll('.nav-tab');
     
     let currentSection = '';
     
@@ -1055,9 +874,9 @@ function updateActiveNavItem() {
     });
 }
 
-// Event listeners para o menu flutuante
-function setupFloatingNav() {
-    const navItems = document.querySelectorAll('.floating-nav-item');
+// Event listeners para a navegação com abas
+function setupTabNav() {
+    const navItems = document.querySelectorAll('.nav-tab');
     
     navItems.forEach(item => {
         item.addEventListener('click', function(e) {
@@ -1223,8 +1042,8 @@ function closeDocumentPreview() {
 
 // Event listeners para os modais
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar menu flutuante
-    setupFloatingNav();
+    // Inicializar navegação com abas
+    setupTabNav();
     
     const documentsModal = document.getElementById('documentsModal');
     const previewModal = document.getElementById('documentPreviewModal');
