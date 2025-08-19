@@ -323,7 +323,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
   <section id="porque-gostamos" class="bg-slate-100 text-slate-800 py-16">
     <div class="max-w-[1440px] mx-auto px-4">
       <div class="max-w-6xl mx-auto">
-          <h2 class="md:text-3xl sm:text-1xl font-bold mb-8 flex items-center gap-3 text-primary">
+          <h2 class="md:text-3xl sm:text-2xl font-bold mb-8 flex items-center gap-3 text-primary">
             <i class="fas fa-chart-line text-secondary"></i>
             Porque gostamos deste ativo?
           </h2>
@@ -364,11 +364,11 @@ if ($quantidade_cotas && !$cotas_vendidas) {
     </div>
   </section>
       
-  <!-- SEÇÃO: RISCOS - FUNDO ESCURO -->
+  <!-- SEÇÃO: RISCOS-->
   <section id="riscos" class="bg-slate-100 text-slate-800 py-16">
     <div class="max-w-[1440px] mx-auto px-4">
       <div class="max-w-6xl mx-auto">
-          <h2 class="text-3xl font-bold mb-8 flex items-center gap-3 text-primary">
+          <h2 class="md:text-3xl sm:text-2xl font-bold mb-8 flex items-center gap-3 text-primary">
             <i class="fas fa-shield-alt text-yellow-600"></i>
             Riscos
           </h2>
