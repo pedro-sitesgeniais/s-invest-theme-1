@@ -866,6 +866,7 @@ $investimentos_disponiveis_extrato = get_posts([
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investimento</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Situação</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -893,6 +894,18 @@ $investimentos_disponiveis_extrato = get_posts([
                                             <i :class="movimento.situacao === 'ativo' ? 'fas fa-chart-line' : (movimento.situacao === 'vendido' ? 'fas fa-hand-holding-usd' : 'fas fa-times-circle')" class="mr-1"></i>
                                             <span x-text="movimento.situacao === 'ativo' ? 'Ativo' : (movimento.situacao === 'vendido' ? 'Vendido' : 'Encerrado')"></span>
                                         </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <template x-if="movimento.investment_id">
+                                            <a :href="`?secao=meus-investimentos&detalhe=${movimento.investment_id}`"
+                                                class="inline-flex items-center px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:bg-slate-950 transition-colors">
+                                                <i class="fas fa-eye mr-1.5"></i>
+                                                Ver detalhes
+                                            </a>
+                                        </template>
+                                        <template x-if="!movimento.investment_id">
+                                            <span class="text-xs text-gray-400 italic">N/A</span>
+                                        </template>
                                     </td>
                                 </tr>
                             </template>
