@@ -900,7 +900,7 @@ $investimentos_disponiveis_extrato = get_posts([
                                             <a :href="`?secao=meus-investimentos&detalhe=${movimento.investment_id}`"
                                                 class="inline-flex items-center px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:bg-slate-950 transition-colors">
                                                 <i class="fas fa-eye mr-1.5"></i>
-                                                Ver detalhes
+                                                 Ver detalhes
                                             </a>
                                         </template>
                                         <template x-if="!movimento.investment_id">
