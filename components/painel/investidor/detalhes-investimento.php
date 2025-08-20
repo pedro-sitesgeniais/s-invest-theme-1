@@ -542,25 +542,23 @@ $docs = get_field('documentos', $inv_id) ?: [];
         </div>
     </div>
 
-    <!-- GRÁFICO -->
-    <?php if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist) && count($rentabilidade_hist) > 0) : ?>
-        <div class="my-6 md:my-12">
-            <!-- Título do Gráfico -->
-            <div class="mb-4 md:mb-6 text-center">
-                <h3 class="text-lg md:text-xl font-semibold text-slate-300 mb-2">
-                    <?php echo $is_private ? 'Histórico de Dividendos Mensais' : 'Evolução da Rentabilidade'; ?>
-                </h3>
-                <p class="text-sm text-slate-400">
-                    <?php echo $is_private ? 'Valores recebidos por mês' : 'Histórico de valores do investimento'; ?>
-                </p>
-            </div>
-            
-            <!-- Canvas do Gráfico -->
-            <div class="h-[300px] sm:h-[350px] md:h-[400px]">
-                <canvas id="investmentChart"></canvas>
-            </div>
+    <!-- GRÁFICO - SEMPRE EXIBIR COM OS ÚLTIMOS 5 MESES -->
+    <div class="my-6 md:my-12">
+        <!-- Título do Gráfico -->
+        <div class="mb-4 md:mb-6 text-center">
+            <h3 class="text-lg md:text-xl font-semibold text-slate-300 mb-2">
+                <?php echo $is_private ? 'Histórico de Dividendos Mensais' : 'Evolução da Rentabilidade'; ?>
+            </h3>
+            <p class="text-sm text-slate-400">
+                <?php echo $is_private ? 'Últimos 5 meses de dividendos recebidos' : 'Últimos 5 meses de rentabilidade do investimento'; ?>
+            </p>
         </div>
-    <?php endif; ?>
+        
+        <!-- Canvas do Gráfico -->
+        <div class="h-[300px] sm:h-[350px] md:h-[400px]">
+            <canvas id="investmentChart"></canvas>
+        </div>
+    </div>
 
     <!-- INFORMAÇÕES DA VENDA -->
     <?php if ($venda_status && !empty($data_venda)) : ?>
