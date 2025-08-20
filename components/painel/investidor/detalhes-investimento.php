@@ -235,7 +235,27 @@ $rentabilidade_projetada = $rentabilidade_ativa_total; // Sempre do histórico
 $rentabilidade_pct = ($status_geral === 'misto') ? $rentabilidade_pct_ativos : 
                     ($status_geral === 'ativo' ? $rentabilidade_pct_ativos_puros : $rentabilidade_pct_geral);
 
-// ===== PREPARAR DADOS PARA GRÁFICO =====
+// ===== PREPARAR DADOS PARA GRÁFICO (SEMPRE 5 MESES) =====
+
+// Função para gerar últimos 5 meses
+function gerar_ultimos_5_meses() {
+    $meses = [];
+    $data_atual = new DateTime();
+    
+    for ($i = 4; $i >= 0; $i--) {
+        $data_mes = clone $data_atual;
+        $data_mes->modify("-{$i} months");
+        $meses[] = [
+            'mes_ano' => $data_mes->format('m/Y'),
+            'label' => $data_mes->format('M/Y'),
+            'timestamp' => $data_mes->getTimestamp()
+        ];
+    }
+    
+    return $meses;
+}
+
+$ultimos_5_meses = gerar_ultimos_5_meses();
 $dados_grafico = [];
 
 if ($is_private) {
@@ -251,17 +271,10 @@ if ($is_private) {
                 $date = DateTime::createFromFormat('d/m/Y', $data_dividendo);
                 if ($date) {
                     $mes_ano = $date->format('m/Y');
-                    $mes_ano_label = $date->format('M/Y');
-                    
                     if (!isset($dividendos_por_mes[$mes_ano])) {
-                        $dividendos_por_mes[$mes_ano] = [
-                            'data_dividendo' => $mes_ano_label,
-                            'valor' => 0,
-                            'timestamp' => $date->getTimestamp()
-                        ];
+                        $dividendos_por_mes[$mes_ano] = 0;
                     }
-                    
-                    $dividendos_por_mes[$mes_ano]['valor'] += $valor_dividendo;
+                    $dividendos_por_mes[$mes_ano] += $valor_dividendo;
                 }
             } catch (Exception $e) {
                 // Ignorar datas inválidas
@@ -269,24 +282,47 @@ if ($is_private) {
         }
     }
     
-    // Ordenar por data e converter para array indexado
-    uasort($dividendos_por_mes, function($a, $b) {
-        return $a['timestamp'] - $b['timestamp'];
-    });
-    
-    $dados_grafico = array_values($dividendos_por_mes);
+    // Criar dados para os últimos 5 meses
+    foreach ($ultimos_5_meses as $mes) {
+        $dados_grafico[] = [
+            'data_dividendo' => $mes['label'],
+            'valor' => $dividendos_por_mes[$mes['mes_ano']] ?? 0,
+            'timestamp' => $mes['timestamp']
+        ];
+    }
     
 } else {
-    // Para produtos TRADE: usar rentabilidade histórica existente
-    $dados_grafico = array_values($historico_rentabilidade_consolidado);
+    // Para produtos TRADE: usar rentabilidade histórica existente ou zeros
+    $rentabilidade_por_mes = [];
     
-    // Ordenar por data
-    usort($dados_grafico, function($a, $b) {
-        $dateA = DateTime::createFromFormat('d/m/Y', $a['data_rentabilidade']);
-        $dateB = DateTime::createFromFormat('d/m/Y', $b['data_rentabilidade']);
-        if (!$dateA || !$dateB) return 0;
-        return $dateA->getTimestamp() - $dateB->getTimestamp();
-    });
+    foreach ($historico_rentabilidade_consolidado as $item) {
+        $data_rentabilidade = $item['data_rentabilidade'] ?? '';
+        $valor = floatval($item['valor'] ?? 0);
+        
+        if ($data_rentabilidade) {
+            try {
+                $date = DateTime::createFromFormat('d/m/Y', $data_rentabilidade);
+                if ($date) {
+                    $mes_ano = $date->format('m/Y');
+                    if (!isset($rentabilidade_por_mes[$mes_ano])) {
+                        $rentabilidade_por_mes[$mes_ano] = 0;
+                    }
+                    $rentabilidade_por_mes[$mes_ano] = max($rentabilidade_por_mes[$mes_ano], $valor); // Pegar maior valor do mês
+                }
+            } catch (Exception $e) {
+                // Ignorar datas inválidas
+            }
+        }
+    }
+    
+    // Criar dados para os últimos 5 meses
+    foreach ($ultimos_5_meses as $mes) {
+        $dados_grafico[] = [
+            'data_rentabilidade' => $mes['label'],
+            'valor' => $rentabilidade_por_mes[$mes['mes_ano']] ?? 0,
+            'timestamp' => $mes['timestamp']
+        ];
+    }
 }
 
 // Manter compatibilidade com código existente
