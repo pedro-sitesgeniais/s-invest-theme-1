@@ -191,8 +191,10 @@ foreach ($aportes as $aporte) {
         
         // Somar dividendos recebidos (para rentabilidade consolidada)
         $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
-        foreach ($historico_dividendos as $dividendo) {
-            $rentabilidade_consolidada += floatval($dividendo['valor'] ?? 0);
+        if (is_array($historico_dividendos)) {
+            foreach ($historico_dividendos as $dividendo) {
+                $rentabilidade_consolidada += floatval($dividendo['valor'] ?? 0);
+            }
         }
         
     } else {
@@ -272,7 +274,8 @@ foreach ($aportes as $aporte) {
     
     // Processar dividendos
     $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
-    foreach ($historico_dividendos as $index => $dividendo) {
+    if (is_array($historico_dividendos)) {
+        foreach ($historico_dividendos as $index => $dividendo) {
         $valor_dividendo = floatval($dividendo['valor'] ?? 0);
         $data_dividendo = $dividendo['data_dividendo'] ?? $dividendo['data'] ?? '';
         
@@ -315,6 +318,7 @@ foreach ($aportes as $aporte) {
                 'situacao' => $situacao
             ];
         }
+    }
     }
     
     // Processar histórico de rentabilidade (apenas trades ativos)
