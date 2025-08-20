@@ -775,8 +775,7 @@ $docs = get_field('documentos', $inv_id) ?: [];
     </div>
 </div>
 
-<!-- SCRIPT DO GRÁFICO -->
-<?php if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist) && count($rentabilidade_hist) > 0) : ?>
+<!-- SCRIPT DO GRÁFICO - SEMPRE CARREGAR -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     function initChart() {
@@ -792,7 +791,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const historico = <?php echo json_encode($rentabilidade_hist); ?>;
         const isPrivate = <?php echo $is_private ? 'true' : 'false'; ?>;
 
-        if (historico && historico.length > 0) {
+        // Sempre exibir gráfico, mesmo com dados zerados
+        if (historico) {
             try {
                 // Definir configurações baseadas no tipo de produto
                 const config = {
@@ -889,7 +889,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(initChart, 300);
 });
 </script>
-<?php endif; ?>
 
 <!-- SCRIPT PARA DROPDOWN DOS CONTRATOS -->
 <?php if (!empty($contratos_venda) && count($contratos_venda) > 1) : ?>
