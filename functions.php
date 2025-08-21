@@ -35,13 +35,51 @@ require_once S_INVEST_THEME_DIR . '/inc/investment-system/data-migration.php';
 // ========== COMPATIBILIDADE E MIGRAÇÃO ==========
 
 /**
+ * Verificação robusta se o plugin está ativo
+ */
+function s_invest_plugin_is_active() {
+    // Verificar múltiplas formas de detectar o plugin
+    
+    // 1. Verificar opção do WordPress (mais confiável)
+    $active_plugins = get_option('active_plugins', []);
+    if (in_array('sky-invest-panel/sky-invest-panel.php', $active_plugins)) {
+        return true;
+    }
+    
+    // 2. Verificar se o arquivo principal existe e está na lista de plugins ativos
+    if (function_exists('is_plugin_active')) {
+        return is_plugin_active('sky-invest-panel/sky-invest-panel.php');
+    }
+    
+    // 3. Verificar constantes do plugin
+    if (defined('SKY_INVEST_PANEL_VERSION') || defined('SIP_PLUGIN_URL')) {
+        return true;
+    }
+    
+    // 4. Verificar se funções específicas do plugin existem (mas não as nossas)
+    if (function_exists('sip_get_meta_captacao_original') || 
+        function_exists('sip_plugin_main_function')) {
+        return true;
+    }
+    
+    return false;
+}
+
+/**
  * Hook para inicialização do sistema unificado
  */
 add_action('after_setup_theme', 's_invest_unified_system_init', 1);
 
 function s_invest_unified_system_init() {
+    // Marcar que o sistema de compatibilidade está ativo
+    if (!function_exists('s_invest_plugin_compatibility_active')) {
+        function s_invest_plugin_compatibility_active() { return true; }
+    }
+    
     // Verificar se o plugin sky-invest-panel está ativo
-    if (function_exists('is_plugin_active') && is_plugin_active('sky-invest-panel/sky-invest-panel.php')) {
+    $plugin_active = s_invest_plugin_is_active();
+    
+    if ($plugin_active) {
         add_action('admin_notices', function() {
             echo '<div class="notice notice-warning is-dismissible">';
             echo '<p><strong>⚠️ Sistema Unificado Ativo:</strong> O plugin sky-invest-panel pode ser desativado. ';
@@ -56,42 +94,70 @@ function s_invest_unified_system_init() {
     
     // Log da inicialização
     if (WP_DEBUG) {
-        error_log('S-Invest Unified System v3.0.0 inicializado - Plugin ativo: ' . 
-                 (function_exists('is_plugin_active') && is_plugin_active('sky-invest-panel/sky-invest-panel.php') ? 'Sim' : 'Não'));
+        error_log('S-Invest Unified System v3.0.0 inicializado - Plugin ativo: ' . ($plugin_active ? 'Sim' : 'Não'));
     }
 }
 
 /**
- * Funções de compatibilidade - só declara se não existirem
+ * Funções de compatibilidade - só declara se não existirem E se o plugin não estiver ativo
  * Permite convivência temporária com o plugin sky-invest-panel
  */
-if (!function_exists('sip_get_meta_captacao')) {
-    function sip_get_meta_captacao($investment_id) {
-        return S_Invest_Calculations::get_meta_captacao($investment_id);
-    }
+
+// SOLUÇÃO DEFINITIVA: Verificar antes de incluir qualquer função
+$s_invest_should_load_functions = true;
+
+// Verificar se está tentando ativar o plugin
+if (isset($_GET['action']) && $_GET['action'] === 'activate' && 
+    isset($_GET['plugin']) && strpos($_GET['plugin'], 'sky-invest-panel') !== false) {
+    $s_invest_should_load_functions = false;
 }
 
-if (!function_exists('sip_get_aporte_minimo_scp')) {
-    function sip_get_aporte_minimo_scp($investment_id) {
-        return S_Invest_Calculations::get_aporte_minimo_scp($investment_id);
-    }
+// Verificar se o plugin já está na lista de ativos
+$active_plugins = get_option('active_plugins', []);
+if (in_array('sky-invest-panel/sky-invest-panel.php', $active_plugins)) {
+    $s_invest_should_load_functions = false;
 }
 
-if (!function_exists('sip_is_scp_investment')) {
-    function sip_is_scp_investment($investment_id) {
-        return S_Invest_Calculations::is_scp_investment($investment_id);
-    }
+// Hook tardio para garantir que o plugin foi carregado primeiro
+if ($s_invest_should_load_functions) {
+    add_action('plugins_loaded', 's_invest_load_compatibility_functions', 999);
 }
 
-if (!function_exists('sip_get_investor_summary_unified_updated')) {
-    function sip_get_investor_summary_unified_updated($user_id) {
-        return S_Invest_Calculations::get_investor_summary_unified($user_id);
+function s_invest_load_compatibility_functions() {
+    // Verificação final antes de criar funções
+    $active_plugins = get_option('active_plugins', []);
+    if (in_array('sky-invest-panel/sky-invest-panel.php', $active_plugins)) {
+        return; // Plugin está ativo, não criar funções
     }
-}
+    
+    if (!function_exists('sip_get_meta_captacao')) {
+        function sip_get_meta_captacao($investment_id) {
+            return S_Invest_Calculations::get_meta_captacao($investment_id);
+        }
+    }
 
-if (!function_exists('sip_format_currency')) {
-    function sip_format_currency($value, $show_symbol = true) {
-        return S_Invest_Calculations::format_currency($value, $show_symbol);
+    if (!function_exists('sip_get_aporte_minimo_scp')) {
+        function sip_get_aporte_minimo_scp($investment_id) {
+            return S_Invest_Calculations::get_aporte_minimo_scp($investment_id);
+        }
+    }
+
+    if (!function_exists('sip_is_scp_investment')) {
+        function sip_is_scp_investment($investment_id) {
+            return S_Invest_Calculations::is_scp_investment($investment_id);
+        }
+    }
+
+    if (!function_exists('sip_get_investor_summary_unified_updated')) {
+        function sip_get_investor_summary_unified_updated($user_id) {
+            return S_Invest_Calculations::get_investor_summary_unified($user_id);
+        }
+    }
+
+    if (!function_exists('sip_format_currency')) {
+        function sip_format_currency($value, $show_symbol = true) {
+            return S_Invest_Calculations::format_currency($value, $show_symbol);
+        }
     }
 }
 
