@@ -29,6 +29,9 @@ require_once S_INVEST_THEME_DIR . '/inc/admin-system/admin-interface.php';
 // 5. Override Inteligente do WP-Admin
 require_once S_INVEST_THEME_DIR . '/inc/admin-system/wp-admin-override.php';
 
+// 6. Sistema de Migração de Dados
+require_once S_INVEST_THEME_DIR . '/inc/investment-system/data-migration.php';
+
 // ========== COMPATIBILIDADE E MIGRAÇÃO ==========
 
 /**
