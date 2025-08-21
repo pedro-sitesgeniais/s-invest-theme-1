@@ -131,7 +131,7 @@ if ($aportes) :
       <tr>
         <td class="px-4 py-3"><?php echo esc_html($nome_investimento); ?></td>
         <td class="px-4 py-3"><?php echo esc_html($nome_investidor); ?></td>
-        <td class="px-4 py-3">R$ <?php echo number_format($valor, 2, ',', '.'); ?></td>
+        <td class="px-4 py-3">R$ <?php echo number_format(floatval($valor ?: 0), 2, ',', '.'); ?></td>
         <td class="px-4 py-3"><?php echo esc_html($data); ?></td>
         <td class="px-4 py-3"><?php echo esc_html($forma); ?></td>
       </tr>

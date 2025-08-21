@@ -135,8 +135,12 @@ foreach ($aportes as $aporte) {
     $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
     $valor_investido_aporte = 0;
     
-    foreach ($historico_aportes as $item) {
-        $valor_investido_aporte += floatval($item['valor_aporte'] ?? 0);
+    if (is_array($historico_aportes)) {
+        foreach ($historico_aportes as $item) {
+            if (is_array($item)) {
+                $valor_investido_aporte += floatval($item['valor_aporte'] ?? 0);
+            }
+        }
     }
     
     // Se não tem histórico, usar valor_compra ou valor_aportado
@@ -216,8 +220,10 @@ foreach ($aportes as $aporte) {
     }
     
     // Histórico para gráfico de barras
-    foreach ($historico_aportes as $index => $item) {
-        $valor_aporte_item = floatval($item['valor_aporte'] ?? 0);
+    if (is_array($historico_aportes)) {
+        foreach ($historico_aportes as $index => $item) {
+            if (is_array($item)) {
+                $valor_aporte_item = floatval($item['valor_aporte'] ?? 0);
         $data_aporte = $item['data_aporte'] ?? '';
         
         if ($valor_aporte_item > 0 && !empty($data_aporte)) {
@@ -267,6 +273,7 @@ foreach ($aportes as $aporte) {
                 'eh_scp' => $eh_scp,
                 'situacao' => $situacao
             ];
+            }
         }
     }
     
