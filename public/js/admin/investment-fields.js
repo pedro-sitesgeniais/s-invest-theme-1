@@ -9,7 +9,7 @@ document.addEventListener('alpine:init', () => {
         activeTab: 'basic_info',
         data: {
             // Valores padrão
-            classe_de_ativos: 'trade',
+            classe_de_ativos: 'compra-em-lote',
             status_captacao: 'ativo',
             motivos: [],
             riscos: [],
@@ -85,7 +85,7 @@ document.addEventListener('alpine:init', () => {
         
         // Calcular valores SCP automaticamente
         calculateSCPValues() {
-            if (this.data.classe_de_ativos !== 'private') return;
+            if (this.data.classe_de_ativos !== 'private-scp') return;
             
             const valorCota = parseFloat(this.data.valor_cota) || 0;
             const totalCotas = parseInt(this.data.total_cotas) || 0;

@@ -53,8 +53,9 @@ class S_Invest_Native_Fields {
                         'label' => 'Classe de Ativos',
                         'required' => true,
                         'options' => [
-                            'trade' => 'Trade',
-                            'private' => 'Private (SCP)'
+                            'private-scp' => 'Private SCP',
+                            'compra-em-lote' => 'Compra em Lote',
+                            'land-bank' => 'Land Bank'
                         ],
                         'description' => 'Define o tipo de investimento e campos disponíveis',
                         'trigger_conditional' => true
@@ -108,7 +109,7 @@ class S_Invest_Native_Fields {
             // ===== DADOS SCP (CONDICIONAL) =====
             'scp_data' => [
                 'title' => 'Dados SCP (Private)',
-                'condition' => 'classe_de_ativos == private',
+                'condition' => 'classe_de_ativos == private-scp',
                 'fields' => [
                     'nome_ativo' => [
                         'type' => 'text',
@@ -149,6 +150,70 @@ class S_Invest_Native_Fields {
                         'type' => 'percentage',
                         'label' => 'Percentual Total do VGV',
                         'description' => 'Percentual que este investimento representa do VGV total'
+                    ]
+                ]
+            ],
+            
+            // ===== DADOS COMPRA EM LOTE (CONDICIONAL) =====
+            'compra_lote_data' => [
+                'title' => 'Dados Compra em Lote',
+                'condition' => 'classe_de_ativos == compra-em-lote',
+                'fields' => [
+                    'tipo_produto_trade' => [
+                        'type' => 'text',
+                        'label' => 'Tipo de Produto',
+                        'description' => 'Especificação do produto de investimento'
+                    ],
+                    'estrategia_compra' => [
+                        'type' => 'textarea',
+                        'label' => 'Estratégia de Compra',
+                        'description' => 'Descrição da estratégia utilizada'
+                    ],
+                    'ciclo_investimento' => [
+                        'type' => 'select',
+                        'label' => 'Ciclo de Investimento',
+                        'options' => [
+                            'curto' => 'Curto Prazo (até 12 meses)',
+                            'medio' => 'Médio Prazo (1-3 anos)',
+                            'longo' => 'Longo Prazo (3+ anos)'
+                        ]
+                    ]
+                ]
+            ],
+            
+            // ===== DADOS LAND BANK (CONDICIONAL) =====
+            'land_bank_data' => [
+                'title' => 'Dados Land Bank',
+                'condition' => 'classe_de_ativos == land-bank',
+                'fields' => [
+                    'localizacao_terreno' => [
+                        'type' => 'text',
+                        'label' => 'Localização do Terreno',
+                        'description' => 'Endereço ou região específica'
+                    ],
+                    'area_total' => [
+                        'type' => 'number',
+                        'label' => 'Área Total (m²)',
+                        'description' => 'Área total do terreno em metros quadrados'
+                    ],
+                    'zoneamento' => [
+                        'type' => 'text',
+                        'label' => 'Zoneamento',
+                        'description' => 'Tipo de zoneamento da área'
+                    ],
+                    'potencial_construtivo' => [
+                        'type' => 'textarea',
+                        'label' => 'Potencial Construtivo',
+                        'description' => 'Descrição do potencial de desenvolvimento'
+                    ],
+                    'documentacao_legal' => [
+                        'type' => 'select',
+                        'label' => 'Status Documentação',
+                        'options' => [
+                            'completa' => 'Documentação Completa',
+                            'pendente' => 'Pendências Documentais',
+                            'processo' => 'Em Processo de Regularização'
+                        ]
                     ]
                 ]
             ],
@@ -544,12 +609,16 @@ class S_Invest_Native_Fields {
      * Converter condições para Alpine.js
      */
     private function convert_condition_to_alpine($condition) {
-        // Converter "classe_de_ativos == private" para "data.classe_de_ativos === 'private'"
-        return str_replace(
-            ['==', 'classe_de_ativos'],
-            ['===', 'data.classe_de_ativos'],
-            $condition
-        );
+        // Converter "classe_de_ativos == private-scp" para "data.classe_de_ativos === 'private-scp'"
+        $condition = str_replace('==', '===', $condition);
+        $condition = str_replace('classe_de_ativos', 'data.classe_de_ativos', $condition);
+        
+        // Adicionar aspas se não existirem
+        if (strpos($condition, "'") === false && strpos($condition, '"') === false) {
+            $condition = preg_replace('/=== ([a-z-]+)/', "=== '$1'", $condition);
+        }
+        
+        return $condition;
     }
     
     /**
@@ -584,10 +653,27 @@ class S_Invest_Native_Fields {
     private function calculate_investment_values($investment_id) {
         $classe = get_post_meta($investment_id, 's_invest_classe_de_ativos', true);
         
-        if ($classe === 'private') {
-            $this->calculate_scp_values($investment_id);
-        } else {
-            $this->calculate_trade_values($investment_id);
+        switch ($classe) {
+            case 'private-scp':
+                $this->calculate_scp_values($investment_id);
+                break;
+                
+            case 'compra-em-lote':
+                $this->calculate_trade_values($investment_id, 'compra-em-lote');
+                break;
+                
+            case 'land-bank':
+                $this->calculate_trade_values($investment_id, 'land-bank');
+                break;
+                
+            default:
+                // Fallback para valores antigos
+                if ($classe === 'private') {
+                    $this->calculate_scp_values($investment_id);
+                } else {
+                    $this->calculate_trade_values($investment_id, 'trade');
+                }
+                break;
         }
     }
     
@@ -630,7 +716,7 @@ class S_Invest_Native_Fields {
     /**
      * Calcular valores Trade
      */
-    private function calculate_trade_values($investment_id) {
+    private function calculate_trade_values($investment_id, $tipo = 'trade') {
         // Get Trade aportes
         $aportes = get_posts([
             'post_type' => 'aporte',
@@ -671,7 +757,7 @@ class S_Invest_Native_Fields {
         
         // Set defaults for required fields
         if (empty($data['classe_de_ativos'])) {
-            $data['classe_de_ativos'] = 'trade';
+            $data['classe_de_ativos'] = 'compra-em-lote';
         }
         
         return $data;
