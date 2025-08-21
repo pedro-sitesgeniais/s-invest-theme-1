@@ -261,9 +261,14 @@ if (locate_template("{$mobile_menu_template}.php")) {
                 <div x-data="sectionLoader()" @section-loaded="onSectionLoaded()">
                     <?php
                     $valid_sections = [
+                        // Seções do investidor
                         'dashboard', 'meus-investimentos', 'meus-aportes', 
                         'produtos-gerais', 'comunicados', 'suporte', 'perfil',
-                        'detalhes-investimento', 'documentos'
+                        'detalhes-investimento', 'documentos',
+                        
+                        // Seções do associado/admin
+                        'admin-dashboard', 'investimentos', 'investidores', 
+                        'aportes', 'relatorios', 'configuracoes'
                     ];
 
                     if (in_array($secao, $valid_sections)) {

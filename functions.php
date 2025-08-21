@@ -7,9 +7,73 @@
 if (!defined('WP_CLI')) ob_start();
 defined('ABSPATH') || exit;
 
-define('S_INVEST_VERSION', '2.3.1');
+define('S_INVEST_VERSION', '3.0.0');
 define('S_INVEST_THEME_DIR', get_template_directory());
 define('S_INVEST_THEME_URL', get_template_directory_uri());
+
+// ========== SISTEMA UNIFICADO DE INVESTIMENTOS ==========
+// Carregar sistema unificado que substitui o plugin sky-invest-panel
+
+// 1. Sistema de CPTs e Taxonomias
+require_once S_INVEST_THEME_DIR . '/inc/investment-system/cpt-manager.php';
+
+// 2. Sistema de Roles e Permissões
+require_once S_INVEST_THEME_DIR . '/inc/investment-system/roles-manager.php';
+
+// 3. Engine de Cálculos
+require_once S_INVEST_THEME_DIR . '/inc/investment-system/calculations.php';
+
+// 4. Interface Administrativa
+require_once S_INVEST_THEME_DIR . '/inc/admin-system/admin-interface.php';
+
+// ========== COMPATIBILIDADE E MIGRAÇÃO ==========
+
+/**
+ * Hook para inicialização do sistema unificado
+ */
+add_action('after_setup_theme', 's_invest_unified_system_init', 1);
+
+function s_invest_unified_system_init() {
+    // Verificar se o plugin sky-invest-panel está ativo
+    if (is_plugin_active('sky-invest-panel/sky-invest-panel.php')) {
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-warning">';
+            echo '<p><strong>Sistema Unificado Ativo:</strong> O plugin sky-invest-panel pode ser desativado. ';
+            echo 'Todas as funcionalidades foram migradas para o tema.</p>';
+            echo '</div>';
+        });
+    }
+    
+    // Log da inicialização
+    if (WP_DEBUG) {
+        error_log('S-Invest Unified System v3.0.0 inicializado com sucesso!');
+    }
+}
+
+/**
+ * Função helper para compatibilidade com o código existente
+ */
+function sip_get_meta_captacao($investment_id) {
+    return S_Invest_Calculations::get_meta_captacao($investment_id);
+}
+
+function sip_get_aporte_minimo_scp($investment_id) {
+    return S_Invest_Calculations::get_aporte_minimo_scp($investment_id);
+}
+
+function sip_is_scp_investment($investment_id) {
+    return S_Invest_Calculations::is_scp_investment($investment_id);
+}
+
+function sip_get_investor_summary_unified_updated($user_id) {
+    return S_Invest_Calculations::get_investor_summary_unified($user_id);
+}
+
+function sip_format_currency($value, $show_symbol = true) {
+    return S_Invest_Calculations::format_currency($value, $show_symbol);
+}
+
+// ========== FIM DO SISTEMA UNIFICADO ==========
 
 /**
  * NOVA FUNÇÃO: Calcula automaticamente o status da captação
