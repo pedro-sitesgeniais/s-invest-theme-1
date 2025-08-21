@@ -224,55 +224,56 @@ foreach ($aportes as $aporte) {
         foreach ($historico_aportes as $index => $item) {
             if (is_array($item)) {
                 $valor_aporte_item = floatval($item['valor_aporte'] ?? 0);
-        $data_aporte = $item['data_aporte'] ?? '';
-        
-        if ($valor_aporte_item > 0 && !empty($data_aporte)) {
-            // Para o gráfico mensal
-            $data = DateTime::createFromFormat('d/m/Y', $data_aporte);
-            if ($data) {
-                $mesIngles = $data->format('M');
-                $ano = $data->format('Y');
-                $mes = $mesesTraducao[$mesIngles] ?? '';
-                $mesAno = $mes . ' ' . $ano;
+                $data_aporte = $item['data_aporte'] ?? '';
                 
-                if ($mes) {
-                    if (!isset($investidoPorMesAno[$mesAno])) {
-                        $investidoPorMesAno[$mesAno] = 0;
+                if ($valor_aporte_item > 0 && !empty($data_aporte)) {
+                    // Para o gráfico mensal
+                    $data = DateTime::createFromFormat('d/m/Y', $data_aporte);
+                    if ($data) {
+                        $mesIngles = $data->format('M');
+                        $ano = $data->format('Y');
+                        $mes = $mesesTraducao[$mesIngles] ?? '';
+                        $mesAno = $mes . ' ' . $ano;
+                        
+                        if ($mes) {
+                            if (!isset($investidoPorMesAno[$mesAno])) {
+                                $investidoPorMesAno[$mesAno] = 0;
+                            }
+                            $investidoPorMesAno[$mesAno] += $valor_aporte_item;
+                        }
                     }
-                    $investidoPorMesAno[$mesAno] += $valor_aporte_item;
+                    
+                    // Para tabela de últimos movimentos
+                    $ultimos[] = [
+                        'data' => $data_aporte,
+                        'valor' => $valor_aporte_item,
+                        'investimento' => $nome_investimento . ($venda_status ? ' (Vendido)' : ''),
+                        'vendido' => $venda_status ? true : false
+                    ];
+                    
+                    // Para o extrato completo com filtros
+                    $situacao = 'ativo';
+                    if ($venda_status) {
+                        $situacao = 'vendido';
+                    } elseif ($eh_scp && in_array($status_captacao, ['encerrado', 'encerrado_meta', 'encerrado_data', 'encerrado_manual'])) {
+                        $situacao = 'encerrado';
+                    }
+                    
+                    $movimentos_completos[] = [
+                        'id' => "aporte_{$aporte_id}_{$index}",
+                        'data' => $data_aporte,
+                        'tipo' => 'aporte',
+                        'investimento' => $nome_investimento,
+                        'valor' => $valor_aporte_item,
+                        'vendido' => $venda_status ? true : false,
+                        'aporte_id' => $aporte_id,
+                        'investment_id' => $investment_id,
+                        'timestamp' => $data ? $data->getTimestamp() : time(),
+                        'classe_ativo' => $classe_ativo,
+                        'eh_scp' => $eh_scp,
+                        'situacao' => $situacao
+                    ];
                 }
-            }
-            
-            // Para tabela de últimos movimentos
-            $ultimos[] = [
-                'data' => $data_aporte,
-                'valor' => $valor_aporte_item,
-                'investimento' => $nome_investimento . ($venda_status ? ' (Vendido)' : ''),
-                'vendido' => $venda_status ? true : false
-            ];
-            
-            // Para o extrato completo com filtros
-            $situacao = 'ativo';
-            if ($venda_status) {
-                $situacao = 'vendido';
-            } elseif ($eh_scp && in_array($status_captacao, ['encerrado', 'encerrado_meta', 'encerrado_data', 'encerrado_manual'])) {
-                $situacao = 'encerrado';
-            }
-            
-            $movimentos_completos[] = [
-                'id' => "aporte_{$aporte_id}_{$index}",
-                'data' => $data_aporte,
-                'tipo' => 'aporte',
-                'investimento' => $nome_investimento,
-                'valor' => $valor_aporte_item,
-                'vendido' => $venda_status ? true : false,
-                'aporte_id' => $aporte_id,
-                'investment_id' => $investment_id,
-                'timestamp' => $data ? $data->getTimestamp() : time(),
-                'classe_ativo' => $classe_ativo,
-                'eh_scp' => $eh_scp,
-                'situacao' => $situacao
-            ];
             }
         }
     }
@@ -1326,5 +1327,5 @@ $investimentos_disponiveis_extrato = get_posts([
     </script>
 <?php endif; ?>
 
-<!-- SCRIPT PARA FUNÇÃO EXTRATO -->
+<!-- SCRIPT PARA FUNCAO EXTRATO -->
 <script src="<?php echo S_INVEST_THEME_URL; ?>/public/js/dashboard-fix.js"></script>
