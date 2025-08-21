@@ -26,6 +26,9 @@ require_once S_INVEST_THEME_DIR . '/inc/investment-system/calculations.php';
 // 4. Interface Administrativa
 require_once S_INVEST_THEME_DIR . '/inc/admin-system/admin-interface.php';
 
+// 5. Override Inteligente do WP-Admin
+require_once S_INVEST_THEME_DIR . '/inc/admin-system/wp-admin-override.php';
+
 // ========== COMPATIBILIDADE E MIGRAÇÃO ==========
 
 /**
