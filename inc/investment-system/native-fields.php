@@ -740,3 +740,9 @@ class S_Invest_Native_Fields {
 
 // Initialize
 S_Invest_Native_Fields::get_instance();
+
+// Load AJAX handlers
+require_once dirname(__FILE__) . '/native-fields-ajax.php';
+
+// Load ACF migration
+require_once dirname(__FILE__) . '/acf-migration.php';

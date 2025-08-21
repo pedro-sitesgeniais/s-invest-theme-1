@@ -32,6 +32,9 @@ require_once S_INVEST_THEME_DIR . '/inc/admin-system/wp-admin-override.php';
 // 6. Sistema de Migração de Dados
 require_once S_INVEST_THEME_DIR . '/inc/investment-system/data-migration.php';
 
+// 7. Sistema Nativo de Campos (substitui ACF)
+require_once S_INVEST_THEME_DIR . '/inc/investment-system/native-fields.php';
+
 // ========== COMPATIBILIDADE E MIGRAÇÃO ==========
 
 /**
