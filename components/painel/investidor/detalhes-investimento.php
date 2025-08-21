@@ -235,27 +235,7 @@ $rentabilidade_projetada = $rentabilidade_ativa_total; // Sempre do histórico
 $rentabilidade_pct = ($status_geral === 'misto') ? $rentabilidade_pct_ativos : 
                     ($status_geral === 'ativo' ? $rentabilidade_pct_ativos_puros : $rentabilidade_pct_geral);
 
-// ===== PREPARAR DADOS PARA GRÁFICO (SEMPRE 5 MESES) =====
-
-// Função para gerar últimos 5 meses
-function gerar_ultimos_5_meses() {
-    $meses = [];
-    $data_atual = new DateTime();
-    
-    for ($i = 4; $i >= 0; $i--) {
-        $data_mes = clone $data_atual;
-        $data_mes->modify("-{$i} months");
-        $meses[] = [
-            'mes_ano' => $data_mes->format('m/Y'),
-            'label' => $data_mes->format('M/Y'),
-            'timestamp' => $data_mes->getTimestamp()
-        ];
-    }
-    
-    return $meses;
-}
-
-$ultimos_5_meses = gerar_ultimos_5_meses();
+// ===== PREPARAR DADOS PARA GRÁFICO =====
 $dados_grafico = [];
 
 if ($is_private) {
@@ -271,10 +251,17 @@ if ($is_private) {
                 $date = DateTime::createFromFormat('d/m/Y', $data_dividendo);
                 if ($date) {
                     $mes_ano = $date->format('m/Y');
+                    $mes_ano_label = $date->format('M/Y');
+                    
                     if (!isset($dividendos_por_mes[$mes_ano])) {
-                        $dividendos_por_mes[$mes_ano] = 0;
+                        $dividendos_por_mes[$mes_ano] = [
+                            'data_dividendo' => $mes_ano_label,
+                            'valor' => 0,
+                            'timestamp' => $date->getTimestamp()
+                        ];
                     }
-                    $dividendos_por_mes[$mes_ano] += $valor_dividendo;
+                    
+                    $dividendos_por_mes[$mes_ano]['valor'] += $valor_dividendo;
                 }
             } catch (Exception $e) {
                 // Ignorar datas inválidas
@@ -282,47 +269,24 @@ if ($is_private) {
         }
     }
     
-    // Criar dados para os últimos 5 meses
-    foreach ($ultimos_5_meses as $mes) {
-        $dados_grafico[] = [
-            'data_dividendo' => $mes['label'],
-            'valor' => $dividendos_por_mes[$mes['mes_ano']] ?? 0,
-            'timestamp' => $mes['timestamp']
-        ];
-    }
+    // Ordenar por data e converter para array indexado
+    uasort($dividendos_por_mes, function($a, $b) {
+        return $a['timestamp'] - $b['timestamp'];
+    });
+    
+    $dados_grafico = array_values($dividendos_por_mes);
     
 } else {
-    // Para produtos TRADE: usar rentabilidade histórica existente ou zeros
-    $rentabilidade_por_mes = [];
+    // Para produtos TRADE: usar rentabilidade histórica existente
+    $dados_grafico = array_values($historico_rentabilidade_consolidado);
     
-    foreach ($historico_rentabilidade_consolidado as $item) {
-        $data_rentabilidade = $item['data_rentabilidade'] ?? '';
-        $valor = floatval($item['valor'] ?? 0);
-        
-        if ($data_rentabilidade) {
-            try {
-                $date = DateTime::createFromFormat('d/m/Y', $data_rentabilidade);
-                if ($date) {
-                    $mes_ano = $date->format('m/Y');
-                    if (!isset($rentabilidade_por_mes[$mes_ano])) {
-                        $rentabilidade_por_mes[$mes_ano] = 0;
-                    }
-                    $rentabilidade_por_mes[$mes_ano] = max($rentabilidade_por_mes[$mes_ano], $valor); // Pegar maior valor do mês
-                }
-            } catch (Exception $e) {
-                // Ignorar datas inválidas
-            }
-        }
-    }
-    
-    // Criar dados para os últimos 5 meses
-    foreach ($ultimos_5_meses as $mes) {
-        $dados_grafico[] = [
-            'data_rentabilidade' => $mes['label'],
-            'valor' => $rentabilidade_por_mes[$mes['mes_ano']] ?? 0,
-            'timestamp' => $mes['timestamp']
-        ];
-    }
+    // Ordenar por data
+    usort($dados_grafico, function($a, $b) {
+        $dateA = DateTime::createFromFormat('d/m/Y', $a['data_rentabilidade']);
+        $dateB = DateTime::createFromFormat('d/m/Y', $b['data_rentabilidade']);
+        if (!$dateA || !$dateB) return 0;
+        return $dateA->getTimestamp() - $dateB->getTimestamp();
+    });
 }
 
 // Manter compatibilidade com código existente
@@ -542,23 +506,25 @@ $docs = get_field('documentos', $inv_id) ?: [];
         </div>
     </div>
 
-    <!-- GRÁFICO - SEMPRE EXIBIR COM OS ÚLTIMOS 5 MESES -->
-    <div class="my-6 md:my-12">
-        <!-- Título do Gráfico -->
-        <div class="mb-4 md:mb-6 text-center">
-            <h3 class="text-lg md:text-xl font-semibold text-slate-300 mb-2">
-                <?php echo $is_private ? 'Histórico de Dividendos Mensais' : 'Evolução da Rentabilidade'; ?>
-            </h3>
-            <p class="text-sm text-slate-400">
-                <?php echo $is_private ? 'Últimos 5 meses de dividendos recebidos' : 'Últimos 5 meses de rentabilidade do investimento'; ?>
-            </p>
+    <!-- GRÁFICO -->
+    <?php if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist) && count($rentabilidade_hist) > 0) : ?>
+        <div class="my-6 md:my-12">
+            <!-- Título do Gráfico -->
+            <div class="mb-4 md:mb-6 text-center">
+                <h3 class="text-lg md:text-xl font-semibold text-slate-300 mb-2">
+                    <?php echo $is_private ? 'Histórico de Dividendos Mensais' : 'Evolução da Rentabilidade'; ?>
+                </h3>
+                <p class="text-sm text-slate-400">
+                    <?php echo $is_private ? 'Valores recebidos por mês' : 'Histórico de valores do investimento'; ?>
+                </p>
+            </div>
+            
+            <!-- Canvas do Gráfico -->
+            <div class="h-[300px] sm:h-[350px] md:h-[400px]">
+                <canvas id="investmentChart"></canvas>
+            </div>
         </div>
-        
-        <!-- Canvas do Gráfico -->
-        <div class="h-[300px] sm:h-[350px] md:h-[400px]">
-            <canvas id="investmentChart"></canvas>
-        </div>
-    </div>
+    <?php endif; ?>
 
     <!-- INFORMAÇÕES DA VENDA -->
     <?php if ($venda_status && !empty($data_venda)) : ?>
@@ -775,7 +741,8 @@ $docs = get_field('documentos', $inv_id) ?: [];
     </div>
 </div>
 
-<!-- SCRIPT DO GRÁFICO - SEMPRE CARREGAR -->
+<!-- SCRIPT DO GRÁFICO -->
+<?php if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist) && count($rentabilidade_hist) > 0) : ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     function initChart() {
@@ -791,8 +758,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const historico = <?php echo json_encode($rentabilidade_hist); ?>;
         const isPrivate = <?php echo $is_private ? 'true' : 'false'; ?>;
 
-        // Sempre exibir gráfico, mesmo com dados zerados
-        if (historico) {
+        if (historico && historico.length > 0) {
             try {
                 // Definir configurações baseadas no tipo de produto
                 const config = {
@@ -889,6 +855,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(initChart, 300);
 });
 </script>
+<?php endif; ?>
 
 <!-- SCRIPT PARA DROPDOWN DOS CONTRATOS -->
 <?php if (!empty($contratos_venda) && count($contratos_venda) > 1) : ?>

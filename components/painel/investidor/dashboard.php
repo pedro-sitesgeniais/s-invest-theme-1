@@ -135,12 +135,8 @@ foreach ($aportes as $aporte) {
     $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
     $valor_investido_aporte = 0;
     
-    if (is_array($historico_aportes)) {
-        foreach ($historico_aportes as $item) {
-            if (is_array($item)) {
-                $valor_investido_aporte += floatval($item['valor_aporte'] ?? 0);
-            }
-        }
+    foreach ($historico_aportes as $item) {
+        $valor_investido_aporte += floatval($item['valor_aporte'] ?? 0);
     }
     
     // Se não tem histórico, usar valor_compra ou valor_aportado
@@ -220,61 +216,57 @@ foreach ($aportes as $aporte) {
     }
     
     // Histórico para gráfico de barras
-    if (is_array($historico_aportes)) {
-        foreach ($historico_aportes as $index => $item) {
-            if (is_array($item)) {
-                $valor_aporte_item = floatval($item['valor_aporte'] ?? 0);
-                $data_aporte = $item['data_aporte'] ?? '';
+    foreach ($historico_aportes as $index => $item) {
+        $valor_aporte_item = floatval($item['valor_aporte'] ?? 0);
+        $data_aporte = $item['data_aporte'] ?? '';
+        
+        if ($valor_aporte_item > 0 && !empty($data_aporte)) {
+            // Para o gráfico mensal
+            $data = DateTime::createFromFormat('d/m/Y', $data_aporte);
+            if ($data) {
+                $mesIngles = $data->format('M');
+                $ano = $data->format('Y');
+                $mes = $mesesTraducao[$mesIngles] ?? '';
+                $mesAno = $mes . ' ' . $ano;
                 
-                if ($valor_aporte_item > 0 && !empty($data_aporte)) {
-                    // Para o gráfico mensal
-                    $data = DateTime::createFromFormat('d/m/Y', $data_aporte);
-                    if ($data) {
-                        $mesIngles = $data->format('M');
-                        $ano = $data->format('Y');
-                        $mes = $mesesTraducao[$mesIngles] ?? '';
-                        $mesAno = $mes . ' ' . $ano;
-                        
-                        if ($mes) {
-                            if (!isset($investidoPorMesAno[$mesAno])) {
-                                $investidoPorMesAno[$mesAno] = 0;
-                            }
-                            $investidoPorMesAno[$mesAno] += $valor_aporte_item;
-                        }
+                if ($mes) {
+                    if (!isset($investidoPorMesAno[$mesAno])) {
+                        $investidoPorMesAno[$mesAno] = 0;
                     }
-                    
-                    // Para tabela de últimos movimentos
-                    $ultimos[] = [
-                        'data' => $data_aporte,
-                        'valor' => $valor_aporte_item,
-                        'investimento' => $nome_investimento . ($venda_status ? ' (Vendido)' : ''),
-                        'vendido' => $venda_status ? true : false
-                    ];
-                    
-                    // Para o extrato completo com filtros
-                    $situacao = 'ativo';
-                    if ($venda_status) {
-                        $situacao = 'vendido';
-                    } elseif ($eh_scp && in_array($status_captacao, ['encerrado', 'encerrado_meta', 'encerrado_data', 'encerrado_manual'])) {
-                        $situacao = 'encerrado';
-                    }
-                    
-                    $movimentos_completos[] = [
-                        'id' => "aporte_{$aporte_id}_{$index}",
-                        'data' => $data_aporte,
-                        'tipo' => 'aporte',
-                        'investimento' => $nome_investimento,
-                        'valor' => $valor_aporte_item,
-                        'vendido' => $venda_status ? true : false,
-                        'aporte_id' => $aporte_id,
-                        'investment_id' => $investment_id,
-                        'timestamp' => $data ? $data->getTimestamp() : time(),
-                        'classe_ativo' => $classe_ativo,
-                        'eh_scp' => $eh_scp,
-                        'situacao' => $situacao
-                    ];
+                    $investidoPorMesAno[$mesAno] += $valor_aporte_item;
                 }
             }
+            
+            // Para tabela de últimos movimentos
+            $ultimos[] = [
+                'data' => $data_aporte,
+                'valor' => $valor_aporte_item,
+                'investimento' => $nome_investimento . ($venda_status ? ' (Vendido)' : ''),
+                'vendido' => $venda_status ? true : false
+            ];
+            
+            // Para o extrato completo com filtros
+            $situacao = 'ativo';
+            if ($venda_status) {
+                $situacao = 'vendido';
+            } elseif ($eh_scp && in_array($status_captacao, ['encerrado', 'encerrado_meta', 'encerrado_data', 'encerrado_manual'])) {
+                $situacao = 'encerrado';
+            }
+            
+            $movimentos_completos[] = [
+                'id' => "aporte_{$aporte_id}_{$index}",
+                'data' => $data_aporte,
+                'tipo' => 'aporte',
+                'investimento' => $nome_investimento,
+                'valor' => $valor_aporte_item,
+                'vendido' => $venda_status ? true : false,
+                'aporte_id' => $aporte_id,
+                'investment_id' => $investment_id,
+                'timestamp' => $data ? $data->getTimestamp() : time(),
+                'classe_ativo' => $classe_ativo,
+                'eh_scp' => $eh_scp,
+                'situacao' => $situacao
+            ];
         }
     }
     
@@ -874,7 +866,6 @@ $investimentos_disponiveis_extrato = get_posts([
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investimento</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Situação</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -902,17 +893,6 @@ $investimentos_disponiveis_extrato = get_posts([
                                             <i :class="movimento.situacao === 'ativo' ? 'fas fa-chart-line' : (movimento.situacao === 'vendido' ? 'fas fa-hand-holding-usd' : 'fas fa-times-circle')" class="mr-1"></i>
                                             <span x-text="movimento.situacao === 'ativo' ? 'Ativo' : (movimento.situacao === 'vendido' ? 'Vendido' : 'Encerrado')"></span>
                                         </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <template x-if="movimento.investment_id">
-                                            <a :href="`?secao=meus-investimentos&detalhe=${movimento.investment_id}`"
-                                                class="inline-flex items-center px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:bg-slate-950 transition-colors">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        </template>
-                                        <template x-if="!movimento.investment_id">
-                                            <span class="text-xs text-gray-400 italic">N/A</span>
-                                        </template>
                                     </td>
                                 </tr>
                             </template>
@@ -1327,5 +1307,5 @@ $investimentos_disponiveis_extrato = get_posts([
     </script>
 <?php endif; ?>
 
-<!-- SCRIPT PARA FUNCAO EXTRATO -->
+<!-- SCRIPT PARA FUNÇÃO EXTRATO -->
 <script src="<?php echo S_INVEST_THEME_URL; ?>/public/js/dashboard-fix.js"></script>

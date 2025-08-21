@@ -152,11 +152,11 @@ $faqs_js = json_encode($faqs_json, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT 
             <div class="space-y-4">
                 <div>
                     <h3 class="font-medium text-gray-900 mb-2">📞 Telefone</h3>
-                    <a href="tel:+5519999954240" class="text-blue-600 hover:text-blue-800">(19) 9 9995-4240</a>
+                    <a href="tel:+5511999999999" class="text-blue-600 hover:text-blue-800">(11) 99999-9999</a>
                 </div>
                 <div>
                     <h3 class="font-medium text-gray-900 mb-2">✉️ Email</h3>
-                    <a href="mailto:suporte@bravaforte.com" class="text-blue-600 hover:text-blue-800">suporte@bravaforte.com</a>
+                    <a href="mailto:suporte@sinvest.com.br" class="text-blue-600 hover:text-blue-800">suporte@sinvest.com.br</a>
                 </div>
                 <div>
                     <h3 class="font-medium text-gray-900 mb-2">🕒 Horário de Atendimento</h3>

@@ -52,19 +52,13 @@ function sit_menu_link_associado( $secao, $label, $icon ) {
 
 <nav role="navigation" aria-label="Menu do Associado" class="flex-1 overflow-y-auto space-y-1 text-sm text-white">
     <?php
-    // Dashboard Administrativo
-    sit_menu_link_associado( 'admin-dashboard', 'Dashboard Admin',       'chart-line'      );
-    // Dashboard do Investidor (visualização)
-    sit_menu_link_associado( 'dashboard',     'Dashboard Investidor',    'tachometer-alt'  );
+    // Dashboard
+    sit_menu_link_associado( 'dashboard',     'Dashboard',              'tachometer-alt' );
     // Investimentos publicados
-    sit_menu_link_associado( 'investimentos', 'Investimentos',           'folder-open'     );
+    sit_menu_link_associado( 'investimentos', 'Investimentos Publicados','folder-open'    );
     // Lista de investidores
-    sit_menu_link_associado( 'investidores',  'Investidores',            'users'           );
+    sit_menu_link_associado( 'investidores',  'Investidores',           'users'           );
     // Aportes cadastrados
-    sit_menu_link_associado( 'aportes',       'Aportes',                 'coins'           );
-    // Relatórios
-    sit_menu_link_associado( 'relatorios',    'Relatórios',              'chart-bar'       );
-    // Configurações
-    sit_menu_link_associado( 'configuracoes', 'Configurações',           'cogs'            );
+    sit_menu_link_associado( 'aportes',       'Aportes',                'coins'           );
     ?>
 </nav>
