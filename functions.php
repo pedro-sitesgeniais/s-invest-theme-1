@@ -38,42 +38,58 @@ add_action('after_setup_theme', 's_invest_unified_system_init', 1);
 
 function s_invest_unified_system_init() {
     // Verificar se o plugin sky-invest-panel está ativo
-    if (is_plugin_active('sky-invest-panel/sky-invest-panel.php')) {
+    if (function_exists('is_plugin_active') && is_plugin_active('sky-invest-panel/sky-invest-panel.php')) {
         add_action('admin_notices', function() {
-            echo '<div class="notice notice-warning">';
-            echo '<p><strong>Sistema Unificado Ativo:</strong> O plugin sky-invest-panel pode ser desativado. ';
+            echo '<div class="notice notice-warning is-dismissible">';
+            echo '<p><strong>⚠️ Sistema Unificado Ativo:</strong> O plugin sky-invest-panel pode ser desativado. ';
             echo 'Todas as funcionalidades foram migradas para o tema.</p>';
+            echo '<p><em>Para evitar conflitos, desative o plugin sky-invest-panel.</em></p>';
             echo '</div>';
         });
+        
+        // Se o plugin estiver ativo, não registrar os CPTs para evitar conflito
+        remove_action('init', [S_Invest_CPT_Manager::get_instance(), 'register_post_types']);
     }
     
     // Log da inicialização
     if (WP_DEBUG) {
-        error_log('S-Invest Unified System v3.0.0 inicializado com sucesso!');
+        error_log('S-Invest Unified System v3.0.0 inicializado - Plugin ativo: ' . 
+                 (function_exists('is_plugin_active') && is_plugin_active('sky-invest-panel/sky-invest-panel.php') ? 'Sim' : 'Não'));
     }
 }
 
 /**
- * Função helper para compatibilidade com o código existente
+ * Funções de compatibilidade - só declara se não existirem
+ * Permite convivência temporária com o plugin sky-invest-panel
  */
-function sip_get_meta_captacao($investment_id) {
-    return S_Invest_Calculations::get_meta_captacao($investment_id);
+if (!function_exists('sip_get_meta_captacao')) {
+    function sip_get_meta_captacao($investment_id) {
+        return S_Invest_Calculations::get_meta_captacao($investment_id);
+    }
 }
 
-function sip_get_aporte_minimo_scp($investment_id) {
-    return S_Invest_Calculations::get_aporte_minimo_scp($investment_id);
+if (!function_exists('sip_get_aporte_minimo_scp')) {
+    function sip_get_aporte_minimo_scp($investment_id) {
+        return S_Invest_Calculations::get_aporte_minimo_scp($investment_id);
+    }
 }
 
-function sip_is_scp_investment($investment_id) {
-    return S_Invest_Calculations::is_scp_investment($investment_id);
+if (!function_exists('sip_is_scp_investment')) {
+    function sip_is_scp_investment($investment_id) {
+        return S_Invest_Calculations::is_scp_investment($investment_id);
+    }
 }
 
-function sip_get_investor_summary_unified_updated($user_id) {
-    return S_Invest_Calculations::get_investor_summary_unified($user_id);
+if (!function_exists('sip_get_investor_summary_unified_updated')) {
+    function sip_get_investor_summary_unified_updated($user_id) {
+        return S_Invest_Calculations::get_investor_summary_unified($user_id);
+    }
 }
 
-function sip_format_currency($value, $show_symbol = true) {
-    return S_Invest_Calculations::format_currency($value, $show_symbol);
+if (!function_exists('sip_format_currency')) {
+    function sip_format_currency($value, $show_symbol = true) {
+        return S_Invest_Calculations::format_currency($value, $show_symbol);
+    }
 }
 
 // ========== FIM DO SISTEMA UNIFICADO ==========

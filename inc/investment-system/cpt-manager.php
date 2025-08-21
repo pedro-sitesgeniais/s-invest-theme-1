@@ -19,8 +19,8 @@ class S_Invest_CPT_Manager {
     }
     
     private function __construct() {
-        add_action('init', [$this, 'register_post_types']);
-        add_action('init', [$this, 'register_taxonomies']);
+        add_action('init', [$this, 'register_post_types'], 5);
+        add_action('init', [$this, 'register_taxonomies'], 6);
         add_action('admin_init', [$this, 'run_migration']);
         
         // Hooks de funcionalidade
@@ -51,9 +51,29 @@ class S_Invest_CPT_Manager {
     }
     
     /**
+     * Verificar se deve registrar CPTs (evitar conflito com plugin)
+     */
+    private function should_register_cpts() {
+        // Se o plugin sky-invest-panel estiver ativo, não registrar
+        if (function_exists('is_plugin_active') && is_plugin_active('sky-invest-panel/sky-invest-panel.php')) {
+            return false;
+        }
+        
+        // Se os CPTs já estiverem registrados por outro plugin, não registrar
+        if (post_type_exists('investment') && !get_option('s_invest_unified_migrated')) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
      * Registrar CPT Investimentos Unificado (Trade + SCP)
      */
     public function register_post_types() {
+        if (!$this->should_register_cpts()) {
+            return;
+        }
         // CPT Investimentos
         register_post_type('investment', [
             'labels' => [
@@ -154,6 +174,9 @@ class S_Invest_CPT_Manager {
      * Registrar taxonomias
      */
     public function register_taxonomies() {
+        if (!$this->should_register_cpts()) {
+            return;
+        }
         // Classe de Ativos (select único)
         register_taxonomy('tipo_produto', ['investment'], [
             'labels' => [
