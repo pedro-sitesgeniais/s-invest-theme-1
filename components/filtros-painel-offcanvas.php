@@ -71,12 +71,13 @@ $impostos = get_terms([
                     </select>
                 </div>
             <?php else : ?>
-                <!-- Status do Produto (ativo/encerrado) - APENAS PARA PRODUTOS GERAIS -->
+                <!-- Status do Produto (em_breve/ativo/encerrado) - APENAS PARA PRODUTOS GERAIS -->
                 <div class="flex-shrink-0">
                     <select x-model="filtros.status_produto" 
                             @change="aplicarFiltros()"
                             class="appearance-none bg-white border border-gray-300 rounded-2xl px-5 py-3 text-sm shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors">
                         <option value="">Todos os Status</option>
+                        <option value="em_breve">Em Breve</option>
                         <option value="ativo">Ativo</option>
                         <option value="encerrado">Encerrado</option>
                     </select>
@@ -299,6 +300,7 @@ $impostos = get_terms([
                     <select x-model="filtros.status_produto" 
                             class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all">
                         <option value="">Todos os Status</option>
+                        <option value="em_breve">Em Breve</option>
                         <option value="ativo">Ativo</option>
                         <option value="encerrado">Encerrado</option>
                     </select>

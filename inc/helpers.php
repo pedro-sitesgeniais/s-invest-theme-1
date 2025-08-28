@@ -443,22 +443,48 @@ function icf_get_investment_status( int $inv_id ): string {
 }
 
 /**
- * NOVA FUNÇÃO: Wrapper para verificar status da captação
+ * FUNÇÃO PRINCIPAL: Calcular status da captação (em_breve, ativo, encerrado)
  */
-function icf_get_captacao_status($investment_id) {
-    if (function_exists('s_invest_calcular_status_captacao')) {
-        return s_invest_calcular_status_captacao($investment_id);
-    }
-    
-    // Fallback básico
+function s_invest_calcular_status_captacao($investment_id) {
+    $data_lancamento = get_field('data_lancamento', $investment_id);
+    $fim_captacao = get_field('fim_captacao', $investment_id);
     $valor_total = floatval(get_field('valor_total', $investment_id) ?: 0);
     $total_captado = floatval(get_field('total_captado', $investment_id) ?: 0);
     
-    if ($valor_total > 0 && ($total_captado / $valor_total) >= 1.0) {
-        return 'encerrado_meta';
+    $hoje = new DateTime();
+    
+    // Em breve: data de lançamento futura
+    if (!empty($data_lancamento)) {
+        $data_obj = DateTime::createFromFormat('d/m/Y', $data_lancamento);
+        if ($data_obj && $data_obj > $hoje) {
+            return 'em_breve';
+        }
     }
     
+    // Encerrado: meta atingida OU prazo vencido
+    $meta_atingida = ($valor_total > 0 && $total_captado >= $valor_total);
+    
+    $prazo_vencido = false;
+    if (!empty($fim_captacao)) {
+        $fim_obj = DateTime::createFromFormat('d/m/Y', $fim_captacao);
+        if ($fim_obj && $fim_obj < $hoje) {
+            $prazo_vencido = true;
+        }
+    }
+    
+    if ($meta_atingida || $prazo_vencido) {
+        return 'encerrado';
+    }
+    
+    // Ativo: captação iniciada e não encerrado
     return 'ativo';
+}
+
+/**
+ * NOVA FUNÇÃO: Wrapper para verificar status da captação
+ */
+function icf_get_captacao_status($investment_id) {
+    return s_invest_calcular_status_captacao($investment_id);
 }
 
 /**
@@ -469,16 +495,34 @@ function icf_get_captacao_status_info($investment_id) {
         return s_invest_get_status_captacao_info($investment_id);
     }
     
-    // Fallback básico
+    // Fallback atualizado com 3 status
     $status = icf_get_captacao_status($investment_id);
     
-    return [
-        'status' => $status,
-        'label' => $status === 'ativo' ? 'Em Captação' : 'Encerrado',
-        'class' => $status === 'ativo' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400',
-        'icon' => $status === 'ativo' ? 'fa-chart-line' : 'fa-times-circle',
-        'description' => $status === 'ativo' ? 'Investimento disponível' : 'Captação encerrada'
+    $config = [
+        'em_breve' => [
+            'status' => 'em_breve',
+            'label' => 'Em Breve',
+            'class' => 'bg-blue-500/20 text-blue-400',
+            'icon' => 'fa-clock',
+            'description' => 'Captação em breve'
+        ],
+        'ativo' => [
+            'status' => 'ativo',
+            'label' => 'Em Captação',
+            'class' => 'bg-green-500/20 text-green-400',
+            'icon' => 'fa-chart-line',
+            'description' => 'Investimento disponível'
+        ],
+        'encerrado' => [
+            'status' => 'encerrado',
+            'label' => 'Encerrado',
+            'class' => 'bg-red-500/20 text-red-400',
+            'icon' => 'fa-times-circle',
+            'description' => 'Captação encerrada'
+        ]
     ];
+    
+    return $config[$status] ?? $config['ativo'];
 }
 
 /**

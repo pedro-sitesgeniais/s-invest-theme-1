@@ -120,10 +120,8 @@ function s_invest_ajax_filtrar_investimentos_painel() {
                     ? s_invest_calcular_status_captacao($investment_id) 
                     : 'ativo';
                 
-                $eh_ativo = ($status === 'ativo');
-                
-                if (($status_filtro === 'ativo' && $eh_ativo) || 
-                    ($status_filtro === 'encerrado' && !$eh_ativo)) {
+                // Novo: verificar se corresponde ao filtro selecionado
+                if ($status === $status_filtro) {
                     $investments_filtrados[] = $investment_id;
                 }
             }
@@ -368,22 +366,35 @@ function aplicar_filtros_investimentos(&$args, $dados) {
                     OR
                     (
                         meta_fim_captacao.meta_value IS NOT NULL 
-                        AND STR_TO_DATE(meta_fim_captacao.meta_value, '%Y-%m-%d') < CURDATE()
+                        AND STR_TO_DATE(meta_fim_captacao.meta_value, '%d/%m/%Y') < CURDATE()
                     )
                 )";
             } elseif ($status_produto === 'ativo') {
-                // Para produtos ativos: valor_total > total_captado E (sem data fim OU data fim futura)
+                // Para produtos ativos: captação iniciada E não encerrado
                 $where .= " AND (
                     (
-                        meta_valor_total.meta_value IS NOT NULL 
-                        AND meta_total_captado.meta_value IS NOT NULL
-                        AND CAST(meta_total_captado.meta_value AS DECIMAL(10,2)) < CAST(meta_valor_total.meta_value AS DECIMAL(10,2))
+                        meta_data_lancamento.meta_value IS NOT NULL 
+                        AND STR_TO_DATE(meta_data_lancamento.meta_value, '%d/%m/%Y') <= CURDATE()
                     )
                     AND
                     (
-                        meta_fim_captacao.meta_value IS NULL
-                        OR STR_TO_DATE(meta_fim_captacao.meta_value, '%Y-%m-%d') >= CURDATE()
+                        (
+                            meta_valor_total.meta_value IS NOT NULL 
+                            AND meta_total_captado.meta_value IS NOT NULL
+                            AND CAST(meta_total_captado.meta_value AS DECIMAL(10,2)) < CAST(meta_valor_total.meta_value AS DECIMAL(10,2))
+                        )
+                        AND
+                        (
+                            meta_fim_captacao.meta_value IS NULL
+                            OR STR_TO_DATE(meta_fim_captacao.meta_value, '%d/%m/%Y') >= CURDATE()
+                        )
                     )
+                )";
+            } elseif ($status_produto === 'em_breve') {
+                // Para produtos em breve: data de lançamento futura
+                $where .= " AND (
+                    meta_data_lancamento.meta_value IS NOT NULL 
+                    AND STR_TO_DATE(meta_data_lancamento.meta_value, '%d/%m/%Y') > CURDATE()
                 )";
             }
             
@@ -397,6 +408,7 @@ function aplicar_filtros_investimentos(&$args, $dados) {
             $join .= " LEFT JOIN {$wpdb->postmeta} AS meta_valor_total ON ({$wpdb->posts}.ID = meta_valor_total.post_id AND meta_valor_total.meta_key = 'valor_total')";
             $join .= " LEFT JOIN {$wpdb->postmeta} AS meta_total_captado ON ({$wpdb->posts}.ID = meta_total_captado.post_id AND meta_total_captado.meta_key = 'total_captado')";
             $join .= " LEFT JOIN {$wpdb->postmeta} AS meta_fim_captacao ON ({$wpdb->posts}.ID = meta_fim_captacao.post_id AND meta_fim_captacao.meta_key = 'fim_captacao')";
+            $join .= " LEFT JOIN {$wpdb->postmeta} AS meta_data_lancamento ON ({$wpdb->posts}.ID = meta_data_lancamento.post_id AND meta_data_lancamento.meta_key = 'data_lancamento')";
             
             return $join;
         }, 10);
