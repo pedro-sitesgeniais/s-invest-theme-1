@@ -442,43 +442,6 @@ function icf_get_investment_status( int $inv_id ): string {
     return 'Concluído';
 }
 
-/**
- * FUNÇÃO PRINCIPAL: Calcular status da captação (em_breve, ativo, encerrado)
- */
-function s_invest_calcular_status_captacao($investment_id) {
-    $data_lancamento = get_field('data_lancamento', $investment_id);
-    $fim_captacao = get_field('fim_captacao', $investment_id);
-    $valor_total = floatval(get_field('valor_total', $investment_id) ?: 0);
-    $total_captado = floatval(get_field('total_captado', $investment_id) ?: 0);
-    
-    $hoje = new DateTime();
-    
-    // Em breve: data de lançamento futura
-    if (!empty($data_lancamento)) {
-        $data_obj = DateTime::createFromFormat('d/m/Y', $data_lancamento);
-        if ($data_obj && $data_obj > $hoje) {
-            return 'em_breve';
-        }
-    }
-    
-    // Encerrado: meta atingida OU prazo vencido
-    $meta_atingida = ($valor_total > 0 && $total_captado >= $valor_total);
-    
-    $prazo_vencido = false;
-    if (!empty($fim_captacao)) {
-        $fim_obj = DateTime::createFromFormat('d/m/Y', $fim_captacao);
-        if ($fim_obj && $fim_obj < $hoje) {
-            $prazo_vencido = true;
-        }
-    }
-    
-    if ($meta_atingida || $prazo_vencido) {
-        return 'encerrado';
-    }
-    
-    // Ativo: captação iniciada e não encerrado
-    return 'ativo';
-}
 
 /**
  * NOVA FUNÇÃO: Wrapper para verificar status da captação

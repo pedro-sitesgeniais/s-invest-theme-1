@@ -22,27 +22,41 @@ function s_invest_calcular_status_captacao($investment_id) {
     if (empty($status_manual) || $status_manual === 'automatico') {
         
         // Dados do investimento
+        $data_lancamento = get_field('data_lancamento', $investment_id);
         $valor_total = floatval(get_field('valor_total', $investment_id) ?: 0);
         $total_captado = floatval(get_field('total_captado', $investment_id) ?: 0);
         $fim_captacao = get_field('fim_captacao', $investment_id);
+        
+        $hoje = new DateTime();
+        
+        // Em breve: data de lançamento futura
+        if (!empty($data_lancamento)) {
+            $data_obj = DateTime::createFromFormat('d/m/Y', $data_lancamento);
+            if (!$data_obj) {
+                $data_obj = DateTime::createFromFormat('Y-m-d', $data_lancamento);
+            }
+            if ($data_obj && $data_obj > $hoje) {
+                return 'em_breve';
+            }
+        }
         
         // Verificar se atingiu 100% da meta
         if ($valor_total > 0) {
             $porcentagem = ($total_captado / $valor_total) * 100;
             if ($porcentagem >= 100) {
-                return 'encerrado_meta';
+                return 'encerrado';
             }
         }
         
         // Verificar se passou da data final de captação
         if ($fim_captacao) {
-            $data_fim = DateTime::createFromFormat('Y-m-d', $fim_captacao);
+            $data_fim = DateTime::createFromFormat('d/m/Y', $fim_captacao);
             if (!$data_fim) {
-                $data_fim = DateTime::createFromFormat('d/m/Y', $fim_captacao);
+                $data_fim = DateTime::createFromFormat('Y-m-d', $fim_captacao);
             }
             
-            if ($data_fim && $data_fim < new DateTime()) {
-                return 'encerrado_data';
+            if ($data_fim && $data_fim < $hoje) {
+                return 'encerrado';
             }
         }
         
@@ -69,6 +83,13 @@ function s_invest_get_status_captacao_info($investment_id) {
     ];
     
     switch ($status) {
+        case 'em_breve':
+            $info['label'] = 'Em Breve';
+            $info['class'] = 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+            $info['icon'] = 'fa-clock';
+            $info['description'] = 'Captação em breve';
+            break;
+            
         case 'ativo':
             $info['label'] = 'Em Captação';
             $info['class'] = 'bg-green-500/20 text-green-400 border-green-500/30';
