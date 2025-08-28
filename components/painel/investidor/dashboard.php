@@ -897,11 +897,12 @@ $investimentos_disponiveis_extrato = get_posts([
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
                                         <a :href="`?secao=detalhes-investimento&id=${movimento.investment_id}`" 
-                                           x-show="movimento.investment_id"
                                            class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary hover:bg-blue-50 rounded-full transition-colors duration-200"
                                            title="Ver detalhes do investimento">
                                             <i class="fas fa-eye text-sm"></i>
                                         </a>
+                                        <!-- Debug: mostrar o ID -->
+                                        <small x-text="movimento.investment_id" class="block text-xs text-gray-400"></small>
                                     </td>
                                 </tr>
                             </template>
