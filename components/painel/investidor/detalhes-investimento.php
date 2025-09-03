@@ -529,30 +529,17 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     Análise de Performance
                 </h3>
                 <p class="text-sm text-slate-400">
-                    <?php echo $is_private ? 'Histórico de dividendos e comparação com índices' : 'Evolução da rentabilidade e comparação com o mercado'; ?>
+                    <?php echo $is_private ? 'Histórico de dividendos recebidos' : 'Evolução da rentabilidade do investimento'; ?>
                 </p>
             </div>
             
-            <!-- Container dos Gráficos Lado a Lado -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Gráfico Principal (Barras) -->
-                <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                    <h4 class="text-base font-medium text-slate-300 mb-4 text-center">
-                        <?php echo $is_private ? 'Histórico de Dividendos' : 'Evolução da Rentabilidade'; ?>
-                    </h4>
-                    <div class="h-[280px]">
-                        <canvas id="investmentChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Gráfico de Comparação (Linhas) -->
-                <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                    <h4 class="text-base font-medium text-slate-300 mb-4 text-center">
-                        Comparação com Índices
-                    </h4>
-                    <div class="h-[280px]">
-                        <canvas id="comparisonChart"></canvas>
-                    </div>
+            <!-- Gráfico Principal -->
+            <div class="bg-white/5 rounded-xl p-4 border border-white/10 max-w-4xl mx-auto">
+                <h4 class="text-base font-medium text-slate-300 mb-4 text-center">
+                    <?php echo $is_private ? 'Histórico de Dividendos' : 'Evolução da Rentabilidade'; ?>
+                </h4>
+                <div class="h-[280px]">
+                    <canvas id="investmentChart"></canvas>
                 </div>
             </div>
         </div>
@@ -884,192 +871,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Inicializar gráfico de comparação
-    function initComparisonChart() {
-        if (typeof Chart === 'undefined') {
-            setTimeout(initComparisonChart, 200);
-            return;
-        }
-        
-        const canvas = document.getElementById('comparisonChart');
-        if (!canvas) return;
-        
-        const ctx = canvas.getContext('2d');
-        const historico = <?php echo json_encode($rentabilidade_hist); ?>;
-        
-        if (historico && historico.length > 0) {
-            try {
-                // Preparar dados para comparação
-                const labels = historico.map(item => {
-                    const parts = item.data_rentabilidade.split('/');
-                    if (parts.length === 3) {
-                        const month = parts[1];
-                        const year = parts[2].substr(-2);
-                        return `${month}/${year}`;
-                    }
-                    return item.data_rentabilidade;
-                });
-                
-                // Calcular performance acumulada (assumindo que são percentuais mensais)
-                let ativoAcumulado = [0];
-                let cdiAcumulado = [0];
-                let ibovAcumulado = [0];
-                let inflacaoAcumulado = [0];
-                
-                for (let i = 0; i < historico.length; i++) {
-                    const item = historico[i];
-                    
-                    // Para o ativo, calcular % de rentabilidade mensal baseado no valor
-                    let ativoPerc = 0;
-                    if (i === 0) {
-                        ativoPerc = 0; // Primeiro mês como base
-                    } else {
-                        const valorAnterior = historico[i-1].valor || 1;
-                        const valorAtual = item.valor || 0;
-                        ativoPerc = valorAnterior > 0 ? ((valorAtual - valorAnterior) / valorAnterior) * 100 : 0;
-                    }
-                    
-                    // Acumular performances
-                    const ultimoAtivo = ativoAcumulado[ativoAcumulado.length - 1];
-                    const ultimoCdi = cdiAcumulado[cdiAcumulado.length - 1];
-                    const ultimoIbov = ibovAcumulado[ibovAcumulado.length - 1];
-                    const ultimaInflacao = inflacaoAcumulado[inflacaoAcumulado.length - 1];
-                    
-                    ativoAcumulado.push(ultimoAtivo + ativoPerc);
-                    cdiAcumulado.push(ultimoCdi + (parseFloat(item.cdi) || 0));
-                    ibovAcumulado.push(ultimoIbov + (parseFloat(item.ibov) || 0));
-                    inflacaoAcumulado.push(ultimaInflacao + (parseFloat(item.inflacao) || 0));
-                }
-                
-                // Remover o primeiro elemento (base 0)
-                ativoAcumulado.shift();
-                cdiAcumulado.shift();
-                ibovAcumulado.shift();
-                inflacaoAcumulado.shift();
-
-                const config = {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: 'Ativo',
-                                data: ativoAcumulado,
-                                borderColor: '#3B82F6',
-                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                borderWidth: 3,
-                                tension: 0.3,
-                                fill: false,
-                                pointRadius: 4,
-                                pointHoverRadius: 6,
-                                pointBackgroundColor: '#3B82F6',
-                            },
-                            {
-                                label: 'CDI',
-                                data: cdiAcumulado,
-                                borderColor: '#10B981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                borderWidth: 2,
-                                tension: 0.3,
-                                fill: false,
-                                pointRadius: 3,
-                                pointHoverRadius: 5,
-                                pointBackgroundColor: '#10B981',
-                            },
-                            {
-                                label: 'IBOV',
-                                data: ibovAcumulado,
-                                borderColor: '#F59E0B',
-                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                                borderWidth: 2,
-                                tension: 0.3,
-                                fill: false,
-                                pointRadius: 3,
-                                pointHoverRadius: 5,
-                                pointBackgroundColor: '#F59E0B',
-                            },
-                            {
-                                label: 'Inflação',
-                                data: inflacaoAcumulado,
-                                borderColor: '#EF4444',
-                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                borderWidth: 2,
-                                tension: 0.3,
-                                fill: false,
-                                pointRadius: 3,
-                                pointHoverRadius: 5,
-                                pointBackgroundColor: '#EF4444',
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top',
-                                labels: {
-                                    color: '#94A3B8',
-                                    font: { size: 11 },
-                                    usePointStyle: true,
-                                    padding: 15
-                                }
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                titleColor: '#ffffff',
-                                bodyColor: '#ffffff',
-                                borderColor: 'rgba(255, 255, 255, 0.1)',
-                                borderWidth: 1,
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + '%';
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: { 
-                                    color: 'rgba(148, 163, 184, 0.1)',
-                                    drawBorder: false
-                                },
-                                ticks: {
-                                    color: '#94A3B8',
-                                    font: { size: 10 },
-                                    callback: function(value) {
-                                        return value.toFixed(1) + '%';
-                                    },
-                                    maxTicksLimit: 6
-                                }
-                            },
-                            x: {
-                                grid: { display: false },
-                                ticks: { 
-                                    color: '#94A3B8',
-                                    font: { size: 10 },
-                                    maxTicksLimit: 8
-                                }
-                            }
-                        },
-                        interaction: {
-                            mode: 'index',
-                            intersect: false
-                        }
-                    }
-                };
-                
-                new Chart(ctx, config);
-            } catch (error) {
-                console.error('Erro ao criar gráfico de comparação:', error);
-            }
-        }
-    }
     
     setTimeout(initChart, 300);
-    setTimeout(initComparisonChart, 400);
 });
 </script>
 <?php endif; ?>
