@@ -534,12 +534,12 @@ $docs = get_field('documentos', $inv_id) ?: [];
             </div>
             
             <!-- Gráfico Principal -->
-            <div class="bg-white/5 rounded-xl p-4 border border-white/10 max-w-4xl mx-auto">
-                <h4 class="text-base font-medium text-slate-300 mb-4 text-center">
+            <div class="bg-white/5 rounded-xl p-2 md:p-4 border border-white/10 w-full mx-auto">
+                <h4 class="text-sm md:text-base font-medium text-slate-300 mb-2 md:mb-4 text-center">
                     <?php echo $is_private ? 'Histórico de Dividendos' : 'Evolução da Rentabilidade'; ?>
                 </h4>
-                <div class="h-[280px]">
-                    <canvas id="investmentChart"></canvas>
+                <div class="h-[200px] md:h-[280px] lg:h-[320px] w-full">
+                    <canvas id="investmentChart" class="w-full h-full"></canvas>
                 </div>
             </div>
         </div>
