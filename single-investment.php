@@ -330,7 +330,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <?php 
-            $motivos = get_field('motivos_investimento');
+            $motivos = get_field('motivos');
             if ($motivos && is_array($motivos)) : 
               foreach ($motivos as $motivo) : 
                 $titulo = $motivo['titulo'] ?? '';
@@ -375,7 +375,7 @@ if ($quantidade_cotas && !$cotas_vendidas) {
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <?php 
-            $riscos_lista = get_field('riscos_operacao');
+            $riscos_lista = get_field('riscos');
             if ($riscos_lista && is_array($riscos_lista)) : 
               foreach ($riscos_lista as $risco_item) : 
                 $titulo = $risco_item['titulo'] ?? '';
