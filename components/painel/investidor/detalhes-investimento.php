@@ -243,8 +243,8 @@ $venda_status = ($status_geral === 'vendido');
 $venda_valor = $valor_recebido_total;
 $venda_rentabilidade = $rentabilidade_pct_vendidos;
 
-// ✅ CORRIGIR RENTABILIDADE PROJETADA: usar histórico, não diferença
-$rentabilidade_projetada = $rentabilidade_ativa_total; // Sempre do histórico
+// ✅ CORRIGIR RENTABILIDADE PROJETADA: buscar do campo do investimento
+$rentabilidade_projetada_pct = floatval(get_field('rentabilidade', $inv_id) ?: 0);
 
 $rentabilidade_pct = ($status_geral === 'misto') ? $rentabilidade_pct_ativos : 
                     ($status_geral === 'ativo' ? $rentabilidade_pct_ativos_puros : $rentabilidade_pct_geral);
@@ -504,9 +504,9 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Rentabilidade Projetada</div>
-                        <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400">+R$ <?php echo number_format($rentabilidade_projetada, 2, ',', '.'); ?></div>
+                        <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400"><?php echo number_format($rentabilidade_projetada_pct, 1, ',', '.'); ?>% a.a</div>
                         <div class="text-xs text-green-300 mt-1">
-                            (<?php echo number_format($rentabilidade_pct, 1, ',', '.'); ?>%)
+                            Rentabilidade Real: R$ <?php echo number_format($rentabilidade_ativa_total, 2, ',', '.'); ?>
                         </div>
                     </div>
                 <?php endif; ?>
