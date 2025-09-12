@@ -164,24 +164,10 @@ foreach ($aporte_posts as $aporte_post) {
             if (!isset($historico_rentabilidade_consolidado[$data_key])) {
                 $historico_rentabilidade_consolidado[$data_key] = [
                     'data_rentabilidade' => $data_key,
-                    'valor' => 0,
-                    'cdi' => 0,
-                    'ibov' => 0,
-                    'inflacao' => 0
+                    'valor' => 0
                 ];
             }
             $historico_rentabilidade_consolidado[$data_key]['valor'] += floatval($item['valor'] ?? 0);
-            
-            // Adicionar dados de comparação (usar a média ponderada ou último valor)
-            if (!empty($item['cdi'])) {
-                $historico_rentabilidade_consolidado[$data_key]['cdi'] = floatval($item['cdi'] ?? 0);
-            }
-            if (!empty($item['ibov'])) {
-                $historico_rentabilidade_consolidado[$data_key]['ibov'] = floatval($item['ibov'] ?? 0);
-            }
-            if (!empty($item['inflacao'])) {
-                $historico_rentabilidade_consolidado[$data_key]['inflacao'] = floatval($item['inflacao'] ?? 0);
-            }
         }
     }
     

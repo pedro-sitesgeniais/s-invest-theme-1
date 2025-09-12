@@ -225,7 +225,6 @@ if (!empty($_POST['nova_categoria_nome'])) {
         <legend class="font-semibold mb-2 capitalize" x-text="`Cenário ${cenario}`"></legend>
 
         <input :name="`cenario_${cenario}[exposicao_maxima]`" placeholder="Exposição Máxima" type="number" step="0.01" class="w-full border px-3 py-2 rounded mb-2" />
-        <input :name="`cenario_${cenario}[rentabilidade_cdi]`" placeholder="Rentabilidade (%CDI)" type="number" step="0.01" class="w-full border px-3 py-2 rounded mb-2" />
         <input :name="`cenario_${cenario}[rentabilidade_tir]`" placeholder="Rentabilidade (%TIR)" type="number" step="0.01" class="w-full border px-3 py-2 rounded mb-2" />
         <input :name="`cenario_${cenario}[multiplo]`" placeholder="Múltiplo" type="number" step="0.01" class="w-full border px-3 py-2 rounded mb-2" />
         <input :name="`cenario_${cenario}[prazo]`" placeholder="Prazo" type="text" class="w-full border px-3 py-2 rounded" />
@@ -353,21 +352,18 @@ function cadastroInvestimento() {
       multiplicador_simulador: '',
       cenario_base: {
         exposicao_maxima: '',
-        rentabilidade_cdi: '',
         prazo: '',
         rentabilidade_tir: '',
         multiplo: ''
       },
       cenario_otimista: {
         exposicao_maxima: '',
-        rentabilidade_cdi: '',
         prazo: '',
         rentabilidade_tir: '',
         multiplo: ''
       },
       cenario_pessimista: {
         exposicao_maxima: '',
-        rentabilidade_cdi: '',
         prazo: '',
         rentabilidade_tir: '',
         multiplo: ''

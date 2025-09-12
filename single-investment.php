@@ -432,64 +432,9 @@ if ($quantidade_cotas && !$cotas_vendidas) {
             </h2>
             
             <div class="space-y-6 text-white leading-relaxed">
-              
-              <!-- Seção 1: Caráter Informativo -->
-              <div class="space-y-3">
-                <p>
-                  <strong class="text-secondary">Caráter Informativo:</strong> Esta apresentação foi preparada pela Bravaforte, com caráter meramente informativo. Qualquer oferta de investimento só poderá ser feita de acordo com o contrato de SCP, que poderá conter informações relevantes não aqui contidas (incluindo certos riscos).
-                </p>
-                
-                <p>
-                  Antes de decidir participar, os potenciais parceiros devem prestar especial atenção aos <strong class="text-gray-300">fatores de risco</strong>, incluindo, mas não se limitando a: cenário macroeconômico, prazo de lançamento, prazo de entrega, velocidade de vendas, valor de vendas, prazo de distribuição de dividendos, taxas e tributos.
-                </p>
-              </div>
-
-              <!-- Seção 2: Garantias e Projeções -->
-              <div class="space-y-3 pt-4 border-t border-slate-600">
-                <p>
-                  <strong class="text-secondary">Garantias:</strong> Esta apresentação não implica qualquer garantia com relação às informações aqui contidas, e as expectativas de retornos futuros e/ou valor principal integralizado, podendo variar de acordo com as condições econômicas, de mercado, tributárias, entre outros fatores. <strong class="text-gray-300">O desempenho passado não é garantia de resultados futuros.</strong>
-                </p>
-                
-                <p>
-                  Esta apresentação contém dados históricos e projeções feitas sob determinadas premissas. Embora a Bravaforte acredite que estas projeções são razoáveis e viáveis, não garantimos que sejam precisas ou válidas nas condições reais de mercado ou que todos os fatores de risco relevantes tenham sido esgotados.
-                </p>
-              </div>
-
-              <!-- Seção 3: Confidencialidade -->
-              <div class="space-y-3 pt-4 border-t border-slate-600">
-                <p>
-                  <strong class="text-secondary">Confidencialidade:</strong> A Bravaforte reserva-se o direito de alterar o conteúdo desta apresentação a qualquer momento, sem aviso prévio. Esta apresentação é confidencial e só deve ser visualizada por seus destinatários. Não poderá ser divulgada, distribuída, reproduzida ou copiada sem autorização expressa da Bravaforte.
-                </p>
-              </div>
-
-              <!-- Seção 4: Natureza Jurídica -->
-              <div class="space-y-3 pt-4 border-t border-slate-600">
-                <p>
-                  <strong class="text-secondary">Natureza Jurídica:</strong> Esta apresentação não constitui e nem deve ser interpretada como oferta pública de valores mobiliários, nos termos da Lei nº 6.385/76 e da Resolução CVM nº 88/2022. É destinada exclusivamente a parceiros estratégicos, em ambiente restrito de apresentação institucional.
-                </p>
-                
-                <p>
-                  A relação jurídica entre as partes se dá por meio de contrato de <strong class="text-gray-300">Sociedade em Conta de Participação (SCP)</strong>, de natureza associativa, sem garantias de rendimento ou retorno fixo.
-                </p>
-              </div>
-
-              <!-- Seção 5: Tributação e Proteção de Dados -->
-              <div class="space-y-3 pt-4 border-t border-slate-600">
-                <p>
-                  <strong class="text-secondary">Tributação:</strong> A eventual incidência de tributos será determinada conforme a legislação vigente aplicável a cada participante, sendo recomendável consulta a assessoria contábil ou jurídica.
-                </p>
-                
-                <p>
-                  <strong class="text-secondary">Proteção de Dados:</strong> Este material está protegido pela <strong class="text-gray-300">LGPD</strong> (Lei Geral de Proteção de Dados Pessoais).
-                </p>
-              </div>
-              
-              <!-- Footer -->
-              <div class="text-xs text-gray-300 pt-6 border-t border-slate-600 text-center">
-                <p>
-                  <strong class="text-gray-200">Bravaforte Investimentos</strong><br>
-                </p>
-              </div>
+              <p>
+                Este material foi preparado pela bravaforte, com caráter meramente informativo. Qualquer oferta de investimento só poderá ser feita de acordo com o contrato de SCP, que poderá conter informações relevantes não aqui contidas (incluindo certos riscos). Antes de decidir participar, os potenciais parceiros devem prestar especial atenção aos fatores de risco, incluindo, mas não se limitando a: cenário macroeconômico, prazo de lançamento, prazo de entrega, velocidade de vendas, valor de vendas, prazo de distribuição de dividendos, taxas e tributos. Esta apresentação não implica qualquer garantia com relação às informações aqui contidas, e as expectativas de retornos futuros e/ou valor principal integralizado, podendo variar de acordo com as condições econômicas, de mercado, tributárias, entre outros fatores. O desempenho passado não é garantia de resultados futuros. Esta apresentação contém dados históricos e projeções feitas sob determinadas premissas. Embora a Bravaforte acredite que estas projeções são razoáveis e viáveis, não garantimos que sejam precisas ou válidas nas condições reais de mercado ou que todos os fatores de risco relevantes tenham sido esgotados. A Bravaforte reserva-se o direito de alterar o conteúdo desta apresentação a qualquer momento, sem aviso prévio. Esta apresentação é confidencial e só deve ser visualizada por seus destinatários. Não poderá ser divulgada, distribuída, reproduzida ou copiada sem autorização expressa da Bravaforte. Esta apresentação não constitui e nem deve ser interpretada como oferta pública de valores mobiliários, nos termos da Lei nº 6.385/76 e da Resolução CVM nº 88/2022. É destinada exclusivamente a parceiros estratégicos, em ambiente restrito de apresentação institucional. A relação jurídica entre as partes se dá por meio de contrato de Sociedade em Conta de Participação (SCP), de natureza associativa, sem garantias de rendimento ou retorno fixo. A eventual incidência de tributos será determinada conforme a legislação vigente aplicável a cada participante, sendo recomendável consulta a assessoria contábil ou jurídica. Este material está protegido pela LGPD (Lei Geral de Proteção de Dados Pessoais).
+              </p>
             </div>
           </div>
       </div>

@@ -12,7 +12,7 @@
   if (!function_exists('cenario_tem_dados')) {
       function cenario_tem_dados($cenario) {
           if (!$cenario) return false;
-          $campos = ['exposicao_maxima', 'rentabilidade_cdi', 'prazo', 'rentabilidade_tir'];
+          $campos = ['exposicao_maxima', 'prazo', 'rentabilidade_tir'];
           foreach ($campos as $campo) {
               if (!empty($cenario[$campo])) return true;
           }
@@ -62,12 +62,6 @@
           </tr>
           <?php endif; ?>
           
-          <?php if (!empty($cenario_data['rentabilidade_cdi'])) : ?>
-          <tr>
-            <th class="p-3 font-medium text-left">Rentabilidade (%CDI)</th>
-            <td class="p-3"><?= esc_html($cenario_data['rentabilidade_cdi']); ?>%</td>
-          </tr>
-          <?php endif; ?>
           
           <?php if (!empty($cenario_data['prazo'])) : ?>
           <tr class="bg-gray-50">
