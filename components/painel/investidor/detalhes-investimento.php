@@ -229,8 +229,8 @@ $venda_status = ($status_geral === 'vendido');
 $venda_valor = $valor_recebido_total;
 $venda_rentabilidade = $rentabilidade_pct_vendidos;
 
-// ✅ CORRIGIR RENTABILIDADE PROJETADA: usar histórico, não diferença
-$rentabilidade_projetada = $rentabilidade_ativa_total; // Sempre do histórico
+// ✅ CORRIGIR RENTABILIDADE PROJETADA: buscar do campo do investimento
+$rentabilidade_projetada_pct = floatval(get_field('rentabilidade', $inv_id) ?: 0);
 
 $rentabilidade_pct = ($status_geral === 'misto') ? $rentabilidade_pct_ativos : 
                     ($status_geral === 'ativo' ? $rentabilidade_pct_ativos_puros : $rentabilidade_pct_geral);
@@ -490,9 +490,9 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Rentabilidade Projetada</div>
-                        <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400">+R$ <?php echo number_format($rentabilidade_projetada, 2, ',', '.'); ?></div>
+                        <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400"><?php echo number_format($rentabilidade_projetada_pct, 1, ',', '.'); ?>% a.a</div>
                         <div class="text-xs text-green-300 mt-1">
-                            (<?php echo number_format($rentabilidade_pct, 1, ',', '.'); ?>%)
+                            Rentabilidade Real: R$ <?php echo number_format($rentabilidade_ativa_total, 2, ',', '.'); ?>
                         </div>
                     </div>
                 <?php endif; ?>
@@ -509,19 +509,24 @@ $docs = get_field('documentos', $inv_id) ?: [];
     <!-- GRÁFICO -->
     <?php if (!empty($rentabilidade_hist) && is_array($rentabilidade_hist) && count($rentabilidade_hist) > 0) : ?>
         <div class="my-6 md:my-12">
-            <!-- Título do Gráfico -->
+            <!-- Título Geral dos Gráficos -->
             <div class="mb-4 md:mb-6 text-center">
                 <h3 class="text-lg md:text-xl font-semibold text-slate-300 mb-2">
-                    <?php echo $is_private ? 'Histórico de Dividendos Mensais' : 'Evolução da Rentabilidade'; ?>
+                    Análise de Performance
                 </h3>
                 <p class="text-sm text-slate-400">
-                    <?php echo $is_private ? 'Valores recebidos por mês' : 'Histórico de valores do investimento'; ?>
+                    <?php echo $is_private ? 'Histórico de dividendos recebidos' : 'Evolução da rentabilidade do investimento'; ?>
                 </p>
             </div>
             
-            <!-- Canvas do Gráfico -->
-            <div class="h-[300px] sm:h-[350px] md:h-[400px]">
-                <canvas id="investmentChart"></canvas>
+            <!-- Gráfico Principal -->
+            <div class="bg-white/5 rounded-xl p-2 md:p-4 border border-white/10 w-full mx-auto">
+                <h4 class="text-sm md:text-base font-medium text-slate-300 mb-2 md:mb-4 text-center">
+                    <?php echo $is_private ? 'Histórico de Dividendos' : 'Evolução da Rentabilidade'; ?>
+                </h4>
+                <div class="h-[200px] md:h-[280px] lg:h-[320px] w-full">
+                    <canvas id="investmentChart" class="w-full h-full"></canvas>
+                </div>
             </div>
         </div>
     <?php endif; ?>
@@ -851,6 +856,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
+    
     
     setTimeout(initChart, 300);
 });
