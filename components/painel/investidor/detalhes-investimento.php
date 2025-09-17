@@ -490,9 +490,9 @@ $docs = get_field('documentos', $inv_id) ?: [];
                     
                     <div class="bg-white/8 p-3 md:p-4 lg:p-5 rounded-lg border border-white/10 text-center">
                         <div class="text-slate-400 text-xs md:text-sm mb-1 md:mb-2">Rentabilidade Projetada</div>
-                        <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400"><?php echo number_format($rentabilidade_projetada_pct, 1, ',', '.'); ?>% a.a</div>
+                        <div class="text-lg md:text-xl lg:text-2xl font-bold text-green-400">R$ <?php echo number_format($rentabilidade_ativa_total, 2, ',', '.'); ?></div>
                         <div class="text-xs text-green-300 mt-1">
-                            Rentabilidade Real: R$ <?php echo number_format($rentabilidade_ativa_total, 2, ',', '.'); ?>
+                            <?php echo number_format($rentabilidade_projetada_pct, 1, ',', '.'); ?>%
                         </div>
                     </div>
                 <?php endif; ?>
