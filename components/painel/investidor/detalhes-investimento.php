@@ -108,10 +108,11 @@ foreach ($aporte_posts as $aporte_post) {
     $aporte_id = $aporte_post->ID;
     $venda_status_item = get_field('venda_status', $aporte_id);
     
-    // Calcular valor investido deste aporte
+    // BUGFIX: Calcular APENAS valor investido (histórico de aportes) - NÃO incluir dividendos
     $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
     $valor_investido_item = 0;
     foreach ($historico_aportes as $item) {
+        // VALOR INVESTIDO: Apenas aportes realizados
         $valor_investido_item += floatval($item['valor_aporte'] ?? 0);
         $historico_aportes_consolidado[] = $item;
     }
@@ -171,11 +172,12 @@ foreach ($aporte_posts as $aporte_post) {
         }
     }
     
-    // Consolidar dividendos (para produtos Private)
+    // DIVIDENDOS: Consolidar dividendos SEPARADAMENTE do valor investido (para produtos Private/SCP)
     if ($is_private) {
         $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
         foreach ($historico_dividendos as $dividendo) {
             $historico_dividendos_consolidado[] = $dividendo;
+            // IMPORTANTE: Dividendos não afetam o valor investido total
             $total_dividendos_recebidos += floatval($dividendo['valor'] ?? 0);
         }
     }

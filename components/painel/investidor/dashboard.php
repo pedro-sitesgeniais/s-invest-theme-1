@@ -131,15 +131,16 @@ foreach ($aportes as $aporte) {
         }
     }
     
-    // Calcular valor total investido neste aporte
+    // BUGFIX: Calcular valor total investido APENAS dos aportes (NÃO incluir dividendos)
     $historico_aportes = get_field('historico_aportes', $aporte_id) ?: [];
     $valor_investido_aporte = 0;
-    
+
     foreach ($historico_aportes as $item) {
+        // VALOR INVESTIDO: Apenas aportes realizados pelo investidor
         $valor_investido_aporte += floatval($item['valor_aporte'] ?? 0);
     }
-    
-    // Se não tem histórico, usar valor_compra ou valor_aportado
+
+    // Se não tem histórico, usar valor_compra ou valor_aportado (mas NÃO dividendos)
     if ($valor_investido_aporte == 0) {
         if ($eh_scp) {
             $valor_investido_aporte = floatval(get_field('valor_aportado', $aporte_id));
@@ -189,9 +190,10 @@ foreach ($aportes as $aporte) {
             $aportes_ativos += $valor_investido_aporte;
         }
         
-        // Somar dividendos recebidos (para rentabilidade consolidada)
+        // DIVIDENDOS SCP: Somar dividendos recebidos (para rentabilidade consolidada) - SEPARADO DO VALOR INVESTIDO
         $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
         foreach ($historico_dividendos as $dividendo) {
+            // IMPORTANTE: Dividendos são rentabilidade consolidada, mas NÃO parte do valor investido
             $rentabilidade_consolidada += floatval($dividendo['valor'] ?? 0);
         }
         

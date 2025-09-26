@@ -502,24 +502,25 @@ $risco_class = $risco_colors[strtolower($risco)] ?? 'bg-gray-100 text-gray-800';
             $is_scp = function_exists('s_invest_is_private_scp') ? s_invest_is_private_scp($id) : false;
             
             if ($is_scp) {
-                // Para SCP: calcular dividendos recebidos e cotas
+                // Para SCP: calcular dividendos recebidos e cotas - SEPARADAMENTE DO VALOR INVESTIDO
                 $dividendos_recebidos = 0;
                 $total_cotas = 0;
-                
+
                 foreach ($aportes_usuario as $aporte_item) {
                     $aporte_id = $aporte_item->ID;
-                    
-                    // Somar dividendos
+
+                    // DIVIDENDOS: Somar apenas dividendos recebidos (NÃO incluir no valor investido)
                     $historico_dividendos = get_field('historico_dividendos', $aporte_id) ?: [];
                     foreach ($historico_dividendos as $dividendo) {
                         $dividendos_recebidos += floatval($dividendo['valor'] ?? 0);
                     }
-                    
+
                     // Somar cotas
                     $total_cotas += intval(get_field('quantidade_cotas', $aporte_id) ?: 0);
                 }
-                
-                $yield_percentual = $dados_pessoais['valor_investido'] > 0 ? 
+
+                // YIELD: Dividendos sobre valor investido (sem incluir dividendos no denominador)
+                $yield_percentual = $dados_pessoais['valor_investido'] > 0 ?
                     ($dividendos_recebidos / $dados_pessoais['valor_investido']) * 100 : 0;
             ?>
                 <div class="space-y-3">
