@@ -116,7 +116,24 @@ foreach ($aporte_posts as $aporte_post) {
         $valor_investido_item += floatval($item['valor_aporte'] ?? 0);
         $historico_aportes_consolidado[] = $item;
     }
+
+    // FALLBACK: Se não tem histórico de aportes, usar valor_aportado (para SCPs) - MAS NUNCA dividendos
+    if ($valor_investido_item == 0) {
+        // Verificar se é SCP
+        $is_scp_item = function_exists('s_invest_is_private_scp') ? s_invest_is_private_scp($investment_id) : false;
+        if ($is_scp_item) {
+            $valor_investido_item = floatval(get_field('valor_aportado', $aporte_id) ?: 0);
+        } else {
+            $valor_investido_item = floatval(get_field('valor_compra', $aporte_id) ?: 0);
+        }
+    }
+
     $valor_investido_total += $valor_investido_item;
+
+    // DEBUG: Log para identificar valores incorretos
+    if (defined('WP_DEBUG') && WP_DEBUG && $valor_investido_item > 0) {
+        error_log("DETALHES - Aporte ID {$aporte_id}: Histórico=" . count($historico_aportes) . ", Valor Item=R$ " . number_format($valor_investido_item, 2, ',', '.') . ", Total Acumulado=R$ " . number_format($valor_investido_total, 2, ',', '.'));
+    }
     
     if ($venda_status_item) {
         // Aporte vendido
