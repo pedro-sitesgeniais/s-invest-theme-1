@@ -221,18 +221,29 @@ window.extratoData = function() {
         },
         
         parseData(dataString) {
-            // Converte data do formato dd/mm/yyyy para objeto Date (meio-dia para evitar problemas de timezone)
+            // BUGFIX: Converte data do formato dd/mm/yyyy BRASILEIRO para objeto Date corretamente
             const partes = dataString.split('/');
             if (partes.length === 3) {
-                return new Date(partes[2], partes[1] - 1, partes[0], 12, 0, 0);
+                // FORMATO BRASILEIRO: dd/mm/aaaa
+                const dia = parseInt(partes[0], 10);
+                const mes = parseInt(partes[1], 10) - 1; // JavaScript: mês 0-based
+                const ano = parseInt(partes[2], 10);
+                return new Date(ano, mes, dia, 12, 0, 0);
             }
             return new Date();
         },
         
         formatarDataBrasileira(dataISO) {
             if (!dataISO) return '';
+            // BUGFIX: Garantir formato brasileiro consistente dd/mm/aaaa
             const data = new Date(dataISO + 'T00:00:00'); // Evitar timezone issues
-            return data.toLocaleDateString('pt-BR');
+
+            // Forçar formato brasileiro explícito para evitar problemas de localização
+            const dia = data.getDate().toString().padStart(2, '0');
+            const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+            const ano = data.getFullYear();
+
+            return `${dia}/${mes}/${ano}`;
         },
         
         // ========== FUNÇÃO PARA DATA MÁXIMA (hoje) ==========
